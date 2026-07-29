@@ -30,8 +30,18 @@ if [[ "$SRC" == *.zip ]]; then
   WORK="$(mktemp -d)"
   echo "→ extracting $(basename "$SRC")"
   unzip -q "$SRC" -d "$WORK"
-  SRC="$(find "$WORK" -maxdepth 2 -type d -name 'level1_prototype' -print -quit)"
-  SRC="$(dirname "$SRC")"
+  # No depth limit. The real package zip wraps everything in a version-named
+  # directory, so level1_prototype/ sits three levels down —  `-maxdepth 2` found
+  # nothing, `dirname ""` became ".", and the error blamed the current directory.
+  # Searching the whole extraction costs nothing and works whatever the wrapper.
+  FOUND="$(find "$WORK" -type d -name 'level1_prototype' -print -quit)"
+  if [[ -z "$FOUND" ]]; then
+    echo "✗ no level1_prototype/ anywhere inside $(basename "$SRC")" >&2
+    echo "  contents:" >&2
+    find "$WORK" -maxdepth 2 -type d | sed "s|$WORK|  |" >&2
+    exit 1
+  fi
+  SRC="$(dirname "$FOUND")"
 else
   [[ -d "$SRC/assets/level1_prototype" ]] && SRC="$SRC/assets"
 fi
