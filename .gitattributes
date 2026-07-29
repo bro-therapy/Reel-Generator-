@@ -1,0 +1,45 @@
+# Game assets go through Git LFS so the repo stays clonable as the art grows.
+# Set this up BEFORE committing your first asset — LFS does not retroactively
+# fix files already in history.
+#
+#   git lfs install
+#
+# Godot's own scene/resource files (.tscn, .tres, .gd) are text and are
+# deliberately NOT tracked by LFS — you want those diffable.
+
+# Images
+*.png   filter=lfs diff=lfs merge=lfs -text
+*.jpg   filter=lfs diff=lfs merge=lfs -text
+*.jpeg  filter=lfs diff=lfs merge=lfs -text
+*.gif   filter=lfs diff=lfs merge=lfs -text
+*.psd   filter=lfs diff=lfs merge=lfs -text
+*.aseprite filter=lfs diff=lfs merge=lfs -text
+*.webp  filter=lfs diff=lfs merge=lfs -text
+
+# Audio
+*.wav   filter=lfs diff=lfs merge=lfs -text
+*.mp3   filter=lfs diff=lfs merge=lfs -text
+*.ogg   filter=lfs diff=lfs merge=lfs -text
+
+# Video
+*.mp4   filter=lfs diff=lfs merge=lfs -text
+*.webm  filter=lfs diff=lfs merge=lfs -text
+
+# 3D models
+*.glb   filter=lfs diff=lfs merge=lfs -text
+*.gltf  filter=lfs diff=lfs merge=lfs -text
+*.fbx   filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+
+# Fonts
+*.ttf   filter=lfs diff=lfs merge=lfs -text
+*.otf   filter=lfs diff=lfs merge=lfs -text
+
+# SVG is text — keep it diffable, just don't let git mangle line endings
+*.svg   -text
+
+# Godot text formats — explicitly kept as diffable text
+*.gd    text
+*.tscn  text
+*.tres  text
+*.godot text

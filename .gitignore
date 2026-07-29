@@ -1,23 +1,42 @@
-# OS
+# ── Godot ────────────────────────────────────────────────────────────────────
+# Editor-generated import cache and derived data. Godot rebuilds this on open.
+.godot/
+
+# Legacy Godot 3 import folder, harmless to keep ignored
+.import/
+
+# Exported builds — never commit these
+build/
+builds/
+export/
+exports/
+*.exe
+*.pck
+*.zip
+*.apk
+*.aab
+*.dmg
+*.app
+
+# Godot export credentials — contains keystore paths and passwords
+export_presets.cfg
+
+# Android/iOS build templates
+/android/
+/ios/
+
+# ── OS / editors ─────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
-
-# Editors
 .vscode/
 .idea/
 *.swp
 
-# Env / secrets
+# ── Secrets ──────────────────────────────────────────────────────────────────
 .env
 .env.local
 
-# Dependencies & build output
-node_modules/
-dist/
-build/
-*.log
-
-# ── Engine-specific rules go here once the stack is chosen ───────────────────
-# Game repos bloat fast — art, audio, and builds are what fill them up.
-# Whatever engine you land on, add its ignores before the first asset commit,
-# and keep large binaries out of git (LFS or external storage).
+# ── Notes ────────────────────────────────────────────────────────────────────
+# Art, audio, and video are tracked via Git LFS — see .gitattributes.
+# Do NOT commit large binaries directly. A previous project in this repo hit
+# 556MB of history that way, and the only fix was throwing the history out.
