@@ -1,0 +1,16 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/combat/vfx_effect.gd" id="1_vfx"]
+[ext_resource type="SpriteFrames" path="res://data/vfx/combat_vfx_frames.tres" id="2_frames"]
+
+[node name="VfxEffect" type="Node3D"]
+script = ExtResource("1_vfx")
+
+[node name="Sprite" type="AnimatedSprite3D" parent="."]
+sprite_frames = ExtResource("2_frames")
+animation = &"friendly_a"
+billboard = 1
+texture_filter = 0
+shaded = false
+alpha_cut = 1
+pixel_size = 0.0045

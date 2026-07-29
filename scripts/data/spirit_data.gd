@@ -36,6 +36,11 @@ extends Resource
 ## chasing and then reform on its own.
 @export var engage_radius_units: float = 8.0
 
+@export_group("Behaviour")
+## Species behaviour module (Phase 4). A SummonBehavior subclass; SummonBase
+## instantiates it so all three species keep sharing one base scene.
+@export var behavior_script: Script
+
 @export_group("Forms")
 @export var forms: Array[SpiritFormData] = []
 

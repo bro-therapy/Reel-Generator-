@@ -289,6 +289,13 @@ func _stage_pool_watch() -> void:
 	else:
 		_no("pool accounting", "total %d != active %d + free %d" % [_pool.total_count(), _pool.active_count(), _pool.free_count()])
 
+	# Every checked-out slot must correspond to a projectile actually in flight,
+	# or the pool is leaking slots to callers that never launched.
+	if _pool.active_count() == _pool.in_flight_count():
+		_ok("no checked-out projectile is idle", "%d checked out, %d in flight" % [_pool.active_count(), _pool.in_flight_count()])
+	else:
+		_no("pool slot leak", "%d checked out but only %d in flight" % [_pool.active_count(), _pool.in_flight_count()])
+
 	if _pool.starved_count() == 0:
 		_ok("pool never starved", "capacity %d sufficed" % _pool.total_count())
 	else:

@@ -37,12 +37,36 @@ func _ready() -> void:
 ## Exhaustion is deliberately not an error — dropping a shot beats unbounded
 ## allocation, and the counter surfaces it.
 func acquire() -> FocusProjectile:
+	_reclaim_idle()
 	if _free.is_empty():
 		_starved += 1
 		return null
 	var p: FocusProjectile = _free.pop_back()
 	_busy.append(p)
 	return p
+
+
+## A projectile is marked busy the moment it is handed out, before it is
+## launched. A caller that acquires and then bails — pool exhausted downstream,
+## an early return, an exception — would otherwise strand that slot for the rest
+## of the run. Reclaiming checked-out-but-inactive projectiles makes the pool
+## self-healing rather than trusting every caller to launch what it takes.
+func _reclaim_idle() -> void:
+	for p in _busy.duplicate():
+		if not p.is_active():
+			_busy.erase(p)
+			if not _free.has(p):
+				_free.append(p)
+
+
+## Projectiles genuinely in flight. Distinct from the checked-out count: only
+## this reflects what a player would see on screen.
+func in_flight_count() -> int:
+	var n := 0
+	for p in _busy:
+		if p.is_active():
+			n += 1
+	return n
 
 
 func _on_expired(p: FocusProjectile) -> void:

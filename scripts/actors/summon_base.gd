@@ -32,6 +32,8 @@ var hero: Node3D
 @onready var _fsm: SummonStateMachine = $StateMachine
 
 var form: SpiritFormData
+## Species behaviour module (Phase 4). Null falls back to the generic cycle.
+var behavior: SummonBehavior
 
 var _reform_delay := 0.35
 var _teleport_distance := 10.0
@@ -40,6 +42,7 @@ var _attack_cooldown := 0.0
 var _pivot_offsets: Dictionary = {}
 var _base_sprite_offset_px := 0.0
 var _last_anim := ""
+var _attack_delivered := false
 
 ## Diagnostics for the acceptance harness.
 var attacks_landed := 0
@@ -72,9 +75,24 @@ func _ready() -> void:
 	# walk to, a ranged one must see to the edge of its own reach.
 	_targeting.range_units = maxf(form.range_units, data.engage_radius_units)
 
+	_install_behavior()
 	_fsm.state_changed.connect(_on_state_changed)
 	_load_pivot_offsets()
 	_configure_sprite()
+
+
+## Instantiates the species behaviour named by the SpiritData, if any.
+func _install_behavior() -> void:
+	if data.behavior_script == null:
+		return
+	var instance: Variant = data.behavior_script.new()
+	if instance is SummonBehavior:
+		behavior = instance as SummonBehavior
+		behavior.name = "Behavior"
+		add_child(behavior)
+		behavior.setup(self)
+	else:
+		push_error("SummonBase: behavior_script on '%s' is not a SummonBehavior" % data.id)
 
 
 func _physics_process(delta: float) -> void:
@@ -90,6 +108,8 @@ func _physics_process(delta: float) -> void:
 
 	var forward := _follow.update_basis(_hero_forward(), delta)
 	var lane := _follow.lane_position(hero.global_position, forward)
+	if behavior != null:
+		lane = behavior.follow_target(lane, delta)
 
 	# Separation check runs before anything else: reform outranks every state.
 	if _fsm.state != SummonStateMachine.State.REFORM:
@@ -102,7 +122,7 @@ func _physics_process(delta: float) -> void:
 		SummonStateMachine.State.WINDUP:
 			_process_windup(delta, lane)
 		SummonStateMachine.State.ATTACK:
-			_process_attack()
+			_process_attack(delta, lane)
 		SummonStateMachine.State.RECOVER:
 			_process_recover(delta, lane)
 		SummonStateMachine.State.ACQUIRE:
@@ -130,6 +150,11 @@ func _process_acquire(delta: float, lane: Vector3) -> void:
 
 	if _in_attack_range():
 		_fsm.transition_to(SummonStateMachine.State.WINDUP)
+		return
+
+	# A planted species shoots from where it stands and never closes distance.
+	if behavior != null and behavior.plants_to_attack():
+		_fsm.transition_to(SummonStateMachine.State.FOLLOW)
 		return
 
 	global_position = _follow.steer(global_position, _approach_point(lane), delta)
@@ -161,23 +186,39 @@ func _within_leash() -> bool:
 	return hero.global_position.distance_to(TargetScorer.target_point(target)) <= data.engage_radius_units
 
 
-func _process_windup(_delta: float, _lane: Vector3) -> void:
-	# Committed: hold position through the telegraph.
+func _process_windup(delta: float, lane: Vector3) -> void:
 	if not _targeting.has_valid_target():
 		_fsm.transition_to(SummonStateMachine.State.FOLLOW)
 		return
+	if behavior != null:
+		behavior.on_windup(delta, lane)
 	if _fsm.time_in_state >= form.windup_seconds:
 		_fsm.transition_to(SummonStateMachine.State.ATTACK)
 
 
-func _process_attack() -> void:
-	_deal_damage()
-	_fsm.transition_to(SummonStateMachine.State.RECOVER)
+## The attack lands once on entry; the remaining ticks let a species carry its
+## movement through (the hound's lunge, the wisp's slice) before recovering.
+func _process_attack(delta: float, lane: Vector3) -> void:
+	if not _attack_delivered:
+		_deal_damage()
+		_attack_delivered = true
+	if behavior != null:
+		behavior.on_attack_tick(delta, lane)
+	if _fsm.time_in_state >= _attack_tick_seconds():
+		_fsm.transition_to(SummonStateMachine.State.RECOVER)
+
+
+## How long the ATTACK state holds. Species that move through their attack need
+## a few frames; instant ones fall through on the next tick.
+func _attack_tick_seconds() -> float:
+	return 0.0 if behavior == null else 0.12
 
 
 func _process_recover(delta: float, lane: Vector3) -> void:
 	# Return to the lane rather than parking on the corpse.
-	global_position = _follow.steer(global_position, lane, delta)
+	var handled := behavior != null and behavior.on_recover(delta, lane)
+	if not handled:
+		global_position = _follow.steer(global_position, lane, delta)
 	if _fsm.time_in_state >= form.recover_seconds:
 		_fsm.transition_to(SummonStateMachine.State.FOLLOW)
 
@@ -212,7 +253,8 @@ func _deal_damage() -> void:
 	if _targeting.rally_target != null and target == _targeting.rally_target:
 		dmg = int(round(float(dmg) * (1.0 + _rally_bonus)))
 
-	if target.has_method("take_damage"):
+	var handled := behavior != null and behavior.deliver_attack(target, dmg)
+	if not handled and target.has_method("take_damage"):
 		target.call("take_damage", dmg)
 
 	attacks_landed += 1
@@ -332,6 +374,39 @@ func _load_pivot_offsets() -> void:
 	_pivot_offsets = entry.get("pivot_offsets", {})
 
 
+## Shared pools, resolved from the hero so summons never own their own.
+func projectile_pool() -> ProjectilePool:
+	if hero == null:
+		return null
+	return hero.get_node_or_null("ProjectilePool") as ProjectilePool
+
+
+func effect_pool() -> EffectPool:
+	if hero == null:
+		return null
+	return hero.get_node_or_null("EffectPool") as EffectPool
+
+
+func spawn_effect(position: Vector3, row: StringName, scale_units: float) -> void:
+	var pool := effect_pool()
+	if pool != null:
+		pool.spawn(position, row, scale_units)
+
+
+func attack_origin_position() -> Vector3:
+	return _origin()
+
+
+## The attack origin the summon would have if its body were at `position`.
+## Behaviours use this to test a candidate move without committing to it.
+func attack_origin_offset_from(position: Vector3) -> Vector3:
+	return position + (_origin() - global_position)
+
+
+func behavior_signature() -> String:
+	return behavior.signature() if behavior != null else "generic"
+
+
 func _hero_forward() -> Vector3:
 	if hero == null:
 		return Vector3.FORWARD
@@ -341,4 +416,8 @@ func _hero_forward() -> Vector3:
 
 
 func _on_state_changed(to: int, from: int) -> void:
+	if to == SummonStateMachine.State.ATTACK:
+		_attack_delivered = false
+	if behavior != null:
+		behavior.on_state_entered(to)
 	state_changed.emit(to, from)

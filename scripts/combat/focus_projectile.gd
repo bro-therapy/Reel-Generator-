@@ -35,14 +35,31 @@ func _ready() -> void:
 	_deactivate()
 
 
+## Convenience launch for the Focus Weapon, which carries its values on a
+## FocusWeaponData resource.
 func launch(from: Vector3, direction: Vector3, weapon: FocusWeaponData, rolled_damage: int, critical: bool) -> void:
+	launch_raw(
+		from,
+		direction,
+		weapon.projectile_speed_units_per_second,
+		weapon.projectile_lifetime_seconds,
+		rolled_damage,
+		critical,
+		weapon.pierce_count
+	)
+
+
+## Explicit-parameter launch. Summon species carry their projectile values on
+## their own behaviour rather than a FocusWeaponData, so they use this directly
+## and share the same pool.
+func launch_raw(from: Vector3, direction: Vector3, projectile_speed: float, projectile_lifetime: float, projectile_damage: int, critical: bool, pierce: int) -> void:
 	global_position = from
 	_direction = direction.normalized() if direction.length_squared() > 0.0 else Vector3.FORWARD
-	speed = weapon.projectile_speed_units_per_second
-	lifetime = weapon.projectile_lifetime_seconds
-	damage = rolled_damage
+	speed = projectile_speed
+	lifetime = projectile_lifetime
+	damage = projectile_damage
 	was_critical = critical
-	pierce_remaining = weapon.pierce_count
+	pierce_remaining = pierce
 
 	_life_left = lifetime
 	_hit_this_flight.clear()

@@ -290,6 +290,11 @@ func _stage_reform_watch() -> void:
 ## as happily. These two stages bracket the real value: no reform just under it,
 ## a reform just over it.
 func _stage_threshold_below_start() -> void:
+	# Isolate the reform mechanism. With enemies present the summon is somewhere
+	# in its attack cycle, which changes whether it steers or holds and made this
+	# check flaky. Hiding them removes the confound entirely — the property under
+	# test is separation distance, not combat.
+	_set_enemies_visible(false)
 	_reforms_at_mark = _construct.reform_count
 	var below: float = SpiritData.teleport_back_distance() - 1.0
 	_construct.global_position = _player.global_position + Vector3(below, 0.0, 0.0)
@@ -328,6 +333,7 @@ func _stage_threshold_above_watch() -> void:
 		_ok("reforms just past the threshold", "%.0f u triggered a reform (threshold %.0f u)" % [above, SpiritData.teleport_back_distance()])
 	else:
 		_no("reform threshold too high", "no reform at %.0f u; the %.0f u threshold is not being honoured" % [above, SpiritData.teleport_back_distance()])
+	_set_enemies_visible(true)
 	_stage = 13
 
 
@@ -570,6 +576,16 @@ func _check_invulnerable() -> void:
 		_ok("summons are invulnerable in the prototype", "take_damage() refused on all three")
 	else:
 		_no("invulnerability", "; ".join(failures))
+
+
+## Hides or restores every test target, so a stage can exclude combat.
+func _set_enemies_visible(value: bool) -> void:
+	var tree := root.get_tree()
+	if tree == null:
+		return
+	for n in tree.get_nodes_in_group("enemies"):
+		if n is Node3D:
+			(n as Node3D).visible = value
 
 
 func _walk(node: Node) -> Array[Node]:
