@@ -173,17 +173,32 @@ stagger_core_open, defeat. Comparing against guide §11, these are missing:
   below.
 - Stability meter art (see Phase 13).
 
-**Note on the hero action atlas.** Its 16 cells carry *dual* labels —
-`idle_or_rally`, `dash_or_focus`, `dash_streak_or_convergence_start`,
-`hurt_or_victory`, `knockback_or_interact`, `summon_start_or_revive`,
-`summon_release_or_defeat`. That is roughly 15 distinct hero states packed into 16
-ambiguous cells, and the mapping is unresolved. It is also **directionless** — two rows,
-no compass — while locomotion is fully 8-directional, so a dash to the northeast has no
-matching pose.
+**Hero action atlas — mapping resolved.** The dual cell labels (`idle_or_rally`,
+`dash_or_focus`, …) are not ambiguous: **the top row is the first label of each pair and
+the bottom row is the second.** Verified by inspecting frames — `00_top__00` is a neutral
+idle, `01_bottom__00` is a rally cast standing in a violet summoning circle, and
+`01_bottom__07` is the hero face-down with the staff dropped. The sheet therefore carries
+16 distinct states, and no new art is required for it:
 
-**Ask: confirm the intended cell→state mapping, and decide whether hero actions need
-8-direction coverage.** If they do, the ask grows to 8 directions × ~6 core actions.
-This is a design question for the owner before any art is produced.
+| Column | Top row | Bottom row |
+|---|---|---|
+| 00 | idle | rally |
+| 01 | dash | focus |
+| 02 | dash streak | convergence start |
+| 03 | dash recover | convergence |
+| 04 | hurt | victory |
+| 05 | knockback | interact |
+| 06 | summon start | revive |
+| 07 | summon release | defeat |
+
+**One open question remains:** these poses are front-facing three-quarter and
+**non-directional**, while locomotion is fully 8-directional. A dash to the northeast has
+no matching pose.
+
+*Recommendation: accept non-directional actions for the slice.* Producing 8-direction
+coverage for the ~6 core actions is 48+ frames, and the actor billboards toward the
+camera anyway, so the mismatch is least visible exactly where it would cost most. Revisit
+after the first playtest if dash facing reads badly.
 
 ### Phase 13 — HUD and menus
 
@@ -236,8 +251,9 @@ Ordered by what blocks the next phase, not by size.
 
 1. **Summon evolution frames (42)** — blocks Phase 7, the next phase. Nothing else in the
    package gates work as directly.
-2. **Hero action atlas mapping** — a design decision, not production. Blocks Phase 12 and
-   should be settled early because it may multiply the art required by 8.
+2. ~~Hero action atlas mapping~~ — **resolved, no art needed.** Only the
+   directional-coverage question remains, and the recommendation is to accept
+   non-directional poses for the slice.
 3. **Enemy hit column (6) + Gilded Bellguard row (6–7)** — small, and the elite is
    currently indistinguishable from a normal tank.
 4. **Boss gap frames (3–4)** — blocks Phase 11's readability criteria.
