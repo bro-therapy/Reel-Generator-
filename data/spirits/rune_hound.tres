@@ -1,15 +1,18 @@
-[gd_resource type="Resource" script_class="SpiritData" load_steps=5 format=3]
+[gd_resource type="Resource" script_class="SpiritData" load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/data/spirit_data.gd" id="1_spirit"]
 [ext_resource type="Script" path="res://scripts/data/spirit_form_data.gd" id="2_form"]
 [ext_resource type="SpriteFrames" path="res://data/spirits/rune_hound_frames.tres" id="3_frames"]
 [ext_resource type="Script" path="res://scripts/actors/behaviors/rune_hound_behavior.gd" id="4_behavior"]
+[ext_resource type="SpriteFrames" path="res://data/spirits/volt_hound_frames.tres" id="5_awakened"]
+[ext_resource type="SpriteFrames" path="res://data/spirits/tempest_fenrir_frames.tres" id="6_ascendant"]
 
 [sub_resource type="Resource" id="Resource_bound"]
 script = ExtResource("2_form")
 tier = 0
 display_name = "Rune Hound"
 sprite_frames = ExtResource("3_frames")
+metrics_key = &"rune_hound"
 world_height_units = 2.3469
 source_cell_height_px = 342
 damage = 18
@@ -18,6 +21,38 @@ range_units = 2.2
 windup_seconds = 0.18
 recover_seconds = 0.22
 passive_description = "Bound: one quick bite with a short recovery."
+convergence_description = "Crosses the arena in a lightning-wolf streak."
+
+[sub_resource type="Resource" id="Resource_awakened"]
+script = ExtResource("2_form")
+tier = 1
+display_name = "Volt Hound"
+sprite_frames = ExtResource("5_awakened")
+metrics_key = &"volt_hound"
+world_height_units = 2.317
+source_cell_height_px = 342
+damage = 18
+attack_interval_seconds = 1.05
+range_units = 2.2
+windup_seconds = 0.18
+recover_seconds = 0.22
+passive_description = "Every fourth strike creates a crescent slash."
+convergence_description = "Crosses the arena in a lightning-wolf streak."
+
+[sub_resource type="Resource" id="Resource_ascendant"]
+script = ExtResource("2_form")
+tier = 2
+display_name = "Tempest Fenrir"
+sprite_frames = ExtResource("6_ascendant")
+metrics_key = &"tempest_fenrir"
+world_height_units = 2.1524
+source_cell_height_px = 342
+damage = 18
+attack_interval_seconds = 1.05
+range_units = 2.2
+windup_seconds = 0.18
+recover_seconds = 0.22
+passive_description = "Dash chains to two nearby targets."
 convergence_description = "Crosses the arena in a lightning-wolf streak."
 
 [resource]
@@ -33,4 +68,4 @@ follow_speed_units_per_second = 9.5
 lane_tolerance_units = 0.25
 engage_radius_units = 8.0
 behavior_script = ExtResource("4_behavior")
-forms = Array[ExtResource("2_form")]([SubResource("Resource_bound")])
+forms = Array[ExtResource("2_form")]([SubResource("Resource_bound"), SubResource("Resource_awakened"), SubResource("Resource_ascendant")])

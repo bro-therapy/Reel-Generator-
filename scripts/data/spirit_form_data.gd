@@ -12,6 +12,11 @@ enum Tier { BOUND, AWAKENED, ASCENDANT }
 
 @export_group("Visuals")
 @export var sprite_frames: SpriteFrames
+## Row name in docs/generated/summon_metrics.json. Each tier is audited
+## separately — "rune_hound", "volt_hound" and "tempest_fenrir" have different
+## baselines — and SpiritData.id names only the line, so the pivot table has to
+## be looked up per form. Empty falls back to the SpiritData id.
+@export var metrics_key: StringName = &""
 ## World height of the whole source cell, sized so the drawn creature meets the
 ## guide §2 on-screen pixel target. Computed by build_summon_spriteframes.gd.
 @export var world_height_units: float = 2.0

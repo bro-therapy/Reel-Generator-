@@ -95,6 +95,39 @@ func _install_behavior() -> void:
 		push_error("SummonBase: behavior_script on '%s' is not a SummonBehavior" % data.id)
 
 
+## Advances to a new evolution tier. Guide §5: evolution changes the visible
+## body and one behaviour, so this swaps the SpriteFrames and re-reads every
+## value that came off the old form.
+##
+## Returns false when the index is out of range or already current, so callers
+## can tell a real evolution from a no-op.
+func set_form_index(index: int) -> bool:
+	if data == null:
+		return false
+	var clamped := clampi(index, 0, data.max_form_index())
+	if clamped == form_index:
+		return false
+
+	var next := data.form(clamped)
+	if next == null:
+		return false
+
+	form_index = clamped
+	form = next
+	# Reach can change between tiers, and the targeting radius is derived from
+	# it — re-derive rather than leaving the old tier's value in place.
+	_targeting.range_units = maxf(form.range_units, data.engage_radius_units)
+	_configure_sprite()
+
+	# Each tier is its own row in the audit with its own baseline, so the
+	# corrections have to be reloaded. Keeping the Bound tier's table would
+	# apply up to 16 px of correction to art that needs none.
+	_load_pivot_offsets()
+	# Force the next animation update to re-apply the offset for the new table.
+	_last_anim = ""
+	return true
+
+
 func _physics_process(delta: float) -> void:
 	if form == null or hero == null:
 		return
@@ -356,6 +389,16 @@ func _play(anim: String) -> void:
 		_apply_sprite_offset(int(_pivot_offsets.get("%s/0" % anim, 0)))
 
 
+## The pivot correction this summon has actually loaded for an animation, in
+## source pixels.
+##
+## Exposed for tests: checking the audit JSON instead would pass whether or not
+## the code ever read the right row, which is exactly how the first version of
+## the Phase 7 pivot check let a mutant through.
+func pivot_correction_px(anim: String) -> int:
+	return int(_pivot_offsets.get("%s/0" % anim, 0))
+
+
 func _apply_sprite_offset(correction_px: int) -> void:
 	if _sprite == null:
 		return
@@ -370,7 +413,15 @@ func _load_pivot_offsets() -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 	var species: Dictionary = (parsed as Dictionary).get("species", {})
-	var entry: Dictionary = species.get(String(data.id), {})
+
+	# The audit is keyed per tier — "rune_hound", "volt_hound", "tempest_fenrir"
+	# are three separate rows with three separate baselines. SpiritData.id names
+	# only the line, so the current form supplies the row.
+	var key := String(data.id)
+	if form != null and form.metrics_key != &"":
+		key = String(form.metrics_key)
+
+	var entry: Dictionary = species.get(key, {})
 	_pivot_offsets = entry.get("pivot_offsets", {})
 
 

@@ -23,7 +23,7 @@ Defects in shipped art: `ART_CLEANUP_TODO.md`
 | 4 | Starter species | **complete** — 17/17 acceptance checks |
 | 5 | Enemies | **complete** — 27/27 acceptance checks |
 | 6 | Combat room framework | **complete** — 23/23 acceptance checks |
-| 7 | Rewards, inventory, evolution | next — **art unblocked** |
+| 7 | Rewards, inventory, evolution | **complete** — 23/23 acceptance checks |
 | 8–15 | see the build brief | not started |
 
 The eleven-sheet art package is installed (`tools/install_sheet_package.py`).
@@ -48,9 +48,29 @@ godot --path . scenes/tests/focus_range.tscn    # Phase 2 targeting range
 godot --path . scenes/tests/summon_field.tscn   # Phase 3 summon field
 godot --path . scenes/tests/species_field.tscn  # Phase 4 species behaviours
 godot --path . scenes/tests/enemy_field.tscn    # Phase 5 enemy roles
+godot --path . scenes/tests/reward_demo.tscn    # Phase 7 three-card offer
+godot --path . scenes/tests/evolution_field.tscn # Phase 7 all nine summon forms
 ```
 
-All seven phases: **152 checks, 0 failures.**
+## Seeing it without a monitor
+
+Godot renders here through a virtual display with software GL, so the look can
+be checked on a headless box:
+
+```bash
+./tools/screenshot.sh scenes/tests/reward_demo.tscn build/shots/reward.png
+./tools/screenshot.sh scenes/tests/enemy_field.tscn build/shots/enemy.png 60 180
+```
+
+Extra numbers capture several frames of the same run. `--headless` cannot be
+used for this — its dummy renderer draws nothing.
+
+This is worth doing. The first render of the project immediately showed the hero
+measuring 80 px against his locked 88 px target, which eight phases of headless
+acceptance checks had not caught: the Phase 1 check projects the sprite *cell*
+rather than the drawn character. See `ART_CLEANUP_TODO.md`.
+
+All eight phases: **175 checks, 0 failures.**
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
 
@@ -66,6 +86,7 @@ godot --headless --path . --script scripts/tests/phase3_acceptance.gd
 godot --headless --path . --script scripts/tests/phase4_acceptance.gd
 godot --headless --path . --script scripts/tests/phase5_acceptance.gd
 godot --headless --path . --script scripts/tests/phase6_acceptance.gd
+godot --headless --path . --script scripts/tests/phase7_acceptance.gd
 ```
 
 ## Regenerating actor SpriteFrames
@@ -112,6 +133,14 @@ Two rules came out of that and apply to every new check:
 3. **Never depend on `_ready()` ordering.** A value copied in `_ready` may not be
    there yet for a caller running right after `add_child`. Four separate bugs this
    project have come from that assumption — read from the data resource directly.
+4. **Assert on what the code did, not on the file it should have read.** Phase 7's
+   first pivot check compared two numbers straight out of the audit JSON and passed
+   happily with the lookup hard-wired to the wrong row. It now asks the summon which
+   corrections it actually loaded.
+5. **Make sure the mutation you inject can actually change behaviour.** Several
+   survivors here turned out to be equivalent mutants sitting behind a second,
+   redundant guard. A survivor means "investigate", not automatically "weak test" —
+   but it does mean the check has not been proven yet.
 
 ## Working rules
 
