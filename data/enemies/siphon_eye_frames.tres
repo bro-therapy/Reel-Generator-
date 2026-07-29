@@ -1,0 +1,62 @@
+[gd_resource type="SpriteFrames" load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/05_siphon_eye__04_attack_active.png" id="1_luetx"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/05_siphon_eye__03_attack_windup.png" id="2_1nrgs"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/05_siphon_eye__05_death.png" id="3_d1f5l"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/05_siphon_eye__00_idle.png" id="4_hbhkx"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/05_siphon_eye__01_move_contact.png" id="5_0nxkl"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/05_siphon_eye__02_move_passing.png" id="6_slcu7"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_luetx")
+}],
+"loop": false,
+"name": &"attack_active",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_1nrgs")
+}],
+"loop": false,
+"name": &"attack_windup",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_d1f5l")
+}],
+"loop": false,
+"name": &"death",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_1nrgs")
+}],
+"loop": false,
+"name": &"hit",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_hbhkx")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_0nxkl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_slcu7")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}]

@@ -67,7 +67,6 @@ func on_attack_tick(delta: float, _lane: Vector3) -> bool:
 
 func deliver_attack(target: Node3D, damage: int) -> bool:
 	# Direct melee damage, plus a violet impact on the target.
-	if target != null and target.has_method("take_damage"):
-		target.call("take_damage", damage)
+	CombatDamage.apply(target, damage, summon.attack_origin_position())
 	spawn_effect(target_point(), &"friendly_a", 1.0)
 	return true

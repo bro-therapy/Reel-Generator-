@@ -69,7 +69,6 @@ func on_recover(delta: float, _lane: Vector3) -> bool:
 
 
 func deliver_attack(target: Node3D, damage: int) -> bool:
-	if target != null and target.has_method("take_damage"):
-		target.call("take_damage", damage)
+	CombatDamage.apply(target, damage, summon.attack_origin_position())
 	spawn_effect(target_point(), &"friendly_b", 1.1)
 	return true

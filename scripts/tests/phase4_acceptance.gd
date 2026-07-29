@@ -233,10 +233,19 @@ func _stage_separation() -> void:
 	for i in positions.size():
 		for j in range(i + 1, positions.size()):
 			min_sep = minf(min_sep, (positions[i] as Vector3).distance_to(positions[j] as Vector3))
+	var names := [_hound.name, _wisp.name, _construct.name]
+	var detail := ""
+	for i in positions.size():
+		for j in range(i + 1, positions.size()):
+			detail += "%s-%s %.2f  " % [names[i], names[j], (positions[i] as Vector3).distance_to(positions[j] as Vector3)]
+	var tg := ""
+	for s2: SummonBase in [_hound, _wisp, _construct]:
+		var t2 := s2.current_target()
+		tg += "%s->%s(%s) " % [s2.name, (t2.name if t2 != null else "-"), s2.state_name()]
 	if min_sep > 0.6:
 		_ok("three summons do not stack on one location", "closest pair %.2f u apart mid-combat" % min_sep)
 	else:
-		_no("summon stacking", "closest pair only %.2f u apart" % min_sep)
+		_no("summon stacking", "%s | %s" % [detail.strip_edges(), tg.strip_edges()])
 	_stage = 4
 
 

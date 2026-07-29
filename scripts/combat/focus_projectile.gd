@@ -11,6 +11,13 @@ signal hit_target(target: Node3D, damage: int, was_critical: bool)
 
 const FRIENDLY_ATTACK_LAYER := 1 << 5  # layer 6
 const ENEMY_HURTBOX_MASK := 1 << 4     # layer 5
+const HOSTILE_ATTACK_LAYER := 1 << 6   # layer 7
+const PLAYER_HURTBOX_MASK := 1 << 3    # layer 4
+
+## Which group this projectile damages. Set by the pool: friendly pools hit
+## "enemies", hostile pools hit "player". Everything else about the projectile
+## is identical, so both share one scene and one pool implementation.
+var hits_group: StringName = &"enemies"
 
 var speed := 16.0
 var lifetime := 1.1
@@ -24,10 +31,19 @@ var _active := false
 var _hit_this_flight: Array[Node3D] = []
 
 
+## Switches this projectile to the hostile side. Called by the pool at build
+## time, never mid-flight.
+func make_hostile() -> void:
+	collision_layer = HOSTILE_ATTACK_LAYER
+	collision_mask = PLAYER_HURTBOX_MASK
+	hits_group = &"player"
+
+
 func _ready() -> void:
 	add_to_group("projectiles")
-	collision_layer = FRIENDLY_ATTACK_LAYER
-	collision_mask = ENEMY_HURTBOX_MASK
+	if collision_layer == 0:
+		collision_layer = FRIENDLY_ATTACK_LAYER
+		collision_mask = ENEMY_HURTBOX_MASK
 	monitoring = true
 	monitorable = false
 	area_entered.connect(_on_area_entered)
@@ -118,12 +134,13 @@ func _try_hit(target: Node3D) -> void:
 		return
 	if _hit_this_flight.has(target):
 		return
-	if not target.is_in_group("enemies"):
+	if not target.is_in_group(hits_group):
 		return
 
 	_hit_this_flight.append(target)
-	if target.has_method("take_damage"):
-		target.call("take_damage", damage)
+	# Pass the impact point so directional defences (the Bellguard shield) can
+	# tell a frontal hit from one landing in its back.
+	CombatDamage.apply(target, damage, global_position)
 	hit_target.emit(target, damage, was_critical)
 
 	if pierce_remaining > 0:

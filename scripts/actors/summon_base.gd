@@ -254,8 +254,8 @@ func _deal_damage() -> void:
 		dmg = int(round(float(dmg) * (1.0 + _rally_bonus)))
 
 	var handled := behavior != null and behavior.deliver_attack(target, dmg)
-	if not handled and target.has_method("take_damage"):
-		target.call("take_damage", dmg)
+	if not handled:
+		CombatDamage.apply(target, dmg, _origin())
 
 	attacks_landed += 1
 	_attack_cooldown = form.attack_interval_seconds
@@ -401,6 +401,32 @@ func attack_origin_position() -> Vector3:
 ## Behaviours use this to test a candidate move without committing to it.
 func attack_origin_offset_from(position: Vector3) -> Vector3:
 	return position + (_origin() - global_position)
+
+
+## Places the summon directly on its lane. Spawning on top of the hero and
+## letting it steer out looks like a slide rather than a summoning, and a
+## planted species may never finish the trip — the Gun Construct re-enters its
+## firing cycle before it reaches its lane, so where it settles depends on
+## combat timing rather than on its authored lane.
+## Computed from `data` rather than from the FollowController, deliberately.
+## The controller's lane_offset is copied across in _ready(), and a caller that
+## snaps immediately after add_child() can run before that copy lands — which
+## silently placed every summon on the controller script's DEFAULT lane instead
+## of its own.
+func snap_to_lane() -> void:
+	if hero == null or data == null:
+		return
+	var raw := _hero_forward()
+	var flat := Vector3(raw.x, 0.0, raw.z)
+	var forward := flat.normalized() if flat.length_squared() > 0.0001 else Vector3.FORWARD
+	var right := Vector3(forward.z, 0.0, -forward.x)
+	var offset: Vector3 = data.lane_offset
+	global_position = hero.global_position \
+		+ right * offset.x \
+		+ Vector3.UP * offset.y \
+		+ forward * offset.z
+	if _follow != null:
+		_follow.reset_basis(forward)
 
 
 func behavior_signature() -> String:

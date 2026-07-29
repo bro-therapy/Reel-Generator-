@@ -1,0 +1,62 @@
+[gd_resource type="SpriteFrames" load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/01_lantern_hexer__04_attack_active.png" id="1_4fnwm"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/01_lantern_hexer__03_attack_windup.png" id="2_tnp3g"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/01_lantern_hexer__05_death.png" id="3_35w2y"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/01_lantern_hexer__00_idle.png" id="4_p7lw7"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/01_lantern_hexer__01_move_contact.png" id="5_w47ne"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/01_lantern_hexer__02_move_passing.png" id="6_k41t8"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_4fnwm")
+}],
+"loop": false,
+"name": &"attack_active",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_tnp3g")
+}],
+"loop": false,
+"name": &"attack_windup",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_35w2y")
+}],
+"loop": false,
+"name": &"death",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_tnp3g")
+}],
+"loop": false,
+"name": &"hit",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_p7lw7")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_w47ne")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_k41t8")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}]

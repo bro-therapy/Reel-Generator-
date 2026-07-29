@@ -15,8 +15,9 @@ Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
 | 2 | Conjurer Staff and targeting | **complete** — 22/22 acceptance checks |
 | 3 | Shared summon architecture | **complete** — 29/29 acceptance checks |
 | 4 | Starter species | **complete** — 17/17 acceptance checks |
-| 5 | Enemies | next |
-| 6–15 | see the build brief | not started |
+| 5 | Enemies | **complete** — 27/27 acceptance checks |
+| 6 | Combat room framework | next |
+| 7–15 | see the build brief | not started |
 
 ## Running it
 
@@ -26,9 +27,10 @@ godot --path . scenes/tests/hero_sandbox.tscn   # Phase 1 hero sandbox
 godot --path . scenes/tests/focus_range.tscn    # Phase 2 targeting range
 godot --path . scenes/tests/summon_field.tscn   # Phase 3 summon field
 godot --path . scenes/tests/species_field.tscn  # Phase 4 species behaviours
+godot --path . scenes/tests/enemy_field.tscn    # Phase 5 enemy roles
 ```
 
-All five phases: **102 checks, 0 failures.**
+All six phases: **129 checks, 0 failures.**
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
 
@@ -42,6 +44,7 @@ godot --headless --path . --script scripts/tests/phase1_acceptance.gd
 godot --headless --path . --script scripts/tests/phase2_acceptance.gd
 godot --headless --path . --script scripts/tests/phase3_acceptance.gd
 godot --headless --path . --script scripts/tests/phase4_acceptance.gd
+godot --headless --path . --script scripts/tests/phase5_acceptance.gd
 ```
 
 ## Regenerating actor SpriteFrames
@@ -53,6 +56,7 @@ frames — do not hand-edit it. Rebuild after any actor art change:
 godot --headless --path . --script scripts/tools/build_hero_spriteframes.gd
 godot --headless --path . --script scripts/tools/build_summon_spriteframes.gd
 godot --headless --path . --script scripts/tools/build_vfx_spriteframes.gd
+godot --headless --path . --script scripts/tools/build_enemy_spriteframes.gd
 ```
 
 These also refresh the ground-pivot audits in `docs/generated/` and the runtime
@@ -82,8 +86,10 @@ Two rules came out of that and apply to every new check:
    come from `docs/LEVEL1_BALANCE.json`, not from the resource under test —
    otherwise a wrong value is compared against itself and passes.
 2. **Isolate the property under test.** A check that runs during unrelated
-   combat measures combat noise. Both flaky checks found so far were caused by
-   this.
+   combat measures combat noise. Every flaky check found so far was caused by this.
+3. **Never depend on `_ready()` ordering.** A value copied in `_ready` may not be
+   there yet for a caller running right after `add_child`. Four separate bugs this
+   project have come from that assumption — read from the data resource directly.
 
 ## Working rules
 

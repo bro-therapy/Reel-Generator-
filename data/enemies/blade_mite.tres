@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1_data"]
+[ext_resource type="SpriteFrames" path="res://data/enemies/blade_mite_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/actors/enemies/roles/blade_mite_role.gd" id="3_role"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"blade_mite"
+display_name = "Blade Mite"
+threat_class = &"normal"
+attack_range_units = 1.5
+windup_seconds = 0.70
+active_seconds = 0.22
+recover_seconds = 0.80
+telegraph_shape = &"line"
+telegraph_radius_units = 4.5
+sprite_frames = ExtResource("2_frames")
+world_height_units = 0.9000
+source_cell_height_px = 209
+collision_radius_units = 0.3
+collision_height_units = 0.8
+behavior_script = ExtResource("3_role")

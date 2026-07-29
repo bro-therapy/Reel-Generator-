@@ -17,12 +17,19 @@ and `scripts/tools/build_summon_spriteframes.gd`. Regenerate whenever actor art 
 | High | `PZC_Starter_Summons_Action_Atlas_ALPHA_GRID_v1.png` | `rune_hound` — `aim_or_windup` (+16 px), `attack_recover` (−10 px) | Ground pivot swings 26 px between the windup and the recovery frame inside a single attack. Uncorrected the hound visibly hops each time it bites. | Per-frame offsets in `docs/generated/summon_metrics.json`, applied at runtime by `scripts/actors/summon_base.gd`. Art untouched. | Re-baseline the Rune Hound row so all seven states share one contact-foot row. |
 | High | `PZC_Starter_Summons_Action_Atlas_ALPHA_GRID_v1.png` | `sword_wisp` — `reform` (+17 px) | The reform frame sits 17 px below the rest of the row, so the wisp drops as it re-materialises. Worst single-frame deviation of any summon. | Same runtime offset table. | Align the reform frame to the wisp's hover baseline (row 297). |
 | Medium | `PZC_Starter_Summons_Action_Atlas_ALPHA_GRID_v1.png` | `gun_construct` — `move` (+13 px), `reform` (−11 px) | 24 px of pivot travel between moving and reforming; the construct sinks while walking and floats while reforming. | Same runtime offset table. | Re-baseline the Gun Construct row to row 205. |
+| High | `PZC_Level1_Enemy_Action_Atlas_ALPHA_v1.png` | `rift_crawler` — `attack_windup` / `death` vs the rest | 28 px of ground-pivot drift, the largest of any actor row in the package. On the most-used enemy in Level 1, uncorrected this is a visible hop every time a crawler winds up. | Per-frame offsets in `docs/generated/enemy_metrics.json`, applied by `scripts/actors/enemies/enemy_base.gd`. Art untouched. | Re-baseline the Rift Crawler row to a single contact row. |
+| Medium | `PZC_Level1_Enemy_Action_Atlas_ALPHA_v1.png` | `siphon_eye`, `nest_idol` | 17 px and 16 px of pivot drift respectively. Less visible than the crawler because both are largely stationary, but the nest idol's pulse frame visibly sinks. | Same runtime offset table. | Re-baseline both rows. |
+| Medium | `PZC_Level1_Enemy_Action_Atlas_ALPHA_v1.png` | all six rows — missing `hit` cell | The enemy atlas ships six columns (idle, move_contact, move_passing, attack_windup, attack_active, death) with no dedicated hit/flinch frame, unlike the summon atlas which has one. Enemies therefore have no distinct reaction to being struck. | `build_enemy_spriteframes.gd` maps the `hit` animation onto the `attack_windup` cell, so a struck enemy briefly shows its windup pose — readable but wrong, and it can be mistaken for an incoming attack. | Add a seventh hit column per enemy row, or accept a shader flash instead of a frame. |
 | Medium | `PZC_Starter_Summons_Action_Atlas_ALPHA_GRID_v1.png` | row baselines | The three species use three different contact rows inside the same 220×342 grid — hound 298, wisp 297, construct 205. That is defensible for a hovering wisp but the construct sitting 93 px higher than the hound reads as scale drift, not design. | None; each species is baselined independently, so it is not visible in-game. | Confirm with the artist whether the construct's row is intentional. If not, re-baseline to ~298. |
 
 ## Corrections currently applied in engine
 
 **Hero:** 10 of 40 locomotion frames carry a runtime vertical offset. Residual pivot
 deviation after correction is **0 px** (verified by `scripts/tests/phase1_acceptance.gd`).
+
+**Enemies:** 22 of 36 frames carry an offset, generated into
+`docs/generated/enemy_metrics.json` by `scripts/tools/build_enemy_spriteframes.gd`.
+The Rift Crawler's 28 px spread is the worst in the package.
 
 **Summons:** 17 of 21 frames carry an offset — 6 on the Rune Hound, 5 on the Sword Wisp,
 6 on the Gun Construct. Offsets are generated into `docs/generated/summon_metrics.json`
@@ -47,8 +54,12 @@ Carried over from the package template; these remain unverified until their phas
 - Confirm transparent mattes do not show green fringe under bloom. *(needs a lit
   scene; the Phase 1 sandbox is unshaded)*
 - Keep friendly violet effects below hostile red telegraphs in draw priority. *(Phase 4/12)*
-- Summon silhouettes must stay distinguishable in heavy combat (guide §18). Not yet
-  verifiable — needs enemies on screen. *(Phase 5)*
+- Summon silhouettes must stay distinguishable in heavy combat (guide §18). Enemies now
+  exist, but this needs a human eye on real hardware — headless Godot cannot render.
+- ~~Keep friendly violet effects below hostile red telegraphs in draw priority.~~
+  **Enforced in code (Phase 4/5).** `RenderPriority` pins friendly effects to -20 and
+  hostile telegraphs to +40, and both suites assert it. Still worth one visual
+  confirmation under bloom, which headless cannot provide.
 - Use environment art as a visual reference; build navigable geometry in 3D. *(Phase 8)*
 - Rebuild generated UI screens with native Godot Controls rather than using flattened
   mockups as interactive menus. *(Phase 13)*

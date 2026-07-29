@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1_data"]
+[ext_resource type="SpriteFrames" path="res://data/enemies/rift_crawler_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/actors/enemies/roles/rift_crawler_role.gd" id="3_role"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"rift_crawler"
+display_name = "Rift Crawler"
+threat_class = &"normal"
+attack_range_units = 1.6
+windup_seconds = 0.40
+active_seconds = 0.10
+recover_seconds = 0.35
+telegraph_shape = &"circle"
+telegraph_radius_units = 1.4
+sprite_frames = ExtResource("2_frames")
+world_height_units = 1.4460
+source_cell_height_px = 209
+collision_radius_units = 0.35
+collision_height_units = 0.9
+behavior_script = ExtResource("3_role")

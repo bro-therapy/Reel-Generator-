@@ -1,0 +1,62 @@
+[gd_resource type="SpriteFrames" load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/00_rift_crawler__04_attack_active.png" id="1_bau4v"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/00_rift_crawler__03_attack_windup.png" id="2_lb146"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/00_rift_crawler__05_death.png" id="3_hwdgj"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/00_rift_crawler__00_idle.png" id="4_lj4v1"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/00_rift_crawler__01_move_contact.png" id="5_srssl"]
+[ext_resource type="Texture2D" path="res://assets/enemies/enemy_action_frames/00_rift_crawler__02_move_passing.png" id="6_qunv1"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_bau4v")
+}],
+"loop": false,
+"name": &"attack_active",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_lb146")
+}],
+"loop": false,
+"name": &"attack_windup",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_hwdgj")
+}],
+"loop": false,
+"name": &"death",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_lb146")
+}],
+"loop": false,
+"name": &"hit",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_lj4v1")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_srssl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_qunv1")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}]

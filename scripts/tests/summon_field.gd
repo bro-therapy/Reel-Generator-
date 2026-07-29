@@ -35,7 +35,8 @@ func spawn_team() -> void:
 		s.data = spirit
 		s.hero = hero
 		add_child(s)
-		s.global_position = hero.global_position
+		# Materialise in the lane rather than on the hero.
+		s.snap_to_lane()
 		summons.append(s)
 
 

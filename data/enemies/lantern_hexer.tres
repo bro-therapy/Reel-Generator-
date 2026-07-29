@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1_data"]
+[ext_resource type="SpriteFrames" path="res://data/enemies/lantern_hexer_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/actors/enemies/roles/lantern_hexer_role.gd" id="3_role"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"lantern_hexer"
+display_name = "Lantern Hexer"
+threat_class = &"hexer"
+attack_range_units = 9.5
+windup_seconds = 0.75
+active_seconds = 0.10
+recover_seconds = 0.55
+telegraph_shape = &"circle"
+telegraph_radius_units = 1.2
+sprite_frames = ExtResource("2_frames")
+world_height_units = 1.1864
+source_cell_height_px = 209
+collision_radius_units = 0.35
+collision_height_units = 1.1
+behavior_script = ExtResource("3_role")

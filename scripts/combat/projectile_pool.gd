@@ -12,6 +12,9 @@ const DEFAULT_CAPACITY := 48
 
 @export var projectile_scene: PackedScene
 @export var capacity: int = DEFAULT_CAPACITY
+## Hostile pools fire enemy attacks: layer 7, hitting the player hurtbox on
+## layer 4. Friendly pools keep the default layer 6 / layer 5 pairing.
+@export var hostile := false
 
 var _free: Array[FocusProjectile] = []
 var _busy: Array[FocusProjectile] = []
@@ -28,9 +31,13 @@ func _ready() -> void:
 		if p == null:
 			push_error("ProjectilePool: scene is not a FocusProjectile")
 			return
+		if hostile:
+			p.make_hostile()
 		p.expired.connect(_on_expired)
 		add_child(p)
 		_free.append(p)
+	if hostile:
+		add_to_group("hostile_projectile_pool")
 
 
 ## Returns an inactive projectile, or null when the pool is exhausted.

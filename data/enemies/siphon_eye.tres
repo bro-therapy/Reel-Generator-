@@ -1,0 +1,23 @@
+[gd_resource type="Resource" script_class="EnemyData" load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/enemy_data.gd" id="1_data"]
+[ext_resource type="SpriteFrames" path="res://data/enemies/siphon_eye_frames.tres" id="2_frames"]
+[ext_resource type="Script" path="res://scripts/actors/enemies/roles/siphon_eye_role.gd" id="3_role"]
+
+[resource]
+script = ExtResource("1_data")
+id = &"siphon_eye"
+display_name = "Siphon Eye"
+threat_class = &"normal"
+attack_range_units = 8.0
+windup_seconds = 0.50
+active_seconds = 0.10
+recover_seconds = 0.40
+telegraph_shape = &"line"
+telegraph_radius_units = 4.0
+sprite_frames = ExtResource("2_frames")
+world_height_units = 1.3790
+source_cell_height_px = 209
+collision_radius_units = 0.35
+collision_height_units = 1.0
+behavior_script = ExtResource("3_role")

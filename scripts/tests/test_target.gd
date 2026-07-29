@@ -37,7 +37,7 @@ func threat_class() -> StringName:
 	return threat
 
 
-func take_damage(amount: int) -> void:
+func take_damage(amount: int, _from_position: Variant = null) -> void:
 	if not _alive:
 		return
 	damage_taken_total += amount

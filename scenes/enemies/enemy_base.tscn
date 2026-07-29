@@ -1,0 +1,49 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/actors/enemies/enemy_base.gd" id="1_enemy"]
+[ext_resource type="Script" path="res://scripts/actors/enemies/enemy_state_machine.gd" id="2_fsm"]
+[ext_resource type="Script" path="res://scripts/actors/enemies/telegraph_controller.gd" id="3_tele"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
+radius = 0.4
+height = 1.0
+
+[node name="EnemyBase" type="CharacterBody3D"]
+collision_layer = 4
+collision_mask = 257
+script = ExtResource("1_enemy")
+
+[node name="VisualPivot" type="Node3D" parent="."]
+
+[node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="VisualPivot"]
+billboard = 2
+texture_filter = 0
+shaded = false
+alpha_cut = 1
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="Hurtbox" type="Area3D" parent="."]
+collision_layer = 16
+collision_mask = 32
+monitorable = true
+monitoring = false
+
+[node name="HurtboxShape" type="CollisionShape3D" parent="Hurtbox"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.55, 0)
+shape = SubResource("CapsuleShape3D_body")
+
+[node name="AttackOrigin" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+
+[node name="NavigationAgent3D" type="NavigationAgent3D" parent="."]
+
+[node name="StateMachine" type="Node" parent="."]
+script = ExtResource("2_fsm")
+
+[node name="TelegraphController" type="Node3D" parent="."]
+script = ExtResource("3_tele")
+
+[node name="Audio" type="Node3D" parent="."]
