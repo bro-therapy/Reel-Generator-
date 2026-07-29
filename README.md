@@ -7,7 +7,8 @@ Design source of truth: `docs/PROJECT_ZERO_CLIMB_MASTER_GUIDE_v1.0.md`
 Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
 Art still to produce: `docs/ART_REQUIREMENTS.md`
 Animation recommendations: `docs/ANIMATION_GUIDE.md`
-Generation prompts: `docs/ART_GENERATION_PROMPTS.md`
+Generation prompts: `docs/ART_GENERATION_PROMPTS.md` (per sheet) and
+`docs/ART_GENERATION_MASTER_PROMPT.md` (one paste, all eleven sheets)
 Defects in shipped art: `ART_CLEANUP_TODO.md`
 
 ## Status
