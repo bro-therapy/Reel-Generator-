@@ -29,6 +29,7 @@ var _mark_vec := Vector3.ZERO
 var _dash_start := Vector3.ZERO
 var _dash_ticks := 0
 var _accel_ticks := 0
+var _reach_ticks := 0
 var _decel_ticks := 0
 
 
@@ -81,6 +82,10 @@ func _physics_process(delta: float) -> bool:
 # ---------------------------------------------------------------- stages
 
 func _stage_accel_start() -> void:
+	# Runs on the first physics tick, so Player._ready() has already applied
+	# balance to the resource. Checking this in _initialize() reads the raw
+	# .tres and misses any drift introduced at load time.
+	_check_data_matches_balance(_player)
 	Input.action_press("move_right")
 	_accel_ticks = 0
 	_stage = 1
@@ -89,30 +94,43 @@ func _stage_accel_start() -> void:
 func _stage_accel_watch() -> void:
 	_accel_ticks += 1
 	var speed := Vector2(_player.velocity.x, _player.velocity.z).length()
-	var target: float = _player.data.move_speed_units_per_second
+	# Read the target from the JSON, never from the resource under test —
+	# otherwise a wrong resource value is compared against itself and passes.
+	var target: float = float(Balance.get_value("player/move_speed_units_per_second", 6.2))
 
-	if speed >= target - 0.02:
-		var expected := target / _player.data.acceleration
-		var actual := float(_accel_ticks) * TICK
-		# Allow two ticks of slack on either side.
+	if _reach_ticks == 0 and speed >= target - 0.02:
+		_reach_ticks = _accel_ticks
+
+	# Hold well past saturation so the settled speed can be measured. Stopping
+	# the moment speed crosses the target would accept any higher top speed.
+	if _accel_ticks * TICK < 0.6:
+		return
+
+	if _reach_ticks > 0:
+		var expected := target / float(Balance.get_value("player/acceleration", 35.0))
+		var actual := float(_reach_ticks) * TICK
 		if absf(actual - expected) <= TICK * 2.5:
-			_ok("reaches full speed smoothly", "%.3fs to %.2f u/s (expected ~%.3fs)" % [actual, speed, expected])
+			_ok("reaches full speed smoothly", "%.3fs to %.2f u/s (expected ~%.3fs)" % [actual, target, expected])
 		else:
 			_no("reaches full speed smoothly", "took %.3fs, expected ~%.3fs" % [actual, expected])
-		Input.action_release("move_right")
-		_decel_ticks = 0
-		_stage = 2
-	elif _accel_ticks > 120:
-		_no("reaches full speed", "stalled at %.2f u/s after 2s" % speed)
-		Input.action_release("move_right")
-		_stage = 2
+	else:
+		_no("reaches full speed", "never reached %.2f u/s in 0.6s (peaked %.2f)" % [target, speed])
+
+	if absf(speed - target) <= 0.05:
+		_ok("top speed settles at the balance value", "%.3f u/s vs %.2f in JSON" % [speed, target])
+	else:
+		_no("top speed", "settled at %.3f u/s, JSON says %.2f" % [speed, target])
+
+	Input.action_release("move_right")
+	_decel_ticks = 0
+	_stage = 2
 
 
 func _stage_decel_watch() -> void:
 	_decel_ticks += 1
 	var speed := Vector2(_player.velocity.x, _player.velocity.z).length()
 	if speed <= 0.001:
-		var expected: float = _player.data.move_speed_units_per_second / _player.data.deceleration
+		var expected: float = float(Balance.get_value("player/move_speed_units_per_second", 6.2)) / float(Balance.get_value("player/deceleration", 42.0))
 		var actual := float(_decel_ticks) * TICK
 		if absf(actual - expected) <= TICK * 2.5:
 			_ok("stops without sliding", "%.3fs to rest (expected ~%.3fs)" % [actual, expected])
@@ -148,9 +166,11 @@ func _stage_dash_watch() -> void:
 		return
 
 	var duration := float(_dash_ticks) * TICK
-	var expected_duration: float = _player.data.dash_duration_seconds
 	var travelled := _player.global_position.distance_to(_dash_start)
-	var expected_distance: float = _player.data.dash_distance_units
+	# Both expectations come from LEVEL1_BALANCE.json, so a resource that drifts
+	# from the spec fails instead of quietly moving the goalposts.
+	var expected_duration: float = float(Balance.get_value("player/dash_duration_seconds", 0.18))
+	var expected_distance: float = float(Balance.get_value("player/dash_distance_units", 4.3))
 
 	# One physics tick of quantisation is unavoidable at 60 Hz.
 	if absf(duration - expected_duration) <= TICK * 1.5:
@@ -177,7 +197,7 @@ func _stage_dash_cooldown() -> void:
 
 	var remaining := _player.dash_cooldown_remaining()
 	if remaining > 0.0 and not _player.can_dash():
-		_ok("dash respects cooldown", "%.2fs remaining of %.2fs" % [remaining, _player.data.dash_cooldown_seconds])
+		_ok("dash respects cooldown", "%.2fs remaining of %.2fs" % [remaining, float(Balance.get_value("player/dash_cooldown_seconds", 1.35))])
 	else:
 		_no("dash respects cooldown", "can_dash()=%s remaining=%.2f" % [_player.can_dash(), remaining])
 	_stage = 6
@@ -281,6 +301,33 @@ func _check_facing_math() -> void:
 		_ok("16 animations present (idle + run x 8)")
 	else:
 		_no("animations", "missing: %s" % ", ".join(missing))
+
+
+## Guards against the resource silently diverging from the balance file. Phase 3
+## had this check and survived mutation testing; Phases 1 and 2 did not.
+func _check_data_matches_balance(p: Player) -> void:
+	print("\nCharacterData vs LEVEL1_BALANCE.json")
+	var expect := {
+		"max_hp": [float(p.data.max_hp), "player/max_hp"],
+		"move speed": [p.data.move_speed_units_per_second, "player/move_speed_units_per_second"],
+		"acceleration": [p.data.acceleration, "player/acceleration"],
+		"deceleration": [p.data.deceleration, "player/deceleration"],
+		"dash distance": [p.data.dash_distance_units, "player/dash_distance_units"],
+		"dash duration": [p.data.dash_duration_seconds, "player/dash_duration_seconds"],
+		"dash cooldown": [p.data.dash_cooldown_seconds, "player/dash_cooldown_seconds"],
+		"dash i-frames": [p.data.dash_invulnerability_seconds, "player/dash_invulnerability_seconds"],
+		"contact grace": [p.data.contact_grace_seconds, "player/contact_grace_seconds"],
+	}
+	var wrong: Array[String] = []
+	for label in expect:
+		var pair: Array = expect[label]
+		var want: float = float(Balance.get_value(String(pair[1]), NAN))
+		if is_nan(want) or not is_equal_approx(float(pair[0]), want):
+			wrong.append("%s resource=%s json=%s" % [label, pair[0], want])
+	if wrong.is_empty():
+		_ok("every CharacterData field matches the balance JSON", "%d fields" % expect.size())
+	else:
+		_no("CharacterData drift", "; ".join(wrong))
 
 
 func _check_pivot_correction() -> void:

@@ -68,6 +68,7 @@ func _initialize() -> void:
 
 	_focus.set_rng_seed(12345)
 	_ok("focus range instantiates with controller and pool", "pool capacity %d" % _pool.total_count())
+	_check_weapon_matches_balance()
 
 
 func _physics_process(delta: float) -> bool:
@@ -132,7 +133,8 @@ func _stage_fire_rate_watch() -> void:
 		return
 
 	var shots := _focus.shots_fired - _shots_at_mark
-	var interval: float = _focus.weapon.attack_interval_seconds
+	# From the JSON, not from the weapon resource under test.
+	var interval: float = float(Balance.get_value("conjurer_staff/attack_interval_seconds", 0.72))
 	var expected := int(floor(_mark / interval))
 
 	if absi(shots - expected) <= 1:
@@ -296,6 +298,31 @@ func _stage_pool_watch() -> void:
 
 
 # ---------------------------------------------------------------- static
+
+## Same guard as Phase 1: the weapon resource must not drift from the spec.
+func _check_weapon_matches_balance() -> void:
+	var w := _focus.weapon
+	var expect := {
+		"base damage": [float(w.base_damage), "conjurer_staff/base_damage"],
+		"attack interval": [w.attack_interval_seconds, "conjurer_staff/attack_interval_seconds"],
+		"projectile speed": [w.projectile_speed_units_per_second, "conjurer_staff/projectile_speed_units_per_second"],
+		"projectile lifetime": [w.projectile_lifetime_seconds, "conjurer_staff/projectile_lifetime_seconds"],
+		"critical chance": [w.critical_chance, "conjurer_staff/critical_chance"],
+		"critical multiplier": [w.critical_multiplier, "conjurer_staff/critical_multiplier"],
+		"auto target range": [w.range_units, "player/auto_target_range_units"],
+		"aim assist degrees": [w.aim_assist_degrees, "player/focus_aim_assist_degrees"],
+	}
+	var wrong: Array[String] = []
+	for label in expect:
+		var pair: Array = expect[label]
+		var want: float = float(Balance.get_value(String(pair[1]), NAN))
+		if is_nan(want) or not is_equal_approx(float(pair[0]), want):
+			wrong.append("%s resource=%s json=%s" % [label, pair[0], want])
+	if wrong.is_empty():
+		_ok("every FocusWeaponData field matches the balance JSON", "%d fields" % expect.size())
+	else:
+		_no("FocusWeaponData drift", "; ".join(wrong))
+
 
 func _check_score_contract() -> void:
 	print("Score contract (master guide §16)")

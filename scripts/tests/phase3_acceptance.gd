@@ -98,9 +98,13 @@ func _physics_process(delta: float) -> bool:
 		6: _stage_rally_override()
 		7: _stage_reform_start()
 		8: _stage_reform_watch()
-		9: _stage_screen_sizes()
-		10: _stage_room_change_start()
-		11: _stage_room_change_watch()
+		9: _stage_threshold_below_start()
+		10: _stage_threshold_below_watch()
+		11: _stage_threshold_above_start()
+		12: _stage_threshold_above_watch()
+		13: _stage_screen_sizes()
+		14: _stage_room_change_start()
+		15: _stage_room_change_watch()
 		_:
 			_summary()
 			return true
@@ -281,6 +285,52 @@ func _stage_reform_watch() -> void:
 	_stage = 9
 
 
+## The brief pins reform to "more than 10 units away". Stranding a summon at 40 u
+## only proves it reforms *eventually* — a threshold of 39 u would pass that just
+## as happily. These two stages bracket the real value: no reform just under it,
+## a reform just over it.
+func _stage_threshold_below_start() -> void:
+	_reforms_at_mark = _construct.reform_count
+	var below: float = SpiritData.teleport_back_distance() - 1.0
+	_construct.global_position = _player.global_position + Vector3(below, 0.0, 0.0)
+	_mark = 0.0
+	_stage = 10
+
+
+func _stage_threshold_below_watch() -> void:
+	_mark += TICK
+	if _mark < 1.2:
+		return
+	var below: float = SpiritData.teleport_back_distance() - 1.0
+	var reforms := _construct.reform_count - _reforms_at_mark
+	if reforms == 0:
+		_ok("does not reform inside the threshold", "held at %.0f u for %.1fs, 0 reforms" % [below, _mark])
+	else:
+		_no("premature reform", "reformed %d time(s) at %.0f u, under the %.0f u threshold" % [reforms, below, SpiritData.teleport_back_distance()])
+	_stage = 11
+
+
+func _stage_threshold_above_start() -> void:
+	_reforms_at_mark = _construct.reform_count
+	var above: float = SpiritData.teleport_back_distance() + 1.0
+	_construct.global_position = _player.global_position + Vector3(above, 0.0, 0.0)
+	_mark = 0.0
+	_stage = 12
+
+
+func _stage_threshold_above_watch() -> void:
+	_mark += TICK
+	if _mark < 1.2:
+		return
+	var above: float = SpiritData.teleport_back_distance() + 1.0
+	var reforms := _construct.reform_count - _reforms_at_mark
+	if reforms > 0:
+		_ok("reforms just past the threshold", "%.0f u triggered a reform (threshold %.0f u)" % [above, SpiritData.teleport_back_distance()])
+	else:
+		_no("reform threshold too high", "no reform at %.0f u; the %.0f u threshold is not being honoured" % [above, SpiritData.teleport_back_distance()])
+	_stage = 13
+
+
 ## Master guide §2 gives each summon an on-screen height target. Verified by
 ## projecting the drawn content through the live camera, the same way Phase 1
 ## verifies the hero's 88 px.
@@ -288,13 +338,13 @@ func _stage_screen_sizes() -> void:
 	var cam := _field.get_node_or_null("Camera3D") as Camera3D
 	if cam == null:
 		_no("summon screen sizes", "no camera in the field")
-		_stage = 10
+		_stage = 14
 		return
 
 	var metrics_raw: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://docs/generated/summon_metrics.json"))
 	if typeof(metrics_raw) != TYPE_DICTIONARY:
 		_no("summon metrics", "docs/generated/summon_metrics.json unreadable")
-		_stage = 10
+		_stage = 14
 		return
 	var species: Dictionary = (metrics_raw as Dictionary).get("species", {})
 
@@ -324,7 +374,7 @@ func _stage_screen_sizes() -> void:
 	else:
 		_no("summon screen sizes", "; ".join(off))
 
-	_stage = 10
+	_stage = 14
 
 
 func _stage_room_change_start() -> void:
@@ -335,7 +385,7 @@ func _stage_room_change_start() -> void:
 	_room_b.add_child(_player)
 	_player.global_position = _room_b.global_position
 	_mark = 0.0
-	_stage = 11
+	_stage = 15
 
 
 func _stage_room_change_watch() -> void:
