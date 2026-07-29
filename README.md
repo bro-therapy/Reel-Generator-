@@ -13,8 +13,9 @@ Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
 | 0 | Project foundation | **complete** — 19/19 acceptance checks |
 | 1 | Hero sandbox | **complete** — 13/13 acceptance checks |
 | 2 | Conjurer Staff and targeting | **complete** — 20/20 acceptance checks |
-| 3 | Shared summon architecture | next |
-| 4–15 | see the build brief | not started |
+| 3 | Shared summon architecture | **complete** — 26/26 acceptance checks |
+| 4 | Starter species | next |
+| 5–15 | see the build brief | not started |
 
 ## Running it
 
@@ -22,6 +23,7 @@ Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
 godot --path .                      # boot scene
 godot --path . scenes/tests/hero_sandbox.tscn   # Phase 1 hero sandbox
 godot --path . scenes/tests/focus_range.tscn    # Phase 2 targeting range
+godot --path . scenes/tests/summon_field.tscn   # Phase 3 summon field
 ```
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
@@ -34,6 +36,7 @@ Each phase has a headless, CI-usable harness that exits non-zero on failure.
 godot --headless --path . --script scripts/tests/phase0_acceptance.gd
 godot --headless --path . --script scripts/tests/phase1_acceptance.gd
 godot --headless --path . --script scripts/tests/phase2_acceptance.gd
+godot --headless --path . --script scripts/tests/phase3_acceptance.gd
 ```
 
 ## Regenerating actor SpriteFrames
@@ -43,10 +46,12 @@ frames — do not hand-edit it. Rebuild after any actor art change:
 
 ```bash
 godot --headless --path . --script scripts/tools/build_hero_spriteframes.gd
+godot --headless --path . --script scripts/tools/build_summon_spriteframes.gd
 ```
 
-This also refreshes the ground-pivot audit in `docs/generated/` and the runtime
-pivot correction table.
+These also refresh the ground-pivot audits in `docs/generated/` and the runtime
+pivot correction tables. Every actor row shipped so far has needed correction —
+treat baselining as required for any new actor art.
 
 ## Layout
 

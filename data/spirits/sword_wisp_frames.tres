@@ -1,0 +1,68 @@
+[gd_resource type="SpriteFrames" load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__02_aim_or_windup.png" id="1_ft1jg"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__03_attack.png" id="2_met70"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__04_attack_recover.png" id="3_g37yi"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__05_hit.png" id="4_qaey5"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__00_idle.png" id="5_yngc4"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__01_move.png" id="6_87hi1"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__06_reform.png" id="7_fdwaf"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_ft1jg")
+}],
+"loop": false,
+"name": &"aim_or_windup",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_met70")
+}],
+"loop": false,
+"name": &"attack",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_g37yi")
+}],
+"loop": false,
+"name": &"attack_recover",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_qaey5")
+}],
+"loop": false,
+"name": &"hit",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_yngc4")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_87hi1")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_fdwaf")
+}],
+"loop": true,
+"name": &"reform",
+"speed": 8.0
+}]

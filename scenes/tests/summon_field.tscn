@@ -1,0 +1,40 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/actors/player.tscn" id="1_player"]
+[ext_resource type="PackedScene" path="res://scenes/tests/test_target.tscn" id="2_target"]
+[ext_resource type="Script" path="res://scripts/tests/summon_field.gd" id="3_field"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_floor"]
+size = Vector3(120, 1, 120)
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_floor"]
+size = Vector2(120, 120)
+
+[node name="SummonField" type="Node3D"]
+script = ExtResource("3_field")
+
+[node name="Floor" type="StaticBody3D" parent="."]
+collision_layer = 1
+collision_mask = 0
+
+[node name="FloorShape" type="CollisionShape3D" parent="Floor"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+shape = SubResource("BoxShape3D_floor")
+
+[node name="FloorMesh" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("PlaneMesh_floor")
+
+[node name="Player" parent="." instance=ExtResource("1_player")]
+
+[node name="Close" parent="." instance=ExtResource("2_target")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.6, 0, 0)
+
+[node name="Mid" parent="." instance=ExtResource("2_target")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0, 0)
+
+[node name="RoomB" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 60, 0, 0)
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.819152, 0.573576, 0, -0.573576, 0.819152, 0, 14.25, 20.36)
+fov = 40.0
