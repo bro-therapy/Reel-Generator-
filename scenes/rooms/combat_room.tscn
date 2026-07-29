@@ -1,0 +1,64 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/rooms/encounter_controller.gd" id="1_enc"]
+[ext_resource type="Script" path="res://scripts/rooms/gate_controller.gd" id="2_gate"]
+[ext_resource type="Script" path="res://scripts/rooms/room_entry_trigger.gd" id="3_trigger"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_trigger"]
+size = Vector3(6, 3, 6)
+
+[sub_resource type="BoxMesh" id="BoxMesh_gate"]
+size = Vector3(4, 3, 0.4)
+
+[node name="CombatRoom" type="Node3D"]
+script = ExtResource("1_enc")
+encounter_id = &"combat_a"
+gate_path = NodePath("GateController")
+spawn_root_path = NodePath("SpawnPoints")
+reward_marker_path = NodePath("RewardMarker")
+
+[node name="Environment" type="Node3D" parent="."]
+
+[node name="NavigationRegion3D" type="NavigationRegion3D" parent="."]
+
+[node name="CameraBounds" type="Node3D" parent="."]
+
+[node name="SpawnPoints" type="Node3D" parent="."]
+
+[node name="SpawnA" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 7, 0, 0)
+
+[node name="SpawnB" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -7, 0, 2)
+
+[node name="SpawnC" type="Marker3D" parent="SpawnPoints"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -8)
+
+[node name="GateController" type="Node3D" parent="."]
+script = ExtResource("2_gate")
+gate_meshes = [NodePath("GateMesh")]
+
+[node name="GateMesh" type="StaticBody3D" parent="GateController"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 10)
+collision_layer = 0
+collision_mask = 0
+
+[node name="GateShape" type="CollisionShape3D" parent="GateController/GateMesh"]
+shape = SubResource("BoxShape3D_trigger")
+
+[node name="GateVisual" type="MeshInstance3D" parent="GateController/GateMesh"]
+mesh = SubResource("BoxMesh_gate")
+
+[node name="EntryTrigger" type="Area3D" parent="."]
+script = ExtResource("3_trigger")
+encounter_path = NodePath("..")
+
+[node name="EntryShape" type="CollisionShape3D" parent="EntryTrigger"]
+shape = SubResource("BoxShape3D_trigger")
+
+[node name="RewardMarker" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+
+[node name="PickupContainer" type="Node3D" parent="."]
+
+[node name="RoomAudio" type="Node3D" parent="."]

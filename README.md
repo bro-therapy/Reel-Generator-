@@ -16,8 +16,9 @@ Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
 | 3 | Shared summon architecture | **complete** — 29/29 acceptance checks |
 | 4 | Starter species | **complete** — 17/17 acceptance checks |
 | 5 | Enemies | **complete** — 27/27 acceptance checks |
-| 6 | Combat room framework | next |
-| 7–15 | see the build brief | not started |
+| 6 | Combat room framework | **complete** — 23/23 acceptance checks |
+| 7 | Rewards, inventory, evolution | next |
+| 8–15 | see the build brief | not started |
 
 ## Running it
 
@@ -30,7 +31,7 @@ godot --path . scenes/tests/species_field.tscn  # Phase 4 species behaviours
 godot --path . scenes/tests/enemy_field.tscn    # Phase 5 enemy roles
 ```
 
-All six phases: **129 checks, 0 failures.**
+All seven phases: **152 checks, 0 failures.**
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
 
@@ -45,6 +46,7 @@ godot --headless --path . --script scripts/tests/phase2_acceptance.gd
 godot --headless --path . --script scripts/tests/phase3_acceptance.gd
 godot --headless --path . --script scripts/tests/phase4_acceptance.gd
 godot --headless --path . --script scripts/tests/phase5_acceptance.gd
+godot --headless --path . --script scripts/tests/phase6_acceptance.gd
 ```
 
 ## Regenerating actor SpriteFrames
@@ -77,8 +79,7 @@ scripts/      data, actors, combat, run, ui, tools, tests
 
 Acceptance checks are verified by mutation testing, not trusted on green. A
 deliberate wrong value is injected into the code and the suite must fail; if it
-passes, the check is weak and gets rewritten. Twelve mutants across the five
-phases are currently all killed.
+passes, the check is weak and gets rewritten. Mutants are run against every phase and are currently all killed.
 
 Two rules came out of that and apply to every new check:
 
