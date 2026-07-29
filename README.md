@@ -11,6 +11,7 @@ Animation recommendations: `docs/ANIMATION_GUIDE.md`
 Generation prompts: `docs/ART_GENERATION_PROMPTS.md` (per sheet) and
 `docs/ART_GENERATION_MASTER_PROMPT.md` (one paste, all eleven sheets)
 Defects in shipped art: `ART_CLEANUP_TODO.md`
+Higgsfield animation test: `docs/HIGGSFIELD_ANIMATION_TEST.md`
 
 ## Status
 
@@ -24,7 +25,8 @@ Defects in shipped art: `ART_CLEANUP_TODO.md`
 | 5 | Enemies | **complete** — 27/27 acceptance checks |
 | 6 | Combat room framework | **complete** — 23/23 acceptance checks |
 | 7 | Rewards, inventory, evolution | **complete** — 23/23 acceptance checks |
-| 8–15 | see the build brief | not started |
+| 8 | Sunfall Ward blockout | **complete** — 9/9 acceptance checks |
+| 9–15 | see the build brief | not started |
 
 The eleven-sheet art package is installed (`tools/install_sheet_package.py`).
 Sheets 1–2 give all six evolved summon forms, which was Phase 7's only art
@@ -50,6 +52,7 @@ godot --path . scenes/tests/species_field.tscn  # Phase 4 species behaviours
 godot --path . scenes/tests/enemy_field.tscn    # Phase 5 enemy roles
 godot --path . scenes/tests/reward_demo.tscn    # Phase 7 three-card offer
 godot --path . scenes/tests/evolution_field.tscn # Phase 7 all nine summon forms
+godot --path . scenes/world/sunfall_ward.tscn   # Phase 8 the level blockout
 ```
 
 ## Seeing it without a monitor
@@ -70,7 +73,7 @@ measuring 80 px against his locked 88 px target, which eight phases of headless
 acceptance checks had not caught: the Phase 1 check projects the sprite *cell*
 rather than the drawn character. See `ART_CLEANUP_TODO.md`.
 
-All eight phases: **175 checks, 0 failures.**
+All nine phases: **184 checks, 0 failures.**
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
 
@@ -87,6 +90,7 @@ godot --headless --path . --script scripts/tests/phase4_acceptance.gd
 godot --headless --path . --script scripts/tests/phase5_acceptance.gd
 godot --headless --path . --script scripts/tests/phase6_acceptance.gd
 godot --headless --path . --script scripts/tests/phase7_acceptance.gd
+godot --headless --path . --script scripts/tests/phase8_acceptance.gd
 ```
 
 ## Regenerating actor SpriteFrames

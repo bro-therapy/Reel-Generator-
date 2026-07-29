@@ -1,0 +1,28 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/world/ward_builder.gd" id="1_ward"]
+
+[sub_resource type="Environment" id="Env_ward"]
+background_mode = 1
+background_color = Color(0.34, 0.30, 0.28, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.95, 0.88, 1)
+ambient_light_energy = 0.9
+tonemap_mode = 2
+
+[node name="SunfallWard" type="Node3D"]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Env_ward")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.866, -0.354, 0.354, 0, 0.707, 0.707, -0.5, -0.612, 0.612, 0, 40, 0)
+light_color = Color(1, 0.94, 0.84, 1)
+light_energy = 1.15
+
+[node name="Ward" type="Node3D" parent="." node_paths=PackedStringArray()]
+script = ExtResource("1_ward")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.766, 0.643, 0, -0.643, 0.766, 96, 96, 150)
+fov = 50.0
