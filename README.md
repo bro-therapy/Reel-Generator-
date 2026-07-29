@@ -12,14 +12,16 @@ Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
 |---|---|---|
 | 0 | Project foundation | **complete** — 19/19 acceptance checks |
 | 1 | Hero sandbox | **complete** — 13/13 acceptance checks |
-| 2 | Conjurer Staff and targeting | next |
-| 3–15 | see the build brief | not started |
+| 2 | Conjurer Staff and targeting | **complete** — 20/20 acceptance checks |
+| 3 | Shared summon architecture | next |
+| 4–15 | see the build brief | not started |
 
 ## Running it
 
 ```bash
 godot --path .                      # boot scene
 godot --path . scenes/tests/hero_sandbox.tscn   # Phase 1 hero sandbox
+godot --path . scenes/tests/focus_range.tscn    # Phase 2 targeting range
 ```
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
@@ -31,6 +33,7 @@ Each phase has a headless, CI-usable harness that exits non-zero on failure.
 ```bash
 godot --headless --path . --script scripts/tests/phase0_acceptance.gd
 godot --headless --path . --script scripts/tests/phase1_acceptance.gd
+godot --headless --path . --script scripts/tests/phase2_acceptance.gd
 ```
 
 ## Regenerating actor SpriteFrames

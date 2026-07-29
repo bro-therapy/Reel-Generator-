@@ -1,7 +1,11 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/actors/player.gd" id="1_player"]
 [ext_resource type="Resource" path="res://data/characters/tower_exile.tres" id="2_data"]
+[ext_resource type="Script" path="res://scripts/combat/focus_weapon_controller.gd" id="3_focus"]
+[ext_resource type="Script" path="res://scripts/combat/projectile_pool.gd" id="4_pool"]
+[ext_resource type="Resource" path="res://data/weapons/conjurer_staff.tres" id="5_weapon"]
+[ext_resource type="PackedScene" path="res://scenes/combat/focus_projectile.tscn" id="6_projectile"]
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_body"]
 radius = 0.35
@@ -44,3 +48,15 @@ shape = SubResource("CapsuleShape3D_hurt")
 
 [node name="CameraTarget" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.9, 0)
+
+[node name="ProjectilePool" type="Node3D" parent="."]
+top_level = true
+script = ExtResource("4_pool")
+projectile_scene = ExtResource("6_projectile")
+capacity = 48
+
+[node name="FocusWeaponController" type="Node3D" parent="."]
+script = ExtResource("3_focus")
+weapon = ExtResource("5_weapon")
+muzzle_path = NodePath("../VisualPivot/StaffSocket")
+pool_path = NodePath("../ProjectilePool")

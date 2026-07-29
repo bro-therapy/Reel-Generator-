@@ -33,6 +33,7 @@ const IDLE_SPEED_EPSILON := 0.05
 @onready var _collision: CollisionShape3D = $CollisionShape3D
 @onready var _hurtbox: Area3D = $Hurtbox
 @onready var _camera_target: Node3D = $CameraTarget
+@onready var _focus: FocusWeaponController = $FocusWeaponController
 
 var state: State = State.MOVE
 var hp: int = 100
@@ -138,6 +139,7 @@ func _physics_process(delta: float) -> void:
 
 	_update_facing()
 	_update_animation()
+	_update_aim()
 
 
 func _tick_timers(delta: float) -> void:
@@ -361,10 +363,25 @@ func camera_target() -> Node3D:
 	return _camera_target
 
 
-## Phase 2 replaces this with the real Focus Weapon target. The debug overlay
-## already reads it so the wiring exists from Phase 1.
+## Read by the debug overlay and by the HUD in Phase 13.
 func get_current_target() -> Node:
-	return null
+	return _focus.current_target if _focus != null else null
+
+
+func focus_weapon() -> FocusWeaponController:
+	return _focus
+
+
+## Feeds optional aim into the Focus Weapon. Zero input leaves `preferred_aim`
+## cleared, so the staff falls back to threat-and-proximity ordering and keeps
+## firing — the no-aim promise.
+func _update_aim() -> void:
+	if _focus == null:
+		return
+	var aim := get_aim_input()
+	if aim.length_squared() > 0.0001:
+		preferred_aim = aim.normalized()
+		_focus.set_preferred_aim(preferred_aim)
 
 
 func world_height() -> float:

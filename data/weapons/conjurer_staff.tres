@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="FocusWeaponData" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/focus_weapon_data.gd" id="1_weapon"]
+
+[resource]
+script = ExtResource("1_weapon")
+id = &"conjurer_staff"
+display_name = "Conjurer Staff"
+base_damage = 12
+critical_chance = 0.05
+critical_multiplier = 1.75
+attack_interval_seconds = 0.72
+projectile_speed_units_per_second = 16.0
+projectile_lifetime_seconds = 1.1
+projectile_radius_units = 0.22
+pierce_count = 0
+range_units = 14.0
+aim_assist_degrees = 22.0
+target_refresh_seconds = 0.2
