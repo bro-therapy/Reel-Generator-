@@ -15,6 +15,9 @@ signal bonded(spirit_id: StringName, slot: int)
 signal evolved(spirit_id: StringName, tier: int)
 signal currency_changed(total: int)
 signal relic_gained(relic_id: StringName)
+signal stability_changed(value: int)
+## Emitted once when Stability reaches zero. Guide §7: zero ends the run.
+signal run_failed()
 
 ## One entry per slot. Empty slots hold null so slot indices stay stable.
 var bonds: Array[SpiritData] = [null, null, null]
@@ -29,9 +32,43 @@ var rewards_taken: int = 0
 ## Set when the run reaches the Spirit Well (guide §6 cadence, ~5:00-6:00).
 var reached_spirit_well: bool = false
 
+## Guide §7. Every value comes from LEVEL1_BALANCE.json rather than being
+## written here, so a balance pass does not need a code change.
+var stability: int = 100
+var max_stability: int = 100
+## The Spirit Well's heal is once per run (guide §9 Space 3).
+var well_heal_used: bool = false
+var _failed := false
+
 
 func _init(weapon: FocusWeaponData = null) -> void:
 	focus_weapon = weapon
+	var block := Balance.stability()
+	max_stability = int(block.get("start", 100))
+	stability = max_stability
+
+
+# ---------------------------------------------------------------- stability
+
+## Adds or removes Stability, clamped to 0..max. Returns the new value.
+##
+## Clamping here rather than at the call sites is deliberate: Phase 12 requires
+## that Stability can never exceed 100 or drop below zero, and there are several
+## sources — Rift entry, elite rewards, the Spirit Well — that would each have to
+## remember to clamp.
+func adjust_stability(delta: int) -> int:
+	var before := stability
+	stability = clampi(stability + delta, 0, max_stability)
+	if stability != before:
+		stability_changed.emit(stability)
+	if stability == 0 and not _failed:
+		_failed = true
+		run_failed.emit()
+	return stability
+
+
+func stability_is_spent() -> bool:
+	return stability <= 0
 
 
 # ---------------------------------------------------------------- bond slots
