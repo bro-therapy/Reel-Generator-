@@ -1,0 +1,23 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+*.swp
+
+# Env / secrets
+.env
+.env.local
+
+# Dependencies & build output
+node_modules/
+dist/
+build/
+*.log
+
+# ── Engine-specific rules go here once the stack is chosen ───────────────────
+# Game repos bloat fast — art, audio, and builds are what fill them up.
+# Whatever engine you land on, add its ignores before the first asset commit,
+# and keep large binaries out of git (LFS or external storage).
