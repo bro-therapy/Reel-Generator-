@@ -13,6 +13,47 @@ master guide.
 
 ---
 
+## 0. Delivered by the eleven-sheet package
+
+`Project_Zero_Climb_All_11_Sheets_v1.0` answers most of §3 below. Installed with
+`tools/install_sheet_package.py`; 142/142 files matched the package checksums.
+Sections 2 and 3 are kept as written so the original gaps stay legible — this table
+is what actually changed.
+
+| Sheet | Delivers | Frames | State |
+|---|---|---|---|
+| 1 | Awakened summons — Volt Hound, Twin Oath Blades, Burst Golem | 21 | **wired** — `data/spirits/*_frames.tres` |
+| 2 | Ascendant summons — Tempest Fenrir, Halo Blade Seraph, Arsenal Titan | 21 | **wired** |
+| 3 | Gilded Bellguard elite | 6 | installed, not wired — off silhouette family |
+| 4 | Boss chain sweep / hit / phase two / enrage | 4 | installed, not wired — **off-model redesign** |
+| 5 | Convergence signatures ×3 | 24 | **wired** — `data/vfx/convergence_frames.tres` |
+| 6 | Rally target marker loop | 6 | **wired** — `data/vfx/rally_marker_frames.tres` |
+| 7 | Spirit Core intact/damaged/destroyed | 3 | **wired** — `data/environment/spirit_core_frames.tres` |
+| 8 | Enemy hit reactions ×6 | 6 | installed, not wired — **all six off-model** |
+| 9 | UI components | 23 | installed — consumed by Phase 13 |
+| 10 | Tiling textures | 8 | installed — verified seamless, consumed by Phase 8 |
+| 11 | Floor decals | 4 | installed — consumed by Phase 8 |
+
+**Phase 7 is unblocked.** Its one art-dependent criterion — evolution visibly changes
+the summon — is met by sheets 1 and 2, and all nine species now build with a 0–1 px
+contact baseline.
+
+Sheets 3, 4 and 8 are logged in `ART_CLEANUP_TODO.md`. All three failed the same way:
+generated from text alone, with no reference image of the creature they were meant to
+extend, so they re-invented actors that already exist. **Any regeneration of those three
+must supply the existing frame as a reference image.**
+
+### Open question — on-screen size for evolved forms
+
+Guide §2 gives pixel targets for the three starters only (Rune Hound 52 px, Sword Wisp
+58 px, Gun Construct 46 px) and says evolution "changes the visible body and one
+behavior" without mentioning size. `build_summon_spriteframes.gd` therefore gives every
+tier of a line its starter's target rather than inventing a number, so an Ascendant
+currently reads at the same height as its Bound form. If evolved forms are meant to read
+larger, that is a design value the guide needs to state.
+
+---
+
 ## 1. What ships and is already wired
 
 185 split frames across seven `prototype_ready` atlases. 129 are consumed by the build
@@ -281,23 +322,29 @@ Ordered by what blocks the next phase, not by size.
 
 ## 6. Totals
 
-| Category | Frames / assets |
-|---|---|
-| Summon evolution forms | 42 frames |
-| Enemy hit column | 6 frames |
-| Gilded Bellguard row | 6–7 frames |
-| Boss gap frames | 3–4 frames |
-| Convergence signatures | ~21 frames (3 × ~7) |
-| Rally mark | 1 looping marker |
-| Spirit Core states | 3 frames or 1 mesh |
-| UI components | ~25 elements |
-| Environment materials/decals | ~10 |
-| Props (3D) | 3 |
-| Pivot re-baselining | 49 existing frames |
-| Audio | 3 tracks + ~60 cues |
+Updated after the eleven-sheet package landed. "Delivered" means installed and wired;
+"delivered, unusable" means the frames exist but are off-model (see §0).
 
-**New actor/effect frames to produce: roughly 80–85.** Plus a UI component set, a small
-material set, three props, and the audio pass.
+| Category | Frames / assets | State |
+|---|---|---|
+| Summon evolution forms | 42 frames | **delivered** |
+| Convergence signatures | 24 frames | **delivered** |
+| Rally mark | 6-frame loop | **delivered** |
+| Spirit Core states | 3 frames | **delivered** |
+| UI components | 23 elements | **delivered** |
+| Environment materials/decals | 12 | **delivered** |
+| Enemy hit column | 6 frames | delivered, unusable — regenerate with references |
+| Gilded Bellguard row | 6 frames | delivered, unusable — regenerate with references |
+| Boss gap frames | 4 frames | delivered, unusable — regenerate with references |
+| Pivot re-baselining | 49 existing frames | still open |
+| Props (3D) | 3 | still open |
+| Audio | 3 tracks + ~60 cues | still open |
+
+**Remaining actor/effect frames to produce: 16** — the three off-model sheets, redone
+with reference images. That is down from roughly 80–85.
+
+Everything else outstanding is the pivot re-baselining of the original package art, three
+3D props, and the audio pass.
 
 Every one of these is required by an existing phase or a locked rule in the master guide.
 None of it is scope beyond the vertical slice.

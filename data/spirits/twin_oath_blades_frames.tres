@@ -1,0 +1,68 @@
+[gd_resource type="SpriteFrames" load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/01_twin_oath_blades__02_aim_or_windup.png" id="1_8od2d"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/01_twin_oath_blades__03_attack.png" id="2_3hxtt"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/01_twin_oath_blades__04_attack_recover.png" id="3_v0vna"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/01_twin_oath_blades__05_hit.png" id="4_2c5tl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/01_twin_oath_blades__00_idle.png" id="5_xbnp8"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/01_twin_oath_blades__01_move.png" id="6_wukhw"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/01_twin_oath_blades__06_reform.png" id="7_m33el"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_8od2d")
+}],
+"loop": false,
+"name": &"aim_or_windup",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_3hxtt")
+}],
+"loop": false,
+"name": &"attack",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_v0vna")
+}],
+"loop": false,
+"name": &"attack_recover",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_2c5tl")
+}],
+"loop": false,
+"name": &"hit",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_xbnp8")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_wukhw")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_m33el")
+}],
+"loop": true,
+"name": &"reform",
+"speed": 8.0
+}]

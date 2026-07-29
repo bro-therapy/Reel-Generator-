@@ -1,0 +1,34 @@
+[gd_resource type="SpriteFrames" load_steps=7 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/vfx/rally_marker_frames/00_rally_marker__00_fx_01.png" id="1_6soyl"]
+[ext_resource type="Texture2D" path="res://assets/vfx/rally_marker_frames/00_rally_marker__01_fx_02.png" id="2_x5dfx"]
+[ext_resource type="Texture2D" path="res://assets/vfx/rally_marker_frames/00_rally_marker__02_fx_03.png" id="3_n03rl"]
+[ext_resource type="Texture2D" path="res://assets/vfx/rally_marker_frames/00_rally_marker__03_fx_04.png" id="4_qtx6s"]
+[ext_resource type="Texture2D" path="res://assets/vfx/rally_marker_frames/00_rally_marker__04_fx_05.png" id="5_6tyag"]
+[ext_resource type="Texture2D" path="res://assets/vfx/rally_marker_frames/00_rally_marker__05_fx_06.png" id="6_qd53p"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_6soyl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("2_x5dfx")
+}, {
+"duration": 1.0,
+"texture": ExtResource("3_n03rl")
+}, {
+"duration": 1.0,
+"texture": ExtResource("4_qtx6s")
+}, {
+"duration": 1.0,
+"texture": ExtResource("5_6tyag")
+}, {
+"duration": 1.0,
+"texture": ExtResource("6_qd53p")
+}],
+"loop": true,
+"name": &"rally_marker",
+"speed": 12.0
+}]

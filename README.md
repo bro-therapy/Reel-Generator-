@@ -22,8 +22,14 @@ Defects in shipped art: `ART_CLEANUP_TODO.md`
 | 4 | Starter species | **complete** — 17/17 acceptance checks |
 | 5 | Enemies | **complete** — 27/27 acceptance checks |
 | 6 | Combat room framework | **complete** — 23/23 acceptance checks |
-| 7 | Rewards, inventory, evolution | next |
+| 7 | Rewards, inventory, evolution | next — **art unblocked** |
 | 8–15 | see the build brief | not started |
+
+The eleven-sheet art package is installed (`tools/install_sheet_package.py`).
+Sheets 1–2 give all six evolved summon forms, which was Phase 7's only art
+blocker. Sheets 3, 4 and 8 are installed but deliberately not wired — they were
+generated without reference images and re-invented creatures that already exist.
+See `ART_CLEANUP_TODO.md`.
 
 ## Running it
 
@@ -64,11 +70,13 @@ godot --headless --path . --script scripts/tools/build_hero_spriteframes.gd
 godot --headless --path . --script scripts/tools/build_summon_spriteframes.gd
 godot --headless --path . --script scripts/tools/build_vfx_spriteframes.gd
 godot --headless --path . --script scripts/tools/build_enemy_spriteframes.gd
+godot --headless --path . --script scripts/tools/build_effect_spriteframes.gd
 ```
 
 These also refresh the ground-pivot audits in `docs/generated/` and the runtime
-pivot correction tables. Every actor row shipped so far has needed correction —
-treat baselining as required for any new actor art.
+pivot correction tables. Treat baselining as required for any new actor art:
+every row in the first-playtest package needed correction (13–28 px of drift),
+though the eleven-sheet package lands at 0–1 px, so it is a check that can pass.
 
 ## Layout
 

@@ -1,0 +1,68 @@
+[gd_resource type="SpriteFrames" load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/02_arsenal_titan__02_aim_or_windup.png" id="1_pcrot"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/02_arsenal_titan__03_attack.png" id="2_dwnnk"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/02_arsenal_titan__04_attack_recover.png" id="3_lr34f"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/02_arsenal_titan__05_hit.png" id="4_f2djj"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/02_arsenal_titan__00_idle.png" id="5_wa0wl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/02_arsenal_titan__01_move.png" id="6_8xxud"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/02_arsenal_titan__06_reform.png" id="7_a1o25"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_pcrot")
+}],
+"loop": false,
+"name": &"aim_or_windup",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_dwnnk")
+}],
+"loop": false,
+"name": &"attack",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_lr34f")
+}],
+"loop": false,
+"name": &"attack_recover",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_f2djj")
+}],
+"loop": false,
+"name": &"hit",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_wa0wl")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_8xxud")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_a1o25")
+}],
+"loop": true,
+"name": &"reform",
+"speed": 8.0
+}]

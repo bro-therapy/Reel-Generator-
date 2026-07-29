@@ -1,0 +1,68 @@
+[gd_resource type="SpriteFrames" load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/00_tempest_fenrir__02_aim_or_windup.png" id="1_61qbn"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/00_tempest_fenrir__03_attack.png" id="2_t7se7"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/00_tempest_fenrir__04_attack_recover.png" id="3_vx4g1"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/00_tempest_fenrir__05_hit.png" id="4_a7rdf"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/00_tempest_fenrir__00_idle.png" id="5_fty21"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/00_tempest_fenrir__01_move.png" id="6_1ednh"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_ascendant_frames/00_tempest_fenrir__06_reform.png" id="7_ui2jh"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_61qbn")
+}],
+"loop": false,
+"name": &"aim_or_windup",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_t7se7")
+}],
+"loop": false,
+"name": &"attack",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_vx4g1")
+}],
+"loop": false,
+"name": &"attack_recover",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_a7rdf")
+}],
+"loop": false,
+"name": &"hit",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_fty21")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_1ednh")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_ui2jh")
+}],
+"loop": true,
+"name": &"reform",
+"speed": 8.0
+}]

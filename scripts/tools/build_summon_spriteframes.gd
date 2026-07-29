@@ -9,17 +9,41 @@ extends SceneTree
 ## Grid and ordering come from docs/ASSET_MANIFEST.json. Do not hand-edit the
 ## generated .tres files.
 
-const FRAME_DIR := "res://assets/actors/summon_action_frames"
 const OUT_DIR := "res://data/spirits"
 const METRICS_PATH := "res://docs/generated/summon_metrics.json"
 
-## ASSET_MANIFEST row_order for the starter summon atlas.
-const SPECIES := ["rune_hound", "sword_wisp", "gun_construct"]
-## ASSET_MANIFEST column_order.
+## ASSET_MANIFEST column_order. Shared by all three tiers.
 const COLUMNS := ["idle", "move", "aim_or_windup", "attack", "attack_recover", "hit", "reform"]
 
-## Master guide §2 on-screen size targets, in pixels at 1080p.
-const TARGET_PX := {"rune_hound": 52.0, "sword_wisp": 58.0, "gun_construct": 46.0}
+## The three evolution lines, in guide §11 order. Each tier is its own row of
+## split frames and its own SpriteFrames — evolution swaps the resource rather
+## than adding animations to one set.
+const TIERS := [
+	{
+		"tier": "bound",
+		"dir": "res://assets/actors/summon_action_frames",
+		"species": ["rune_hound", "sword_wisp", "gun_construct"],
+	},
+	{
+		"tier": "awakened",
+		"dir": "res://assets/actors/summon_awakened_frames",
+		"species": ["volt_hound", "twin_oath_blades", "burst_golem"],
+	},
+	{
+		"tier": "ascendant",
+		"dir": "res://assets/actors/summon_ascendant_frames",
+		"species": ["tempest_fenrir", "halo_blade_seraph", "arsenal_titan"],
+	},
+]
+
+## Master guide §2 on-screen size targets, in pixels at 1080p, indexed by
+## evolution line rather than by species name.
+##
+## The guide states these for the three starters only, and says evolution
+## "changes the visible body and one behavior" without ever stating a size
+## change — so every tier of a line inherits its starter's target instead of
+## having a number invented for it. Raised in ART_REQUIREMENTS.md.
+const TARGET_PX := [52.0, 58.0, 46.0]
 
 ## The hero anchors the scale: 242 px of cell reads as 88 px on screen at
 ## 1.8 world units, so one screen pixel is 1.8/88 world units.
@@ -39,91 +63,103 @@ func _initialize() -> void:
 	DirAccess.make_dir_recursive_absolute(OUT_DIR)
 	DirAccess.make_dir_recursive_absolute("res://docs/generated")
 
-	for species_index in SPECIES.size():
-		var species: String = SPECIES[species_index]
-		var frames := SpriteFrames.new()
-		frames.remove_animation("default")
+	for tier_spec in TIERS:
+		var tier: String = tier_spec["tier"]
+		var frame_dir: String = tier_spec["dir"]
+		var species_list: Array = tier_spec["species"]
 
-		var per_frame: Dictionary = {}
-		var foot_rows: Array[int] = []
-		var content_heights: Array[int] = []
-		var cell := Vector2i.ZERO
-
-		for col in COLUMNS.size():
-			var col_name: String = COLUMNS[col]
-			var path := "%s/%02d_%s__%02d_%s.png" % [FRAME_DIR, species_index, species, col, col_name]
-			if not ResourceLoader.exists(path):
-				missing.append(path.get_file())
-				continue
-			var tex := load(path) as Texture2D
-			if tex == null:
-				missing.append(path.get_file())
-				continue
-
-			frames.add_animation(col_name)
-			frames.set_animation_loop(col_name, bool(LOOPING.get(col_name, false)))
-			frames.set_animation_speed(col_name, FPS)
-			frames.add_frame(col_name, tex)
-
-			var m := _measure(tex)
-			per_frame[col_name] = m
-			if m.has("foot_row"):
-				foot_rows.append(int(m["foot_row"]))
-				content_heights.append(int(m["content_height"]))
-				cell = Vector2i(int(m["size"][0]), int(m["size"][1]))
-
-		if frames.get_animation_names().is_empty():
+		# A tier whose art has not landed yet is skipped, not reported missing.
+		if not DirAccess.dir_exists_absolute(frame_dir):
+			print("%-18s tier art not present, skipped" % tier)
 			continue
 
-		var out_path := "%s/%s_frames.tres" % [OUT_DIR, species]
-		var err := ResourceSaver.save(frames, out_path)
-		if err != OK:
-			print("FAILED: could not save %s (err %d)" % [out_path, err])
-			quit(1)
-			return
+		for species_index in species_list.size():
+			var species: String = species_list[species_index]
+			var frames := SpriteFrames.new()
+			frames.remove_animation("default")
 
-		foot_rows.sort()
-		var baseline := foot_rows[foot_rows.size() / 2] if not foot_rows.is_empty() else 0
-		var spread := 0
-		for r in foot_rows:
-			spread = maxi(spread, absi(r - baseline))
+			var per_frame: Dictionary = {}
+			var foot_rows: Array[int] = []
+			var content_heights: Array[int] = []
+			var cell := Vector2i.ZERO
 
-		content_heights.sort()
-		var median_content := content_heights[content_heights.size() / 2] if not content_heights.is_empty() else 1
+			for col in COLUMNS.size():
+				var col_name: String = COLUMNS[col]
+				var path := "%s/%02d_%s__%02d_%s.png" % [frame_dir, species_index, species, col, col_name]
+				if not ResourceLoader.exists(path):
+					missing.append(path.get_file())
+					continue
+				var tex := load(path) as Texture2D
+				if tex == null:
+					missing.append(path.get_file())
+					continue
 
-		# Choose the world height for the whole cell such that the drawn content
-		# lands on the guide's pixel target.
-		var target_px: float = TARGET_PX.get(species, 52.0)
-		var content_world := target_px * world_per_screen_px
-		var cell_world := content_world * (float(cell.y) / maxf(float(median_content), 1.0))
+				frames.add_animation(col_name)
+				frames.set_animation_loop(col_name, bool(LOOPING.get(col_name, false)))
+				frames.set_animation_speed(col_name, FPS)
+				frames.add_frame(col_name, tex)
 
-		# Per-frame pivot corrections, same approach as the hero.
-		var offsets: Dictionary = {}
-		var corrected := 0
-		for col_name in per_frame:
-			var m: Dictionary = per_frame[col_name]
-			if not m.has("foot_row"):
+				var m := _measure(tex)
+				per_frame[col_name] = m
+				if m.has("foot_row"):
+					foot_rows.append(int(m["foot_row"]))
+					content_heights.append(int(m["content_height"]))
+					cell = Vector2i(int(m["size"][0]), int(m["size"][1]))
+
+			if frames.get_animation_names().is_empty():
 				continue
-			var off: int = baseline - int(m["foot_row"])
-			offsets["%s/0" % col_name] = off
-			if off != 0:
-				corrected += 1
 
-		metrics[species] = {
-			"cell": [cell.x, cell.y],
-			"median_content_height_px": median_content,
-			"baseline_foot_row": baseline,
-			"baseline_spread_px": spread,
-			"target_screen_px": target_px,
-			"recommended_world_height_units": snappedf(cell_world, 0.0001),
-			"corrected_frame_count": corrected,
-			"pivot_offsets": offsets,
-			"frames": per_frame,
-		}
+			var out_path := "%s/%s_frames.tres" % [OUT_DIR, species]
+			var err := ResourceSaver.save(frames, out_path)
+			if err != OK:
+				print("FAILED: could not save %s (err %d)" % [out_path, err])
+				quit(1)
+				return
 
-		print("%-14s cell=%s content=%dpx spread=%dpx  -> world_height %.4f u (target %.0f px)" % [
-			species, str(cell), median_content, spread, cell_world, target_px,
-		])
+			foot_rows.sort()
+			var baseline := foot_rows[foot_rows.size() / 2] if not foot_rows.is_empty() else 0
+			var spread := 0
+			for r in foot_rows:
+				spread = maxi(spread, absi(r - baseline))
+
+			content_heights.sort()
+			var median_content := content_heights[content_heights.size() / 2] if not content_heights.is_empty() else 1
+
+			# Choose the world height for the whole cell such that the drawn content
+			# lands on the guide's pixel target.
+			var target_px: float = TARGET_PX[species_index]
+			var content_world := target_px * world_per_screen_px
+			var cell_world := content_world * (float(cell.y) / maxf(float(median_content), 1.0))
+
+			# Per-frame pivot corrections, same approach as the hero.
+			var offsets: Dictionary = {}
+			var corrected := 0
+			for col_name in per_frame:
+				var m: Dictionary = per_frame[col_name]
+				if not m.has("foot_row"):
+					continue
+				var off: int = baseline - int(m["foot_row"])
+				offsets["%s/0" % col_name] = off
+				if off != 0:
+					corrected += 1
+
+			metrics[species] = {
+				"tier": tier,
+				"evolution_line": TIERS[0]["species"][species_index],
+				"cell": [cell.x, cell.y],
+				"median_content_height_px": median_content,
+				"baseline_foot_row": baseline,
+				"baseline_spread_px": spread,
+				"target_screen_px": target_px,
+				"recommended_world_height_units": snappedf(cell_world, 0.0001),
+				"corrected_frame_count": corrected,
+				"pivot_offsets": offsets,
+				"frames": per_frame,
+			}
+
+			print("%-18s %-10s cell=%s content=%dpx spread=%dpx  -> world_height %.4f u (target %.0f px)" % [
+				species, tier, str(cell), median_content, spread, cell_world, target_px,
+			])
 
 	if not missing.is_empty():
 		push_error("Missing %d frames: %s" % [missing.size(), ", ".join(missing)])

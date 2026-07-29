@@ -1,0 +1,68 @@
+[gd_resource type="SpriteFrames" load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/02_burst_golem__02_aim_or_windup.png" id="1_aqbmf"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/02_burst_golem__03_attack.png" id="2_bww5r"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/02_burst_golem__04_attack_recover.png" id="3_ty3hq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/02_burst_golem__05_hit.png" id="4_ntuv5"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/02_burst_golem__00_idle.png" id="5_jpryv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/02_burst_golem__01_move.png" id="6_sy2xl"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_awakened_frames/02_burst_golem__06_reform.png" id="7_0grpw"]
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("1_aqbmf")
+}],
+"loop": false,
+"name": &"aim_or_windup",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("2_bww5r")
+}],
+"loop": false,
+"name": &"attack",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("3_ty3hq")
+}],
+"loop": false,
+"name": &"attack_recover",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("4_ntuv5")
+}],
+"loop": false,
+"name": &"hit",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("5_jpryv")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("6_sy2xl")
+}],
+"loop": true,
+"name": &"move",
+"speed": 8.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": ExtResource("7_0grpw")
+}],
+"loop": true,
+"name": &"reform",
+"speed": 8.0
+}]
