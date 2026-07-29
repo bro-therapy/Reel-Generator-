@@ -5,6 +5,8 @@ slice** for the first playtest.
 
 Design source of truth: `docs/PROJECT_ZERO_CLIMB_MASTER_GUIDE_v1.0.md`
 Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
+Art still to produce: `docs/ART_REQUIREMENTS.md`
+Defects in shipped art: `ART_CLEANUP_TODO.md`
 
 ## Status
 
