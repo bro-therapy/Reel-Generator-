@@ -1,0 +1,26 @@
+[gd_resource type="Resource" script_class="CharacterData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/character_data.gd" id="1_char"]
+[ext_resource type="SpriteFrames" path="res://data/characters/tower_exile_frames.tres" id="2_frames"]
+
+[resource]
+script = ExtResource("1_char")
+id = &"tower_exile"
+display_name = "Tower Exile"
+max_hp = 100
+contact_grace_seconds = 0.4
+move_speed_units_per_second = 6.2
+acceleration = 35.0
+deceleration = 42.0
+dash_distance_units = 4.3
+dash_duration_seconds = 0.18
+dash_cooldown_seconds = 1.35
+dash_invulnerability_seconds = 0.2
+focus_weapon_id = &"conjurer_staff"
+auto_target_range_units = 14.0
+focus_aim_assist_degrees = 22.0
+sprite_frames = ExtResource("2_frames")
+world_height_units = 1.8
+source_cell_height_px = 242
+collision_radius_units = 0.35
+collision_height_units = 1.4

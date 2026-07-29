@@ -40,3 +40,19 @@ Thumbs.db
 # Art, audio, and video are tracked via Git LFS — see .gitattributes.
 # Do NOT commit large binaries directly. A previous project in this repo hit
 # 556MB of history that way, and the only fix was throwing the history out.
+
+# ── Prototype art: TEMPORARILY UNTRACKED ─────────────────────────────────────
+# The 209 package assets are NOT committed yet. This remote build environment's
+# network policy blocks lfs.github.com, so LFS objects cannot be uploaded from
+# here — and committing ~45MB of PNGs as raw blobs would defeat .gitattributes
+# and need a history rewrite to undo.
+#
+# TO COMMIT THEM (from your own machine, where LFS works):
+#   1. Delete this block from .gitignore
+#   2. ./tools/restore_package_assets.sh <path-to-package-or-zip>
+#   3. git lfs install
+#   4. git add assets && git commit -m "chore: add prototype assets via LFS"
+#   5. git push
+#
+# .gitattributes already routes these through LFS, so step 4 stores pointers.
+assets/

@@ -1,60 +1,65 @@
-# Game
+# Project Zero Climb
 
-A Godot 4 game project. Early stage — the scaffold runs, the design is open.
+Connected-room action roguelite. Godot 4.3. Building one **8–12 minute vertical
+slice** for the first playtest.
 
-## Requirements
+Design source of truth: `docs/PROJECT_ZERO_CLIMB_MASTER_GUIDE_v1.0.md`
+Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
 
-- [Godot 4.3+](https://godotengine.org/download) (standard build, no C# needed)
-- [Git LFS](https://git-lfs.com) — **install before committing any art or audio**
+## Status
 
-```bash
-git lfs install
-```
+| Phase | Scope | State |
+|---|---|---|
+| 0 | Project foundation | **complete** — 19/19 acceptance checks |
+| 1 | Hero sandbox | **complete** — 13/13 acceptance checks |
+| 2 | Conjurer Staff and targeting | next |
+| 3–15 | see the build brief | not started |
 
 ## Running it
 
-Open the project folder in Godot, or from the command line:
-
 ```bash
-godot --path .
+godot --path .                      # boot scene
+godot --path . scenes/tests/hero_sandbox.tscn   # Phase 1 hero sandbox
 ```
 
-Press F5 in the editor. You should get a dark window with a blue square you can
-move using the arrow keys or WASD.
+WASD moves, Space dashes, F3 toggles the debug overlay.
+
+## Acceptance tests
+
+Each phase has a headless, CI-usable harness that exits non-zero on failure.
+
+```bash
+godot --headless --path . --script scripts/tests/phase0_acceptance.gd
+godot --headless --path . --script scripts/tests/phase1_acceptance.gd
+```
+
+## Regenerating actor SpriteFrames
+
+`data/characters/tower_exile_frames.tres` is generated from the package split
+frames — do not hand-edit it. Rebuild after any actor art change:
+
+```bash
+godot --headless --path . --script scripts/tools/build_hero_spriteframes.gd
+```
+
+This also refreshes the ground-pivot audit in `docs/generated/` and the runtime
+pivot correction table.
 
 ## Layout
 
 ```
-project.godot       ← engine config, entry point
-scenes/
-  main.tscn         ← root scene, loaded on start
-  player.tscn       ← placeholder player
-scripts/
-  main.gd           ← global setup
-  player.gd         ← 8-directional movement
-assets/             ← art, audio, fonts (tracked via Git LFS)
+assets/       prototype art from the package (LFS)
+data/         Resources and generated SpriteFrames
+docs/         package documentation, balance, manifest
+scenes/       actors, enemies, rooms, ui, tests
+scripts/      data, actors, combat, run, ui, tools, tests
 ```
 
-## Assets and repo size
+## Working rules
 
-Art and audio are routed through Git LFS via `.gitattributes`. Godot's own
-`.tscn` / `.tres` / `.gd` files stay as plain text so they diff and merge
-properly.
+See `CLAUDE.md`. The short version: don't redesign the game, don't replace or
+generate art, don't expand scope, keep balance data-driven, and log art issues in
+`ART_CLEANUP_TODO.md` instead of repainting.
 
-Two rules worth keeping:
-
-1. **Run `git lfs install` before your first asset commit.** LFS can't
-   retroactively fix files already in history.
-2. **Never commit exports or build output.** `.gitignore` covers the usual
-   suspects, but check `git status` before committing after an export.
-
-This repo previously held an unrelated project that reached 556MB of history by
-committing generated video directly. Recovering from that meant discarding the
-history entirely. The LFS setup above exists so that doesn't happen twice.
-
-## Status
-
-The scaffold was written by hand and has not been opened in the Godot editor
-yet. On first open, Godot will regenerate resource UIDs and rewrite
-`project.godot` with its full default set — that's expected, and the resulting
-diff is safe to commit.
+Art and audio go through **Git LFS** (`.gitattributes`). Run `git lfs install`
+after cloning.

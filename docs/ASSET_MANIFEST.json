@@ -1,0 +1,148 @@
+{
+  "project": "Project Zero Climb",
+  "package_version": "1.0",
+  "prototype_target": "Godot 4.x vertical slice",
+  "hero_gameplay_height_px_1080p": 88,
+  "camera_pullback_heavy_combat_percent": [10, 15],
+  "color_rules": {
+    "friendly": ["#9C6BFF", "#44D7E8", "#F8F4FF"],
+    "hostile": ["#FF5B67", "#FF8A3D", "#FFF0D4"],
+    "reward": ["#F3C65C", "#61D095"],
+    "hero_signature": ["#FF8A3D", "#2B204A", "#9C6BFF"]
+  },
+  "assets": [
+    {
+      "path": "level1_prototype/actors/PZC_Tower_Exile_Locomotion_Atlas_ALPHA_GRID_v1.png",
+      "status": "prototype_ready",
+      "purpose": "Eight-direction locomotion source atlas",
+      "dimensions": [810, 1936],
+      "grid": {"columns": 5, "rows": 8, "cell": [162, 242]},
+      "row_order": ["south", "southwest", "west", "northwest", "north", "northeast", "east", "southeast"],
+      "column_order": ["idle", "walk_contact", "walk_passing", "run_extension", "run_recovery"],
+      "split_directory": "level1_prototype/actors/hero_locomotion_frames"
+    },
+    {
+      "path": "level1_prototype/actors/PZC_Tower_Exile_Action_Atlas_ALPHA_GRID_v1.png",
+      "status": "prototype_ready",
+      "purpose": "Hero combat/action source atlas",
+      "dimensions": [1776, 888],
+      "grid": {"columns": 8, "rows": 2, "cell": [222, 444]},
+      "split_directory": "level1_prototype/actors/hero_action_frames",
+      "notes": "Use as pose source. Normalize the south-facing pivot in Godot before chaining animations."
+    },
+    {
+      "path": "level1_prototype/actors/PZC_Starter_Summons_Action_Atlas_ALPHA_GRID_v1.png",
+      "status": "prototype_ready",
+      "purpose": "Starter summon action atlas",
+      "dimensions": [1540, 1026],
+      "grid": {"columns": 7, "rows": 3, "cell": [220, 342]},
+      "row_order": ["rune_hound", "sword_wisp", "gun_construct"],
+      "column_order": ["idle", "move", "aim_or_windup", "attack", "attack_recover", "hit", "reform"],
+      "split_directory": "level1_prototype/actors/summon_action_frames"
+    },
+    {
+      "path": "level1_prototype/actors/PZC_Starter_Summon_Evolution_Paths_v1.png",
+      "status": "production_reference",
+      "purpose": "Bound, Awakened, and Ascendant forms for three starters"
+    },
+    {
+      "path": "level1_prototype/enemies/PZC_Level1_Enemy_Lineup_Bold16_v1.png",
+      "status": "production_reference",
+      "purpose": "Six enemy silhouettes and one elite"
+    },
+    {
+      "path": "level1_prototype/enemies/PZC_Level1_Enemy_Action_Atlas_ALPHA_v1.png",
+      "status": "prototype_ready",
+      "purpose": "Six enemy action rows",
+      "dimensions": [1254, 1254],
+      "grid": {"columns": 6, "rows": 6, "cell": [209, 209]},
+      "row_order": ["rift_crawler", "lantern_hexer", "bellguard", "nest_idol", "blade_mite", "siphon_eye"],
+      "column_order": ["idle", "move_contact", "move_passing", "attack_windup", "attack_active", "death"],
+      "split_directory": "level1_prototype/enemies/enemy_action_frames"
+    },
+    {
+      "path": "level1_prototype/enemies/PZC_Boss_The_First_Bell_Production_Sheet_v1.png",
+      "status": "production_reference",
+      "purpose": "Boss turnaround and attacks"
+    },
+    {
+      "path": "level1_prototype/enemies/PZC_First_Bell_Action_Atlas_ALPHA_GRID_v1.png",
+      "status": "prototype_ready",
+      "purpose": "First Bell boss action atlas",
+      "dimensions": [2176, 724],
+      "grid": {"columns": 8, "rows": 1, "cell": [272, 724]},
+      "row_order": ["the_first_bell"],
+      "column_order": ["idle", "move", "slam_windup", "slam_impact", "chain_sweep_windup", "bell_toll", "stagger_core_open", "defeat"],
+      "split_directory": "level1_prototype/enemies/boss_action_frames"
+    },
+    {
+      "path": "level1_prototype/enemies/PZC_First_Bell_Action_Atlas_ALPHA_GRID_v1.png",
+      "status": "prototype_ready",
+      "purpose": "The First Bell action atlas",
+      "dimensions": [2176, 724],
+      "grid": {"columns": 8, "rows": 1, "cell": [272, 724]},
+      "column_order": ["idle", "move", "slam_windup", "slam_impact", "chain_sweep_windup", "bell_toll", "stagger_core_open", "defeat"],
+      "split_directory": "level1_prototype/enemies/boss_action_frames"
+    },
+    {
+      "path": "level1_prototype/enemies/PZC_The_First_Bell_Boss_Gameplay_Keyframe_v1.png",
+      "status": "production_reference",
+      "purpose": "Boss scale, arena, camera, and telegraph target"
+    },
+    {
+      "path": "level1_prototype/environment/PZC_Sunfall_Ward_Modular_Kit_v1.png",
+      "status": "production_reference",
+      "purpose": "Warm tower-town modular kit with Rift corruption"
+    },
+    {
+      "path": "level1_prototype/environment/PZC_Sunfall_Ward_Modular_Kit_ALPHA_v1.png",
+      "status": "prototype_optional",
+      "purpose": "Alpha-extracted environment modules for temporary 2D cards or billboards",
+      "notes": "Primary level geometry should be a 3D blockout. Do not treat this sheet as final 3D production art."
+    },
+    {
+      "path": "level1_prototype/vfx/PZC_Level1_Combat_VFX_Atlas_ALPHA_GRID_v1.png",
+      "status": "prototype_ready",
+      "purpose": "Friendly, hostile, pickup, and status effects",
+      "dimensions": [1776, 888],
+      "grid": {"columns": 8, "rows": 4, "cell": [222, 222]},
+      "split_directory": "level1_prototype/vfx/vfx_frames"
+    },
+    {
+      "path": "level1_prototype/ui/PZC_Pickup_Relic_Icon_Atlas_ALPHA_GRID_v1.png",
+      "status": "prototype_ready",
+      "purpose": "32 pickup, upgrade, and relic icons",
+      "dimensions": [1776, 888],
+      "grid": {"columns": 8, "rows": 4, "cell": [222, 222]},
+      "split_directory": "level1_prototype/ui/icon_frames"
+    },
+    {
+      "path": "level1_prototype/ui/PZC_Gameplay_HUD_Mockup_v1.png",
+      "status": "production_reference",
+      "purpose": "Controller-first combat HUD"
+    },
+    {
+      "path": "level1_prototype/ui/PZC_Reward_SpiritWell_Merchant_UI_Triptych_v1.png",
+      "status": "production_reference",
+      "purpose": "Reward cards, Spirit Well, and merchant layouts"
+    },
+    {
+      "path": "level1_prototype/ui/PZC_Title_Pause_Results_UI_Triptych_v1.png",
+      "status": "production_reference",
+      "purpose": "Title, pause/accessibility, victory, and results layouts"
+    },
+    {
+      "path": "level1_prototype/maps/PZC_Sunfall_Ward_Route_Map_v1.svg",
+      "status": "implementation_reference",
+      "purpose": "Authoritative Level 1 route and pacing"
+    },
+    {
+      "path": "level1_prototype/maps/PZC_Sunfall_Ward_Route_Map_v1.png",
+      "status": "implementation_reference",
+      "purpose": "Portable raster copy of the authoritative Level 1 route"
+    }
+  ],
+  "reference_art_directory": "concept_art",
+  "source_guide": "docs/PROJECT_ZERO_CLIMB_MASTER_GUIDE_v1.0.pdf",
+  "disclaimer": "AI-generated prototype visuals require human cleanup and consistency review before commercial production."
+}
