@@ -43,6 +43,10 @@ generated from text alone, with no reference image of the creature they were mea
 extend, so they re-invented actors that already exist. **Any regeneration of those three
 must supply the existing frame as a reference image.**
 
+`docs/ART_REGENERATION_SHEETS_3_4_8.md` has the finished prompts for all three, built
+around that reference. It also records why an automated on-model check is not possible
+here — the measurements are in §6 of that document.
+
 ### Open question — on-screen size for evolved forms
 
 Guide §2 gives pixel targets for the three starters only (Rune Hound 52 px, Sword Wisp

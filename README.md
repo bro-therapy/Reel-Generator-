@@ -6,6 +6,7 @@ slice** for the first playtest.
 Design source of truth: `docs/PROJECT_ZERO_CLIMB_MASTER_GUIDE_v1.0.md`
 Build plan: `docs/CLAUDE_GODOT_BUILD_BRIEF.md` (16 numbered phases)
 Art still to produce: `docs/ART_REQUIREMENTS.md`
+Regenerating the three off-model sheets: `docs/ART_REGENERATION_SHEETS_3_4_8.md`
 Animation recommendations: `docs/ANIMATION_GUIDE.md`
 Generation prompts: `docs/ART_GENERATION_PROMPTS.md` (per sheet) and
 `docs/ART_GENERATION_MASTER_PROMPT.md` (one paste, all eleven sheets)
@@ -29,7 +30,14 @@ The eleven-sheet art package is installed (`tools/install_sheet_package.py`).
 Sheets 1–2 give all six evolved summon forms, which was Phase 7's only art
 blocker. Sheets 3, 4 and 8 are installed but deliberately not wired — they were
 generated without reference images and re-invented creatures that already exist.
-See `ART_CLEANUP_TODO.md`.
+Finished regeneration prompts for all three are in
+`docs/ART_REGENERATION_SHEETS_3_4_8.md`; the defects are logged in
+`ART_CLEANUP_TODO.md`.
+
+```bash
+./tools/make_reference_sheets.py    # reference images to attach to the prompts
+./tools/compare_frames.py           # side-by-side check on whatever comes back
+```
 
 ## Running it
 

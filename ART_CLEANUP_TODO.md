@@ -31,6 +31,10 @@ make the game look worse than it does now. All three share one root cause: the s
 were generated from text descriptions with no reference image of the existing art, so
 the generator re-invented creatures that already exist.
 
+**Ready-to-run fixes for all three are in `docs/ART_REGENERATION_SHEETS_3_4_8.md`** —
+prompts with the reference images attached, plus `tools/make_reference_sheets.py` to
+build those references and `tools/compare_frames.py` to check what comes back.
+
 | Priority | Asset | Frame/state | Problem | Temporary handling | Final cleanup |
 |---|---|---|---|---|---|
 | High | Sheet 4 — `boss_action_frames/00_the_first_bell__08..11` | `chain_sweep_active`, `hit`, `phase_two`, `enrage` | **Off-model redesign, not extra frames.** The shipped First Bell is a squat warm-bronze bell body with a small cross-topped cap, red core mid-bell and stubby legs, drawn ~300 px tall in the 724 px cell. These four are a slender *blue-grey* tower with a large ornate belfry, the core low on the bell and long segmented gold legs, drawn 520 px tall. Different palette, silhouette and proportion — not a uniform scale, so no import-time transform can reconcile them. Merged into one animation set the boss would change species mid-fight. | Files installed; **excluded from the boss SpriteFrames.** `build_enemy_spriteframes.gd` is untouched, so the boss still uses only its original eight frames. | Regenerate sheet 4 with the existing boss atlas supplied as a reference image, or repaint the original eight to match the new design. Either direction works; mixing does not. |
