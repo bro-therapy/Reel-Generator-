@@ -3,8 +3,8 @@
 What the first-playtest package ships, what is defective in it, and what still has to
 be produced to finish the vertical slice.
 
-Compiled from `docs/ASSET_MANIFEST.json`, the master guide, and defects measured
-during Phases 0–6. Frame counts are exact, not estimates — they come from the
+Compiled from `docs/ASSET_MANIFEST.json`, `docs/IMAGE_GENERATION_PROMPTS.md`, the master
+guide, and defects measured during Phases 0–6. Frame counts are exact, not estimates — they come from the
 generated audits in `docs/generated/`.
 
 Status as of Phase 6 complete. Nothing here is speculative scope: every item is
@@ -102,11 +102,16 @@ requires that "evolution visibly changes the summon and one behavior". Only the 
 tier ships as usable frames. `PZC_Starter_Summon_Evolution_Paths_v1.png` is a
 `production_reference` sheet, not game-ready cells.
 
-| Species | Awakened | Ascendant (named in guide) |
+| Species | Awakened | Ascendant |
 |---|---|---|
-| Rune Hound | crescent-slash form | **Tempest Fenrir** — chains through two targets |
-| Sword Wisp | delayed second blade | **Halo Blade Seraph** — three blades, intercepts projectiles |
-| Gun Construct | piercing shot form | **Arsenal Titan** — three-missile volley |
+| Rune Hound | **Volt Hound** — crescent slash every fourth strike | **Tempest Fenrir** — chains through two targets |
+| Sword Wisp | **Twin Oath Blades** — delayed second slash | **Halo Blade Seraph** — three blades, intercepts projectiles |
+| Gun Construct | **Burst Golem** — every sixth shot pierces | **Arsenal Titan** — three-missile volley |
+
+All six names come from the package's own generation record in
+`docs/IMAGE_GENERATION_PROMPTS.md`, so they are canon rather than invented. That record
+also fixes the constraint that final forms stay **below roughly 1.5× hero height** and
+remain animation-friendly silhouettes.
 
 **Ask: 3 species × 2 tiers × 7 states = 42 frames**, on the same 220×342 grid and
 matching row/column order as the Bound atlas.
@@ -267,6 +272,12 @@ Ordered by what blocks the next phase, not by size.
 10. **Audio (~60 cues + 3 tracks)** — placeholders keep every phase unblocked.
 
 ---
+
+## 5a. See also
+
+- `docs/ANIMATION_GUIDE.md` — frame budgets, timing technique, and why generated cycles
+  drift.
+- `docs/ART_GENERATION_PROMPTS.md` — copy-paste prompts for everything listed here.
 
 ## 6. Totals
 
