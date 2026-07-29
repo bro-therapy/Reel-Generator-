@@ -97,3 +97,24 @@ Carried over from the package template; these remain unverified until their phas
 - Use environment art as a visual reference; build navigable geometry in 3D. *(Phase 8)*
 - Rebuild generated UI screens with native Godot Controls rather than using flattened
   mockups as interactive menus. *(Phase 13)*
+
+## Realistic effects (generated)
+
+The four additive effect sheets in `assets/vfx/realtime/` are the only generated
+art in the project — see `docs/REALISTIC_VFX.md` for why they exist and how they
+are built.
+
+- **Lightning shows a faint rectangular edge at its widest frames.** Its source
+  fills the frame edge to edge at peak (measured: 0.0% pure-black pixels at the
+  burst), so the 12% edge fade cannot hide the quad boundary without eating the
+  arcs. Regenerating with the burst held further inside the frame is the real fix;
+  raising `edge_fade` further is not. *(low — visible only against a dark floor at
+  close range)*
+- **Fire leans slightly.** The source flame leans in the clip; it is not a
+  rendering fault, and it was verified against the raw cell. Harmless for a hazard
+  fire, worth noting if the same sheet is ever reused for something that must read
+  as vertical.
+- **Effects are linearly filtered, the actors are not.** Deliberate — the contrast
+  between filmed effects and pixel actors is the look that was asked for — but it
+  means these sheets will never sit correctly on a pixel grid if the project ever
+  goes fully pixel-locked.

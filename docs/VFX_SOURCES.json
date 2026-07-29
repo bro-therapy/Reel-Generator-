@@ -1,0 +1,115 @@
+{
+  "_comment": [
+    "Provenance and build recipe for the realistic effect sheets.",
+    "",
+    "These four are the ONLY generated art in the project, and they exist because",
+    "the owner explicitly asked for realistic fire and beam effects over the pixel",
+    "actors. Everything else still comes from the shipped package \u2014 see CLAUDE.md.",
+    "",
+    "Each entry records the Higgsfield job that produced it and the exact prompt,",
+    "so a sheet can be regenerated or audited without guessing. Rebuild with:",
+    "",
+    "  ./tools/vfx_from_video.py",
+    "",
+    "`palette` is enforced, not documented: the tool refuses to write a sheet whose",
+    "hue histogram crosses into the other side's band. That is the colour-ownership",
+    "rule from the master guide, and it is the one thing about these effects that is",
+    "not a matter of taste - it is what tells the player what will hurt them.",
+    "`edge_fade` ramps each side of a cell to black before it is written. It is per side because a beam must run off the top and bottom to read as continuous, while a burst that reaches its frame edge gets hard-cut by the quad and shows as a bright rectangle in the room.",
+    "`source_url` is where each clip came from. The built .png sheets live under assets/, which is gitignored in this repo because LFS upload is blocked from the build environment - so a fresh checkout has the recipe but not the textures. Download the four clips to a directory and run tools/vfx_from_video.py against it to rebuild them. These are CDN links and may expire; the job ids are the durable reference."
+  ],
+  "chromatic_value_floor": 0.15,
+  "chromatic_saturation_floor": 0.25,
+  "max_wrong_side_fraction": 0.005,
+  "effects": [
+    {
+      "name": "fire",
+      "source": "fire.mp4",
+      "job_id": "3f43c00c-9357-4705-baa1-5e8d73e4d261",
+      "model": "seedance_2_0",
+      "palette": "hostile",
+      "orientation": "upright",
+      "anchor": "bottom",
+      "loop": true,
+      "frames": 24,
+      "fps": 24.0,
+      "trim": false,
+      "long_edge_px": 256,
+      "note": "Vertical flame column. Hazard fire and the boss slam aftermath.",
+      "edge_fade": {
+        "x": 0.1,
+        "top": 0.12,
+        "bottom": 0.0
+      },
+      "source_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3CqxjnFIineMHir3Lbt0KHCOqnm/hf_20260729_181048_3f43c00c-9357-4705-baa1-5e8d73e4d261.mp4"
+    },
+    {
+      "name": "shockwave",
+      "source": "shockwave.mp4",
+      "job_id": "3d134b3f-aea5-4c61-a180-7467b043ee4c",
+      "model": "seedance_2_0",
+      "palette": "hostile",
+      "orientation": "ground",
+      "anchor": "center",
+      "loop": false,
+      "frames": 24,
+      "fps": 30.0,
+      "trim": false,
+      "source_range": [
+        0,
+        72
+      ],
+      "long_edge_px": 256,
+      "note": "Shot straight down, so it lies flat in XZ rather than billboarding. The ring keeps expanding to the end of the clip, so the tail is cut at 72 and the shader fades the rest.",
+      "edge_fade": {
+        "x": 0.05,
+        "top": 0.05,
+        "bottom": 0.05
+      },
+      "source_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3CqxjnFIineMHir3Lbt0KHCOqnm/hf_20260729_181112_3d134b3f-aea5-4c61-a180-7467b043ee4c.mp4"
+    },
+    {
+      "name": "beam",
+      "source": "beam.mp4",
+      "job_id": "7e688665-3041-452d-9a0b-32b3cc52d78c",
+      "model": "seedance_2_0",
+      "palette": "friendly",
+      "orientation": "upright",
+      "anchor": "center",
+      "loop": true,
+      "frames": 24,
+      "fps": 24.0,
+      "trim": false,
+      "long_edge_px": 256,
+      "note": "Sustained violet column. Runs off the top and bottom of frame on purpose - it should read as continuing past its own quad.",
+      "edge_fade": {
+        "x": 0.14,
+        "top": 0.0,
+        "bottom": 0.0
+      },
+      "source_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3CqxjnFIineMHir3Lbt0KHCOqnm/hf_20260729_181101_7e688665-3041-452d-9a0b-32b3cc52d78c.mp4"
+    },
+    {
+      "name": "lightning",
+      "source": "lightning.mp4",
+      "job_id": "489f3c4d-b676-4d8c-ae07-097fd5ebf795",
+      "model": "seedance_2_0",
+      "palette": "friendly",
+      "orientation": "view",
+      "anchor": "center",
+      "loop": false,
+      "frames": 24,
+      "fps": 30.0,
+      "trim": true,
+      "trim_floor": 0.06,
+      "long_edge_px": 256,
+      "note": "Radial violet burst with its own build and fade, so the useful range is trimmed by luminance rather than hardcoded. The floor is above the 0.02 default on purpose - at 0.02 seven of the twenty-four frames were a barely-visible spark, which reads as lag rather than anticipation. Convergence signature.",
+      "edge_fade": {
+        "x": 0.12,
+        "top": 0.12,
+        "bottom": 0.12
+      },
+      "source_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3CqxjnFIineMHir3Lbt0KHCOqnm/hf_20260729_181123_489f3c4d-b676-4d8c-ae07-097fd5ebf795.mp4"
+    }
+  ]
+}

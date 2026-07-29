@@ -1,0 +1,180 @@
+{
+  "effects": [
+    {
+      "name": "fire",
+      "texture": "res://assets/vfx/realtime/fire.png",
+      "job_id": "3f43c00c-9357-4705-baa1-5e8d73e4d261",
+      "model": "seedance_2_0",
+      "palette": "hostile",
+      "orientation": "upright",
+      "anchor": "bottom",
+      "loop": true,
+      "cols": 4,
+      "rows": 6,
+      "frame_count": 24,
+      "cell_width": 240,
+      "cell_height": 256,
+      "aspect": 0.9375,
+      "fps": 24.0,
+      "duration_seconds": 1.0,
+      "source_frames": [
+        0,
+        92
+      ],
+      "source_size": [
+        1440,
+        1440
+      ],
+      "crop_box": [
+        46,
+        0,
+        1394,
+        1440
+      ],
+      "sheet_size": [
+        960,
+        1536
+      ],
+      "sheet_bytes": 1128182,
+      "colour": {
+        "chromatic_px": 19199498,
+        "own_side_pct": 99.97761920650217,
+        "wrong_side_pct": 0.0,
+        "neutral_pct": 0.022380793497829995
+      },
+      "note": "Vertical flame column. Hazard fire and the boss slam aftermath."
+    },
+    {
+      "name": "shockwave",
+      "texture": "res://assets/vfx/realtime/shockwave.png",
+      "job_id": "3d134b3f-aea5-4c61-a180-7467b043ee4c",
+      "model": "seedance_2_0",
+      "palette": "hostile",
+      "orientation": "ground",
+      "anchor": "center",
+      "loop": false,
+      "cols": 4,
+      "rows": 6,
+      "frame_count": 24,
+      "cell_width": 256,
+      "cell_height": 256,
+      "aspect": 1.0,
+      "fps": 30.0,
+      "duration_seconds": 0.8,
+      "source_frames": [
+        0,
+        69
+      ],
+      "source_size": [
+        1440,
+        1440
+      ],
+      "crop_box": [
+        0,
+        0,
+        1440,
+        1440
+      ],
+      "sheet_size": [
+        1024,
+        1536
+      ],
+      "sheet_bytes": 1689025,
+      "colour": {
+        "chromatic_px": 22209274,
+        "own_side_pct": 99.99931560122135,
+        "wrong_side_pct": 0.0,
+        "neutral_pct": 0.000684398778636348
+      },
+      "note": "Shot straight down, so it lies flat in XZ rather than billboarding. The ring keeps expanding to the end of the clip, so the tail is cut at 72 and the shader fades the rest."
+    },
+    {
+      "name": "beam",
+      "texture": "res://assets/vfx/realtime/beam.png",
+      "job_id": "7e688665-3041-452d-9a0b-32b3cc52d78c",
+      "model": "seedance_2_0",
+      "palette": "friendly",
+      "orientation": "upright",
+      "anchor": "center",
+      "loop": true,
+      "cols": 4,
+      "rows": 6,
+      "frame_count": 24,
+      "cell_width": 124,
+      "cell_height": 256,
+      "aspect": 0.484375,
+      "fps": 24.0,
+      "duration_seconds": 1.0,
+      "source_frames": [
+        0,
+        92
+      ],
+      "source_size": [
+        1440,
+        1440
+      ],
+      "crop_box": [
+        366,
+        0,
+        1074,
+        1440
+      ],
+      "sheet_size": [
+        496,
+        1536
+      ],
+      "sheet_bytes": 761581,
+      "colour": {
+        "chromatic_px": 10744222,
+        "own_side_pct": 99.94738567389989,
+        "wrong_side_pct": 0.0,
+        "neutral_pct": 0.05261432610011223
+      },
+      "note": "Sustained violet column. Runs off the top and bottom of frame on purpose - it should read as continuing past its own quad."
+    },
+    {
+      "name": "lightning",
+      "texture": "res://assets/vfx/realtime/lightning.png",
+      "job_id": "489f3c4d-b676-4d8c-ae07-097fd5ebf795",
+      "model": "seedance_2_0",
+      "palette": "friendly",
+      "orientation": "view",
+      "anchor": "center",
+      "loop": false,
+      "cols": 4,
+      "rows": 6,
+      "frame_count": 24,
+      "cell_width": 256,
+      "cell_height": 256,
+      "aspect": 1.0,
+      "fps": 30.0,
+      "duration_seconds": 0.8,
+      "source_frames": [
+        27,
+        80
+      ],
+      "source_size": [
+        1440,
+        1440
+      ],
+      "crop_box": [
+        0,
+        0,
+        1440,
+        1440
+      ],
+      "sheet_size": [
+        1024,
+        1536
+      ],
+      "sheet_bytes": 1897550,
+      "colour": {
+        "chromatic_px": 31457371,
+        "own_side_pct": 100.0,
+        "wrong_side_pct": 0.0,
+        "neutral_pct": 0.0
+      },
+      "note": "Radial violet burst with its own build and fade, so the useful range is trimmed by luminance rather than hardcoded. The floor is above the 0.02 default on purpose - at 0.02 seven of the twenty-four frames were a barely-visible spark, which reads as lag rather than anticipation. Convergence signature."
+    }
+  ]
+}

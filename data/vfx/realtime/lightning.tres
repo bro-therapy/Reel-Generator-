@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AdditiveVfxData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/additive_vfx_data.gd" id="1_37323"]
+[ext_resource type="Texture2D" path="res://assets/vfx/realtime/lightning.png" id="2_bhgs2"]
+
+[resource]
+script = ExtResource("1_37323")
+id = &"lightning"
+texture = ExtResource("2_bhgs2")
+cols = 4
+rows = 6
+frame_count = 24
+fps = 30.0
+loop = false
+aspect = 1.0
+world_height = 4.0
+facing = 1
+palette = 0
+energy = 1.25
+fade_out_fraction = 0.3

@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AdditiveVfxData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/additive_vfx_data.gd" id="1_3y6kv"]
+[ext_resource type="Texture2D" path="res://assets/vfx/realtime/fire.png" id="2_pc3lw"]
+
+[resource]
+script = ExtResource("1_3y6kv")
+id = &"fire"
+texture = ExtResource("2_pc3lw")
+cols = 4
+rows = 6
+frame_count = 24
+fps = 24.0
+loop = true
+aspect = 0.9375
+world_height = 2.4
+facing = 0
+palette = 1
+energy = 1.35
+fade_out_fraction = 0.0

@@ -12,6 +12,7 @@ Generation prompts: `docs/ART_GENERATION_PROMPTS.md` (per sheet) and
 `docs/ART_GENERATION_MASTER_PROMPT.md` (one paste, all eleven sheets)
 Defects in shipped art: `ART_CLEANUP_TODO.md`
 Higgsfield animation test: `docs/HIGGSFIELD_ANIMATION_TEST.md`
+Realistic additive effects: `docs/REALISTIC_VFX.md`
 
 ## Status
 
@@ -35,6 +36,17 @@ Higgsfield animation test: `docs/HIGGSFIELD_ANIMATION_TEST.md`
 | 15 | Performance and QA | **complete** — 12/12 acceptance checks |
 
 **All sixteen phases are built.** The vertical slice is ready to play.
+
+Four realistic effects — fire, beam, lightning, shockwave — are generated,
+installed and drawn additively over the pixel actors. They are the only generated
+art in the project and exist by explicit owner request; `docs/REALISTIC_VFX.md`
+covers the pipeline, the enforced colour-ownership gate and the measured cost.
+
+```bash
+./tools/vfx_from_video.py --sources <dir>      # video -> additive sprite sheets
+godot --headless --path . --script scripts/tools/build_additive_vfx.gd
+./tools/screenshot.sh scenes/tests/vfx_showcase.tscn build/shots/vfx.png 30
+```
 
 The eleven-sheet art package is installed (`tools/install_sheet_package.py`).
 Sheets 1–2 give all six evolved summon forms, which was Phase 7's only art
@@ -61,6 +73,7 @@ godot --path . scenes/tests/enemy_field.tscn    # Phase 5 enemy roles
 godot --path . scenes/tests/reward_demo.tscn    # Phase 7 three-card offer
 godot --path . scenes/tests/evolution_field.tscn # Phase 7 all nine summon forms
 godot --path . scenes/world/sunfall_ward.tscn   # Phase 8 the level blockout
+godot --path . scenes/tests/vfx_showcase.tscn   # the four realistic effects
 ```
 
 ## Seeing it without a monitor
@@ -81,7 +94,7 @@ measuring 80 px against his locked 88 px target, which eight phases of headless
 acceptance checks had not caught: the Phase 1 check projects the sprite *cell*
 rather than the drawn character. See `ART_CLEANUP_TODO.md`.
 
-All sixteen phases: **308 checks, 0 failures.**
+All sixteen phases plus the effects suite: **326 checks, 0 failures.**
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
 
@@ -106,6 +119,7 @@ godot --headless --path . --script scripts/tests/phase12_acceptance.gd
 godot --headless --path . --script scripts/tests/phase13_acceptance.gd
 godot --headless --path . --script scripts/tests/phase14_acceptance.gd
 godot --headless --path . --script scripts/tests/phase15_acceptance.gd
+godot --headless --path . --script scripts/tests/vfx_acceptance.gd
 ```
 
 ## Regenerating actor SpriteFrames
@@ -119,6 +133,7 @@ godot --headless --path . --script scripts/tools/build_summon_spriteframes.gd
 godot --headless --path . --script scripts/tools/build_vfx_spriteframes.gd
 godot --headless --path . --script scripts/tools/build_enemy_spriteframes.gd
 godot --headless --path . --script scripts/tools/build_effect_spriteframes.gd
+godot --headless --path . --script scripts/tools/build_additive_vfx.gd
 ```
 
 These also refresh the ground-pivot audits in `docs/generated/` and the runtime
@@ -165,7 +180,10 @@ Two rules came out of that and apply to every new check:
    gate removes — so it passed with the gate gone. It now watches the telegraph's
    own state at the moment damage lands, and separately builds the case the gate
    exists for by tearing the telegraph away mid-windup.
-7. **A guard hidden behind another guard is not tested.** Convergence refuses to
+7. **Check the shipped artefact, not the file it was built from.** The effect
+   colour gate reads the `.png` that ships rather than the `.json` that produced
+   it. Checking the input would pass happily against a texture nobody rebuilt.
+8. **A guard hidden behind another guard is not tested.** Convergence refuses to
    retrigger both because it is active *and* because triggering empties the meter.
    Removing the first changed nothing until the test refilled the meter directly.
 

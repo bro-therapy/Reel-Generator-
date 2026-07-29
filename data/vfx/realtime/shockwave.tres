@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AdditiveVfxData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/additive_vfx_data.gd" id="1_lsw06"]
+[ext_resource type="Texture2D" path="res://assets/vfx/realtime/shockwave.png" id="2_eue2d"]
+
+[resource]
+script = ExtResource("1_lsw06")
+id = &"shockwave"
+texture = ExtResource("2_eue2d")
+cols = 4
+rows = 6
+frame_count = 24
+fps = 30.0
+loop = false
+aspect = 1.0
+world_height = 7.0
+facing = 2
+palette = 1
+energy = 1.5
+fade_out_fraction = 0.35

@@ -61,6 +61,18 @@ Thumbs.db
 # .gitattributes already routes these through LFS, so step 5 stores pointers.
 # Step 3 needs Pillow and numpy; it keys the chroma background those sheets
 # ship with, so copying them by hand instead will produce green frames.
+#
+# The four generated effect sheets in assets/vfx/realtime/ are caught by the same
+# rule, and they are the one thing here that cannot be restored from a package you
+# already have. Rebuild them with:
+#
+#   # download the four clips listed in docs/VFX_SOURCES.json -> some directory
+#   ./tools/vfx_from_video.py --sources <that directory>
+#   godot --headless --path . --import
+#   godot --headless --path . --script scripts/tools/build_additive_vfx.gd
+#
+# docs/VFX_SOURCES.json carries the source URL, the job id and every build
+# decision, so the sheets come back byte-for-byte rather than approximately.
 assets/
 
 # Python bytecode from the import tooling

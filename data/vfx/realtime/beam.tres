@@ -1,0 +1,20 @@
+[gd_resource type="Resource" script_class="AdditiveVfxData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/additive_vfx_data.gd" id="1_kv3dv"]
+[ext_resource type="Texture2D" path="res://assets/vfx/realtime/beam.png" id="2_xvt1d"]
+
+[resource]
+script = ExtResource("1_kv3dv")
+id = &"beam"
+texture = ExtResource("2_xvt1d")
+cols = 4
+rows = 6
+frame_count = 24
+fps = 24.0
+loop = true
+aspect = 0.484375
+world_height = 4.5
+facing = 0
+palette = 0
+energy = 1.2
+fade_out_fraction = 0.0
