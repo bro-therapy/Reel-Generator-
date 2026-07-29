@@ -1,0 +1,6 @@
+Tracked so the directory survives a clone.
+
+Git does not store empty directories. Phase 0 asserts this path exists, so
+without this file the phase-0 suite fails on every fresh checkout while passing
+in any working copy that still has the directory lying around — which is how it
+went unnoticed until a clone was actually tested.

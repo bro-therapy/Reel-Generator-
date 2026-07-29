@@ -24,6 +24,13 @@ func _report() -> void:
 	print("[boot] input actions: %d" % _game_actions().size())
 	print("[boot] debug overlay: press F3 (or controller Back) to toggle")
 
+	# A checkout without assets is a supported state, not a broken one. Say so in
+	# one paragraph rather than leaving Godot's 72 "Resource file not found" lines
+	# as the only explanation for a game with nothing visible in it.
+	var assets := AssetCheck.report()
+	if assets != "":
+		print(assets)
+
 
 ## Project-defined actions only — excludes Godot's built-in ui_* set.
 static func _game_actions() -> Array[StringName]:

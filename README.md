@@ -13,6 +13,7 @@ Generation prompts: `docs/ART_GENERATION_PROMPTS.md` (per sheet) and
 Defects in shipped art: `ART_CLEANUP_TODO.md`
 Higgsfield animation test: `docs/HIGGSFIELD_ANIMATION_TEST.md`
 Realistic additive effects: `docs/REALISTIC_VFX.md`
+Getting the art onto your machine: `docs/ASSET_DELIVERY.md`
 
 ## Status
 
@@ -47,6 +48,31 @@ covers the pipeline, the enforced colour-ownership gate and the measured cost.
 godot --headless --path . --script scripts/tools/build_additive_vfx.gd
 ./tools/screenshot.sh scenes/tests/vfx_showcase.tscn build/shots/vfx.png 30
 ```
+
+There is also a full placeholder sound set — 65 SFX slots and three music beds,
+synthesised from scratch with numpy, nothing downloaded or licensed. `AudioDirector`
+implements guide §14's mix priority as a voice-limited mixer, so the player's damage
+warning stays audible in a 250-enemy room. `CombatPresentation` wires both audio and
+effects to combat from the outside, and cannot change the fight.
+
+```bash
+./tools/make_placeholder_audio.py    # regenerates every WAV in ~3s, byte-identical
+```
+
+## Getting it running on your own machine
+
+`assets/` is gitignored — Git LFS upload is blocked from the build environment. The
+project runs without it (every scene loads; the actors are just invisible), and the
+art arrives as one verified bundle:
+
+```bash
+./tools/fetch_assets.sh <bundle-url-or-zip>
+godot --headless --path . --import
+./tools/check_project.sh
+```
+
+See `docs/ASSET_DELIVERY.md`. The permanent fix is a GitHub Release: 2 GB per file,
+free, out of git history, and a URL `curl` can actually fetch.
 
 The eleven-sheet art package is installed (`tools/install_sheet_package.py`).
 Sheets 1–2 give all six evolved summon forms, which was Phase 7's only art
@@ -94,7 +120,12 @@ measuring 80 px against his locked 88 px target, which eight phases of headless
 acceptance checks had not caught: the Phase 1 check projects the sprite *cell*
 rather than the drawn character. See `ART_CLEANUP_TODO.md`.
 
-All sixteen phases plus the effects suite: **326 checks, 0 failures.**
+All sixteen phases plus the effects, audio and presentation suites:
+**357 checks, 0 failures.** One command runs everything:
+
+```bash
+./tools/check_project.sh
+```
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
 
@@ -120,6 +151,14 @@ godot --headless --path . --script scripts/tests/phase13_acceptance.gd
 godot --headless --path . --script scripts/tests/phase14_acceptance.gd
 godot --headless --path . --script scripts/tests/phase15_acceptance.gd
 godot --headless --path . --script scripts/tests/vfx_acceptance.gd
+godot --headless --path . --script scripts/tests/audio_acceptance.gd
+godot --headless --path . --script scripts/tests/presentation_acceptance.gd
+```
+
+Or all of them at once, which is what to run before believing a change:
+
+```bash
+./tools/check_project.sh
 ```
 
 ## Regenerating actor SpriteFrames
