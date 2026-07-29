@@ -181,8 +181,16 @@ func _check_convergence_retrigger() -> void:
 	if c.trigger([]):
 		repeats += 1
 
-	if first and repeats == 0 and fires.size() == 1:
-		_ok("Convergence cannot be retriggered while active", "6 further attempts refused")
+	# add() refuses to bank charge during a Convergence, so the meter is already
+	# empty and every attempt above is refused for that reason rather than by the
+	# guard under test. Filling the meter directly removes that cover and leaves
+	# `active` as the only thing that can refuse the trigger.
+	c.meter = c.meter_max
+	var guarded := not c.trigger([])
+	c.meter = 0.0
+
+	if first and repeats == 0 and guarded and fires.size() == 1:
+		_ok("Convergence cannot be retriggered while active", "refused even with the meter refilled")
 	else:
 		_no("retrigger", "%d repeats, %d trigger signals" % [repeats, fires.size()])
 

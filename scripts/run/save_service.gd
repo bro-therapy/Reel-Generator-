@@ -11,6 +11,21 @@ const SAVE_VERSION := 1
 
 var _data: Dictionary = _default_data()
 
+## Where settings are read from and applied to. Left null in the game, where it
+## resolves to the GameSettings autoload; the acceptance harness injects its own,
+## because a `--script` run binds no autoloads and the global would silently be
+## a different instance than the one under test.
+var settings_source: Node = null
+
+
+func _settings() -> Node:
+	if settings_source != null:
+		return settings_source
+	var loop := Engine.get_main_loop()
+	if loop is SceneTree:
+		return (loop as SceneTree).root.get_node_or_null("/root/GameSettings")
+	return null
+
 
 static func _default_data() -> Dictionary:
 	return {
@@ -56,14 +71,17 @@ func load_game() -> bool:
 		if loaded.has(key):
 			_data[key] = loaded[key]
 
-	if _data["settings"] is Dictionary:
-		GameSettings.apply_settings(_data["settings"])
+	var settings := _settings()
+	if settings != null and _data["settings"] is Dictionary:
+		settings.apply_settings(_data["settings"])
 	return true
 
 
 func save_game() -> bool:
 	_data["version"] = SAVE_VERSION
-	_data["settings"] = GameSettings.all_settings()
+	var settings := _settings()
+	if settings != null:
+		_data["settings"] = settings.all_settings()
 
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:

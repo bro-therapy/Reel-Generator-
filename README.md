@@ -26,7 +26,15 @@ Higgsfield animation test: `docs/HIGGSFIELD_ANIMATION_TEST.md`
 | 6 | Combat room framework | **complete** — 23/23 acceptance checks |
 | 7 | Rewards, inventory, evolution | **complete** — 23/23 acceptance checks |
 | 8 | Sunfall Ward blockout | **complete** — 9/9 acceptance checks |
-| 9–15 | see the build brief | not started |
+| 9 | Spirit Well and merchant | **complete** — 20/20 acceptance checks |
+| 10 | Optional Rift | **complete** — 18/18 acceptance checks |
+| 11 | The First Bell | **complete** — 19/19 acceptance checks |
+| 12 | Rally, Stability, Convergence | **complete** — 24/24 acceptance checks |
+| 13 | HUD and menus | **complete** — 15/15 acceptance checks |
+| 14 | Save and results | **complete** — 16/16 acceptance checks |
+| 15 | Performance and QA | **complete** — 12/12 acceptance checks |
+
+**All sixteen phases are built.** The vertical slice is ready to play.
 
 The eleven-sheet art package is installed (`tools/install_sheet_package.py`).
 Sheets 1–2 give all six evolved summon forms, which was Phase 7's only art
@@ -73,7 +81,7 @@ measuring 80 px against his locked 88 px target, which eight phases of headless
 acceptance checks had not caught: the Phase 1 check projects the sprite *cell*
 rather than the drawn character. See `ART_CLEANUP_TODO.md`.
 
-All nine phases: **184 checks, 0 failures.**
+All sixteen phases: **308 checks, 0 failures.**
 
 WASD moves, Space dashes, F3 toggles the debug overlay.
 
@@ -91,6 +99,13 @@ godot --headless --path . --script scripts/tests/phase5_acceptance.gd
 godot --headless --path . --script scripts/tests/phase6_acceptance.gd
 godot --headless --path . --script scripts/tests/phase7_acceptance.gd
 godot --headless --path . --script scripts/tests/phase8_acceptance.gd
+godot --headless --path . --script scripts/tests/phase9_acceptance.gd
+godot --headless --path . --script scripts/tests/phase10_acceptance.gd
+godot --headless --path . --script scripts/tests/phase11_acceptance.gd
+godot --headless --path . --script scripts/tests/phase12_acceptance.gd
+godot --headless --path . --script scripts/tests/phase13_acceptance.gd
+godot --headless --path . --script scripts/tests/phase14_acceptance.gd
+godot --headless --path . --script scripts/tests/phase15_acceptance.gd
 ```
 
 ## Regenerating actor SpriteFrames
@@ -145,6 +160,14 @@ Two rules came out of that and apply to every new check:
    survivors here turned out to be equivalent mutants sitting behind a second,
    redundant guard. A survivor means "investigate", not automatically "weak test" —
    but it does mean the check has not been proven yet.
+6. **Never assert on a counter the mutant would delete.** The boss telegraph check
+   watched `untelegraphed_hits`, which only increments inside the branch a broken
+   gate removes — so it passed with the gate gone. It now watches the telegraph's
+   own state at the moment damage lands, and separately builds the case the gate
+   exists for by tearing the telegraph away mid-windup.
+7. **A guard hidden behind another guard is not tested.** Convergence refuses to
+   retrigger both because it is active *and* because triggering empties the meter.
+   Removing the first changed nothing until the test refilled the meter directly.
 
 ## Working rules
 

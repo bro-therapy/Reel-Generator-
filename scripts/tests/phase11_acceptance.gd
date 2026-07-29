@@ -127,11 +127,17 @@ func _process(_delta: float) -> bool:
 func _check_telegraphs() -> void:
 	var boss := _spawn()
 	var landed: Array = []
-	var armed_at_landing: Array = []
+	var unarmed_landings: Array = []
+
+	# Watched from outside, via the telegraph's own state at the moment damage
+	# lands. The boss's `untelegraphed_hits` counter cannot be used here: it only
+	# increments inside the branch that a broken gate would delete, so a check
+	# built on it passes happily with the gate removed. That mutant survived the
+	# first version of this test.
 	boss.attack_landed.connect(func(kind: StringName, amount: int) -> void:
 		landed.append(kind)
-		if amount > 0:
-			armed_at_landing.append(boss.telegraph.is_visible_now() or boss.telegraph.is_armed()))
+		if amount > 0 and not boss.telegraph.is_armed():
+			unarmed_landings.append(kind))
 
 	# Long enough to see the whole rotation several times over.
 	for _i in int(40.0 / STEP):
@@ -142,15 +148,40 @@ func _check_telegraphs() -> void:
 		if k != &"toll":
 			damaging += 1
 
-	if damaging > 0 and boss.untelegraphed_hits == 0:
-		_ok("every damaging hit was telegraphed", "%d hits, 0 untelegraphed" % damaging)
+	if damaging > 0 and unarmed_landings.is_empty():
+		_ok("every damaging hit was telegraphed", "%d hits, telegraph armed at each" % damaging)
 	else:
-		_no("telegraphs", "%d hits, %d untelegraphed" % [damaging, boss.untelegraphed_hits])
+		_no("telegraphs", "%d hits, %d landed with no telegraph armed" % [damaging, unarmed_landings.size()])
 
 	if boss.slams_this_fight > 0 and boss.sweeps_this_fight > 0:
 		_ok("the rotation uses slam and chain sweep", "%d slams, %d sweeps" % [boss.slams_this_fight, boss.sweeps_this_fight])
 	else:
 		_no("rotation", "%d slams, %d sweeps" % [boss.slams_this_fight, boss.sweeps_this_fight])
+
+	# The gate itself, exercised directly.
+	#
+	# Watching the normal rotation is not enough: the telegraph is always armed
+	# when a scheduled hit lands, so deleting the gate changes nothing observable
+	# and the mutant survives. This builds the case the gate exists for — a
+	# windup whose telegraph is torn away before it completes — and requires the
+	# hit to be dropped.
+	var gated := _spawn()
+	gated.tick(STEP)
+	var winding := gated.current_move in [FirstBellBoss.Move.SLAM, FirstBellBoss.Move.CHAIN_SWEEP]
+	gated.telegraph.cancel()
+
+	var hits_before := gated.attacks_landed
+	var suppressed_before := gated.attacks_suppressed
+	var reports: Array = []
+	gated.attack_suppressed_without_telegraph.connect(func() -> void: reports.append(1))
+	gated.tick(2.0)
+
+	if winding and gated.attacks_landed == hits_before and gated.attacks_suppressed > suppressed_before and reports.size() >= 1:
+		_ok("a hit whose telegraph was cancelled is dropped", "%d suppressed, 0 landed" % (gated.attacks_suppressed - suppressed_before))
+	else:
+		_no("telegraph gate", "winding=%s landed +%d suppressed +%d" % [
+			winding, gated.attacks_landed - hits_before, gated.attacks_suppressed - suppressed_before])
+	gated.queue_free()
 
 	# The telegraph must be red. Guide §2: hostile telegraphs are never violet.
 	var colour := boss.telegraph.current_color()
