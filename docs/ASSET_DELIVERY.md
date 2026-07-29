@@ -1,13 +1,41 @@
 # Getting the assets onto your machine
 
-**Short version:** the project runs fine without art. To get the art, download the
-bundle and run one command.
+**Shortest version — on a Mac, from nothing:**
+
+```bash
+bash bootstrap_mac.sh
+```
+
+`RUN_ME_ON_MAC_bootstrap.sh` is in the "My video game" Drive folder, and
+`tools/bootstrap_mac.sh` is the same file in this repo. It clones, downloads both
+art packages out of that Drive folder, installs them, rebuilds the four realistic
+effect sheets from their source clips, synthesises the audio, and runs all
+nineteen suites. Verified from an empty directory: **357 passed, 0 failed.**
+
+Re-runnable, and it skips the 216 MB download once the art is in place.
+
+**If you already have a bundle zip:**
 
 ```bash
 ./tools/fetch_assets.sh ~/Downloads/pzc-assets-YYYYMMDD.zip
 godot --headless --path . --import
 ./tools/check_project.sh
 ```
+
+## Why Drive downloads kept failing
+
+`drive.google.com/uc?export=download&id=...` answers **303 with an empty body**
+for files this size — a curl that looks successful writes a zero-byte file.
+`drive.usercontent.google.com/download?id=...&confirm=t` returns the real bytes
+with a proper `Content-Disposition`. That is the endpoint the bootstrap uses, and
+it is almost certainly what was going wrong before.
+
+Worth knowing about the connector, too: the folder is owned by
+`luiiruii5@gmail.com` while the Drive connector authenticates as
+`lruiz@bro-therapy.com`. Drive **search** only covers the signed-in account's own
+index, so the folder is invisible to a search — but fetching it **by ID** works,
+because the link sharing grants access. Searching for it and concluding it was
+unreachable was my mistake.
 
 ## Why assets are not in git
 

@@ -57,12 +57,19 @@ else
   printf "  steps will be skipped. Get 4.3 from godotengine.org/download.\n"
 fi
 
-# Pillow and numpy do the chroma keying and the audio synthesis.
+# Pillow and numpy do the chroma keying and the audio synthesis; PyAV reads the
+# effect clips. The first two are required, PyAV is not — without it the four
+# realistic effects are skipped and everything else still works.
 if ! python3 -c "import PIL, numpy" 2>/dev/null; then
-  say "Installing Pillow and numpy (needed to key the sheets and make the audio)"
+  say "Installing Pillow and numpy (to key the sheets and synthesise the audio)"
   python3 -m pip install --quiet --user Pillow numpy || die "pip install failed"
 fi
 printf "  Pillow, numpy ✓\n"
+if ! python3 -c "import av" 2>/dev/null; then
+  python3 -m pip install --quiet --user av 2>/dev/null || true
+fi
+python3 -c "import av" 2>/dev/null && printf "  PyAV ✓ (realistic effects will be rebuilt)\n" \
+  || printf "  PyAV missing — the four realistic effects will be skipped\n"
 
 # ----------------------------------------------------------------------- repo
 
@@ -108,12 +115,40 @@ fi
 say "Synthesising the placeholder audio"
 ./tools/make_placeholder_audio.py
 
-# The four realistic effect sheets come from video that is not in the repo. If
-# they are absent the game runs without them, so this is a note and not an error.
+# The four realistic effect sheets are built from generated video that is not in
+# the repo — but the clips' URLs are, in docs/VFX_SOURCES.json, so they can be
+# rebuilt rather than shipped. Non-fatal: these are CDN links and will expire
+# eventually, and the game runs perfectly well without them.
 if [[ ! -f assets/vfx/realtime/fire.png ]]; then
-  printf "\n  Note: the four realistic effect sheets are not here. They rebuild from\n"
-  printf "  the clips listed in docs/VFX_SOURCES.json — see docs/REALISTIC_VFX.md.\n"
-  printf "  Everything else works without them.\n"
+  say "Rebuilding the four realistic effect sheets"
+  CLIPS="$WORK/clips"
+  mkdir -p "$CLIPS"
+  if python3 -c "import av" 2>/dev/null; then
+    if python3 - "$CLIPS" <<'PY'
+import json, sys, urllib.request, pathlib
+out = pathlib.Path(sys.argv[1])
+spec = json.loads(pathlib.Path("docs/VFX_SOURCES.json").read_text())
+for e in spec["effects"]:
+    url = e.get("source_url", "")
+    if not url:
+        raise SystemExit("no source_url for %s" % e["name"])
+    dest = out / e["source"]
+    print("  %s" % e["source"], flush=True)
+    urllib.request.urlretrieve(url, dest)
+PY
+    then
+      ./tools/vfx_from_video.py --sources "$CLIPS" \
+        && "${GODOT:-true}" --headless --path . --import >/dev/null 2>&1 \
+        && [[ -n "$GODOT" ]] \
+        && "$GODOT" --headless --path . --script scripts/tools/build_additive_vfx.gd
+    else
+      printf "  Could not download the clips — they are CDN links and may have expired.\n"
+      printf "  Everything else works without them. See docs/REALISTIC_VFX.md.\n"
+    fi
+  else
+    printf "  Skipping: needs PyAV (pip install av) to read the clips.\n"
+    printf "  Everything else works without them. See docs/REALISTIC_VFX.md.\n"
+  fi
 fi
 
 # ---------------------------------------------------------------- build & test
