@@ -137,3 +137,30 @@ these are small set dressing and read as neutral in practice, but if a
 playtester ever confuses a bench for a pickup, tint those materials toward
 wood-brown at import (do not repaint the source files; they are pristine CC0
 copies restored by tools/fetch_free_assets.sh).
+
+## Hero silhouette clipped by the atlas cell grid (needs a source re-export)
+
+**Measured, not guessed.** `tools/validate_sprite_delivery.py` flags 6 locomotion
+frames where the hero's silhouette runs flat against a canvas side edge for
+13–33% of the canvas height. Worst: `07_southeast__04_run_recovery.png`, 80 of
+242 rows flush against x=0.
+
+Confirmed at source. In `PZC_Tower_Exile_Locomotion_Atlas_ALPHA_v1.png`
+(812x1935, 5x8 grid of 162x242 cells) the run poses are drawn WIDER than their
+cell: the trailing scarf and coat of 32 of the 40 cells overflow their own cell
+boundary, by up to **20 px to the left**. The split at exactly 162 px discarded
+those pixels, so flowing fabric ends in a hard vertical cut instead of a taper.
+This is part of what reads as "not cut out cleanly", alongside the neighbour
+bleed already removed by `tools/clean_frame_residue.py`.
+
+**Not fixed here, deliberately.** Re-splitting with padding looks easy and is
+not: the atlas has only **42 connected components for 40 cells**, meaning
+several frames' art physically touches its neighbours'. A connectivity-based
+re-split would import parts of the adjacent pose into the frame — trading a
+clipped cape for a foreign limb. The guide's rule is to raise this rather than
+silently change it.
+
+**The fix at source:** re-export the locomotion atlas with at least 24 px of
+horizontal padding per cell (cells 210x242, or per-frame PNGs directly), with
+no two poses touching. Then `tools/clean_frame_residue.py` and the pivot audit
+handle the rest unchanged.
