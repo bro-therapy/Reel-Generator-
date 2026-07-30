@@ -78,3 +78,6 @@ assets/
 # Python bytecode from the import tooling
 __pycache__/
 *.pyc
+
+# Local Python virtualenv, if one is made in-project
+.venv/

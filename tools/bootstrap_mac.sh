@@ -38,10 +38,19 @@ die() { printf "\n\033[31m✗ %s\033[0m\n" "$*" >&2; exit 1; }
 # ---------------------------------------------------------------- requirements
 
 say "Checking what you have"
-for cmd in git curl unzip python3; do
+for cmd in git curl unzip; do
   command -v "$cmd" >/dev/null || die "$cmd is not installed"
 done
-printf "  git, curl, unzip, python3 ✓\n"
+
+# `command -v python3` is not enough on macOS: a stub exists before the Xcode
+# Command Line Tools are installed, and running it pops a GUI installer and fails.
+# Actually executing it is the only real test.
+if ! python3 -c "pass" 2>/dev/null; then
+  die "python3 does not run. On macOS install the developer tools first:
+      xcode-select --install
+  then run this script again."
+fi
+printf "  git, curl, unzip, python3 (%s) ✓\n" "$(python3 -c 'import sys;print("%d.%d"%sys.version_info[:2])')"
 
 GODOT=""
 for candidate in godot /Applications/Godot.app/Contents/MacOS/Godot \
@@ -64,18 +73,46 @@ else
   printf "  steps will be skipped. Get 4.7 from godotengine.org/download.\n"
 fi
 
-# Pillow and numpy do the chroma keying and the audio synthesis; PyAV reads the
-# effect clips. The first two are required, PyAV is not — without it the four
-# realistic effects are skipped and everything else still works.
-if ! python3 -c "import PIL, numpy" 2>/dev/null; then
-  say "Installing Pillow and numpy (to key the sheets and synthesise the audio)"
-  python3 -m pip install --quiet --user Pillow numpy || die "pip install failed"
+# Pillow and numpy key the chroma and synthesise the audio; PyAV reads the effect
+# clips. The first two are required, PyAV is not.
+#
+# `pip install --user` is tried but not trusted. Current macOS Pythons — both the
+# Homebrew build and the system one — are marked externally managed (PEP 668) and
+# refuse it outright with "error: externally-managed-environment". So there is a
+# ladder, ending in a virtual environment, which always works and touches nothing
+# outside the project.
+#
+# $PY is whatever Python ends up having the packages. Every Python tool below is
+# invoked through it rather than through its shebang, so a venv is actually used
+# once it exists.
+PY="python3"
+# Deliberately outside $DIR. Putting it inside makes `git clone` fail on a first
+# run — clone requires an empty target, and this step happens before the clone so
+# that a missing dependency is caught before a 216 MB download. Outside also means
+# it survives re-runs and is shared if the project is ever cloned twice.
+VENV="$HOME/.project-zero-climb-venv"
+
+have_deps() { "$PY" -c "import PIL, numpy" 2>/dev/null; }
+
+if ! have_deps; then
+  say "Installing Pillow and numpy"
+  python3 -m pip install --quiet --user Pillow numpy 2>/dev/null || true
 fi
-printf "  Pillow, numpy ✓\n"
-if ! python3 -c "import av" 2>/dev/null; then
-  python3 -m pip install --quiet --user av 2>/dev/null || true
+if ! have_deps; then
+  python3 -m pip install --quiet --break-system-packages Pillow numpy 2>/dev/null || true
 fi
-python3 -c "import av" 2>/dev/null && printf "  PyAV ✓ (realistic effects will be rebuilt)\n" \
+if ! have_deps; then
+  printf "  system pip refused (this is normal on macOS) — using a virtualenv\n"
+  python3 -m venv "$VENV" 2>/dev/null || die "could not create a virtualenv at $VENV"
+  PY="$VENV/bin/python"
+  "$PY" -m pip install --quiet --upgrade pip 2>/dev/null || true
+  "$PY" -m pip install --quiet Pillow numpy || die "could not install Pillow and numpy"
+fi
+have_deps || die "Pillow and numpy still are not importable — cannot continue"
+printf "  Pillow, numpy ✓ (%s)\n" "$PY"
+
+"$PY" -c "import av" 2>/dev/null || "$PY" -m pip install --quiet av 2>/dev/null || true
+"$PY" -c "import av" 2>/dev/null && printf "  PyAV ✓ (realistic effects will be rebuilt)\n" \
   || printf "  PyAV missing — the four realistic effects will be skipped\n"
 
 # ----------------------------------------------------------------------- repo
@@ -116,11 +153,11 @@ else
   ./tools/restore_package_assets.sh "$WORK/playtest.zip"
 
   say "Installing the eleven-sheet package (keying the chroma background)"
-  ./tools/install_sheet_package.py "$WORK/sheets.zip"
+  "$PY" tools/install_sheet_package.py "$WORK/sheets.zip"
 fi
 
 say "Synthesising the placeholder audio"
-./tools/make_placeholder_audio.py
+"$PY" tools/make_placeholder_audio.py
 
 # The four realistic effect sheets are built from generated video that is not in
 # the repo — but the clips' URLs are, in docs/VFX_SOURCES.json, so they can be
@@ -130,8 +167,8 @@ if [[ ! -f assets/vfx/realtime/fire.png ]]; then
   say "Rebuilding the four realistic effect sheets"
   CLIPS="$WORK/clips"
   mkdir -p "$CLIPS"
-  if python3 -c "import av" 2>/dev/null; then
-    if python3 - "$CLIPS" <<'PY'
+  if "$PY" -c "import av" 2>/dev/null; then
+    if "$PY" - "$CLIPS" <<'PY'
 import json, sys, urllib.request, pathlib
 out = pathlib.Path(sys.argv[1])
 spec = json.loads(pathlib.Path("docs/VFX_SOURCES.json").read_text())
@@ -144,7 +181,7 @@ for e in spec["effects"]:
     urllib.request.urlretrieve(url, dest)
 PY
     then
-      ./tools/vfx_from_video.py --sources "$CLIPS" \
+      "$PY" tools/vfx_from_video.py --sources "$CLIPS" \
         && "${GODOT:-true}" --headless --path . --import >/dev/null 2>&1 \
         && [[ -n "$GODOT" ]] \
         && "$GODOT" --headless --path . --script scripts/tools/build_additive_vfx.gd
