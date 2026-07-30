@@ -48,6 +48,7 @@ signal room_entered(space_id: StringName)
 signal boss_door_refused(reason: String)
 signal boss_engaged(max_hp: int)
 signal rooms_cleared(count: int, seconds: float)
+signal room_refought(space_id: StringName, times: int)
 
 var hero: Node3D
 var ward: Node3D
@@ -91,6 +92,8 @@ var _unlocked: Array[StringName] = []
 var _boss_warned := false
 var boss: FirstBellBoss
 var _rooms_announced := false
+var _reentry_armed: Dictionary = {}
+var _reclears: Dictionary = {}
 
 
 func _ready() -> void:
@@ -333,6 +336,7 @@ func _build_pause() -> void:
 
 func _process(delta: float) -> void:
 	_elapsed += delta
+	_check_room_reentry()
 	_check_combat_triggers()
 	_check_boss_trigger()
 	_prune_enemies()
@@ -513,6 +517,43 @@ func _check_boss_trigger() -> void:
 	_spawn_boss(arena)
 
 
+## Lets a cleared combat room be fought again.
+##
+## The owner asked for this directly: "you have to revisit some of the rooms a
+## couple times and kill mobs to level up to get into the room". Without it a
+## room clears exactly once and the only way to gain levels is to walk forward,
+## so a player short of the boss threshold would have no way to earn the
+## difference.
+##
+## A re-entered room runs its LAST wave — the hardest one it declares — rather
+## than the whole sequence again. Repeating a four-wave encounter from the top
+## to farm one level is tedious, and the last wave is where the interesting
+## enemies are. Time escalation applies as usual, so a late re-clear is worth
+## the same experience against tougher enemies.
+##
+## `_cleared` is deliberately NOT unset: the room stays cleared for the boss
+## gate. Re-fighting is for experience, and un-clearing a room would let the
+## player accidentally lock themselves back out of the boss door.
+const REENTRY_RADIUS_MULTIPLE := 1.8
+
+func _check_room_reentry() -> void:
+	if hero == null or not hero.is_inside_tree():
+		return
+	if _active_space != &"":
+		return
+	for id in _cleared.keys():
+		var space := WardLayout.space(id)
+		if space == null or space.kind != WardLayout.Kind.COMBAT:
+			continue
+		var distance := hero.global_position.distance_to(space.centre)
+		# Hysteresis: the exit radius is wider than the entry radius, so
+		# standing on the boundary cannot flicker a room open and shut.
+		if distance > TRIGGER_RADIUS * REENTRY_RADIUS_MULTIPLE:
+			if _triggered.has(id):
+				_triggered.erase(id)
+				_reentry_armed[id] = true
+
+
 func _check_combat_triggers() -> void:
 	if hero == null or not hero.is_inside_tree():
 		return
@@ -525,10 +566,17 @@ func _check_combat_triggers() -> void:
 			continue
 		_triggered[space.id] = true
 		_active_space = space.id
-		_wave_index = 0
+		# A room being fought again starts at its LAST wave; a first visit runs
+		# the whole sequence.
+		var repeat: bool = _reentry_armed.get(space.id, false)
+		_wave_index = (_wave_count(space.id) - 1) if repeat else 0
+		if repeat:
+			_reentry_armed.erase(space.id)
+			_reclears[space.id] = int(_reclears.get(space.id, 0)) + 1
+			room_refought.emit(space.id, int(_reclears[space.id]))
 		encounter_started.emit(space.id, _wave_count(space.id))
 		_set_gates_locked(space.id, true)
-		_spawn_wave(space, 0)
+		_spawn_wave(space, _wave_index)
 
 
 ## Whether walking into this space starts a fight.

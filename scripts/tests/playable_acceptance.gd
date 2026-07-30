@@ -125,6 +125,7 @@ func _process(_delta: float) -> bool:
 	_check_progression()
 	_check_damage_numbers()
 	_check_boss_gate()
+	_check_room_reentry_works()
 	_check_boss_is_fightable()
 	_summary()
 	return true
@@ -211,6 +212,66 @@ func _open_boss_door_and_enter() -> void:
 	if arena != null:
 		_slice.hero.global_position = arena.centre
 		_slice._check_boss_trigger()
+
+
+## A cleared room must be fightable again, or a player short of the boss
+## threshold has no way to earn the difference — the grind loop the owner
+## described ("revisit some of the rooms a couple times and kill mobs to level
+## up") would silently not exist.
+func _check_room_reentry_works() -> void:
+	var target: StringName = &"combat_a"
+	var space := WardLayout.space(target)
+	if space == null:
+		_no("re-entry", "no combat_a space")
+		return
+
+	# Force a clean, cleared state, then walk far away and back.
+	_slice._cleared[target] = true
+	_slice._active_space = &""
+	for e in _slice.enemies.duplicate():
+		if is_instance_valid(e) and e.is_alive():
+			e.kill()
+	_slice._prune_enemies()
+
+	_slice.hero.global_position = space.centre + Vector3(200.0, 0.0, 0.0)
+	_slice._check_room_reentry()
+	if _slice._triggered.has(target):
+		_no("re-entry", "leaving a cleared room did not re-arm it")
+		return
+
+	var before: int = _slice.spawned_total()
+	_slice.hero.global_position = space.centre
+	_slice._check_combat_triggers()
+	var spawned: int = _slice.spawned_total() - before
+
+	if spawned > 0:
+		_ok("a cleared room can be fought again",
+			"%d enemies on re-entry, and it stays cleared for the boss gate" % spawned)
+	else:
+		_no("re-entry", "walking back into a cleared room spawned nothing")
+
+	# It must NOT un-clear itself, or the player could lock themselves back out
+	# of the boss door by revisiting a room to grind.
+	if _slice._cleared.has(target):
+		_ok("re-fighting does not un-clear the room")
+	else:
+		_no("re-entry", "re-entering removed the room's cleared status — the boss "
+			+ "gate would close again")
+
+	# And it should start at the LAST wave, not replay the whole encounter.
+	var last: int = _slice._wave_count(target) - 1
+	if _slice._wave_index == last:
+		_ok("a re-fight starts at the final wave", "wave %d of %d" % [last + 1, last + 1])
+	else:
+		_no("re-entry wave", "started at wave %d, expected the last (%d)"
+			% [_slice._wave_index + 1, last + 1])
+
+	# Leave it in a clean state for the boss checks that follow.
+	for e in _slice.enemies.duplicate():
+		if is_instance_valid(e) and e.is_alive():
+			e.kill()
+	_slice._prune_enemies()
+	_slice._active_space = &""
 
 
 func _check_boss_is_fightable() -> void:

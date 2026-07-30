@@ -158,3 +158,28 @@ measures.
 
 Killing the boss ends the run. Clearing every combat room no longer does — it
 opens the boss door and says so.
+
+## Re-clearable rooms
+
+Requested directly: "you have to revisit some of the rooms a couple times and
+kill mobs to level up to get into the room". Without it a room clears exactly
+once, so a player short of the boss threshold would have no way at all to earn
+the difference — the grind loop would silently not exist.
+
+Three decisions, each with a reason:
+
+**A re-fight runs the LAST wave, not the whole encounter.** Replaying a
+four-wave fight from the top to farm one level is tedious, and the final wave is
+where the interesting enemies are.
+
+**`_cleared` is never unset.** The room stays cleared for the boss gate.
+Un-clearing on re-entry would let a player lock themselves back out of the boss
+door by going back to grind — a trap that punishes exactly the behaviour the
+feature is meant to encourage.
+
+**The exit radius is wider than the entry radius.** Standing on the boundary
+would otherwise flicker a room open and shut every frame.
+
+Time escalation still applies, so a late re-clear pays the same experience
+against tougher enemies — the grind gets slower the longer a run goes, which
+bounds it without a hard cap.
