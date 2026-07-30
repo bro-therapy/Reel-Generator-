@@ -100,7 +100,7 @@
       "bbox": [
         25,
         39,
-        161,
+        130,
         241
       ],
       "content_height": 203,
@@ -115,7 +115,7 @@
       "bbox": [
         0,
         42,
-        161,
+        123,
         241
       ],
       "content_height": 200,
@@ -130,7 +130,7 @@
       "bbox": [
         0,
         42,
-        161,
+        129,
         241
       ],
       "content_height": 200,
@@ -158,14 +158,14 @@
     },
     "02_west__00_idle": {
       "bbox": [
-        41,
-        0,
+        44,
+        44,
         137,
         241
       ],
-      "content_height": 242,
+      "content_height": 198,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 44,
       "size": [
         162,
         242
@@ -174,13 +174,13 @@
     "02_west__01_walk_contact": {
       "bbox": [
         26,
-        0,
-        161,
+        44,
+        121,
         241
       ],
-      "content_height": 242,
+      "content_height": 198,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 44,
       "size": [
         162,
         242
@@ -189,13 +189,13 @@
     "02_west__02_walk_passing": {
       "bbox": [
         0,
-        0,
-        161,
+        48,
+        114,
         241
       ],
-      "content_height": 242,
+      "content_height": 194,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 48,
       "size": [
         162,
         242
@@ -205,7 +205,7 @@
       "bbox": [
         0,
         48,
-        161,
+        119,
         241
       ],
       "content_height": 194,
@@ -219,13 +219,13 @@
     "02_west__04_run_recovery": {
       "bbox": [
         0,
-        0,
+        51,
         126,
         241
       ],
-      "content_height": 242,
+      "content_height": 191,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 51,
       "size": [
         162,
         242
@@ -234,13 +234,13 @@
     "03_northwest__00_idle": {
       "bbox": [
         39,
-        0,
+        52,
         129,
         241
       ],
-      "content_height": 242,
+      "content_height": 190,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 52,
       "size": [
         162,
         242
@@ -248,14 +248,14 @@
     },
     "03_northwest__01_walk_contact": {
       "bbox": [
-        25,
-        0,
-        161,
+        34,
+        54,
+        131,
         241
       ],
-      "content_height": 242,
+      "content_height": 188,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 54,
       "size": [
         162,
         242
@@ -264,13 +264,13 @@
     "03_northwest__02_walk_passing": {
       "bbox": [
         0,
-        0,
-        161,
+        54,
+        121,
         241
       ],
-      "content_height": 242,
+      "content_height": 188,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 54,
       "size": [
         162,
         242
@@ -279,13 +279,13 @@
     "03_northwest__03_run_extension": {
       "bbox": [
         0,
-        0,
-        161,
+        57,
+        140,
         241
       ],
-      "content_height": 242,
+      "content_height": 185,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 57,
       "size": [
         162,
         242
@@ -294,13 +294,13 @@
     "03_northwest__04_run_recovery": {
       "bbox": [
         0,
-        0,
+        58,
         144,
         241
       ],
-      "content_height": 242,
+      "content_height": 184,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 58,
       "size": [
         162,
         242
@@ -309,13 +309,13 @@
     "04_north__00_idle": {
       "bbox": [
         30,
-        0,
+        55,
         128,
         241
       ],
-      "content_height": 242,
+      "content_height": 187,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 55,
       "size": [
         162,
         242
@@ -324,13 +324,13 @@
     "04_north__01_walk_contact": {
       "bbox": [
         12,
-        0,
-        161,
+        57,
+        122,
         241
       ],
-      "content_height": 242,
+      "content_height": 185,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 57,
       "size": [
         162,
         242
@@ -338,14 +338,14 @@
     },
     "04_north__02_walk_passing": {
       "bbox": [
-        0,
-        0,
-        161,
+        7,
+        58,
+        117,
         241
       ],
-      "content_height": 242,
+      "content_height": 184,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 58,
       "size": [
         162,
         242
@@ -354,13 +354,13 @@
     "04_north__03_run_extension": {
       "bbox": [
         0,
-        0,
-        161,
+        62,
+        121,
         241
       ],
-      "content_height": 242,
+      "content_height": 180,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 62,
       "size": [
         162,
         242
@@ -369,13 +369,13 @@
     "04_north__04_run_recovery": {
       "bbox": [
         0,
-        0,
-        139,
+        63,
+        124,
         241
       ],
-      "content_height": 242,
+      "content_height": 179,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 63,
       "size": [
         162,
         242
@@ -384,13 +384,13 @@
     "05_northeast__00_idle": {
       "bbox": [
         27,
-        0,
+        57,
         128,
         241
       ],
-      "content_height": 242,
+      "content_height": 185,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 57,
       "size": [
         162,
         242
@@ -399,13 +399,13 @@
     "05_northeast__01_walk_contact": {
       "bbox": [
         20,
-        0,
+        55,
         118,
         241
       ],
-      "content_height": 242,
+      "content_height": 187,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 55,
       "size": [
         162,
         242
@@ -414,13 +414,13 @@
     "05_northeast__02_walk_passing": {
       "bbox": [
         14,
-        0,
+        55,
         123,
         241
       ],
-      "content_height": 242,
+      "content_height": 187,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 55,
       "size": [
         162,
         242
@@ -428,14 +428,14 @@
     },
     "05_northeast__03_run_extension": {
       "bbox": [
-        4,
-        0,
+        8,
+        60,
         148,
         241
       ],
-      "content_height": 242,
+      "content_height": 182,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 60,
       "size": [
         162,
         242
@@ -443,14 +443,14 @@
     },
     "05_northeast__04_run_recovery": {
       "bbox": [
-        0,
-        0,
+        31,
+        64,
         149,
         241
       ],
-      "content_height": 242,
+      "content_height": 178,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 64,
       "size": [
         162,
         242
@@ -459,13 +459,13 @@
     "06_east__00_idle": {
       "bbox": [
         31,
-        0,
+        54,
         129,
         241
       ],
-      "content_height": 242,
+      "content_height": 188,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 54,
       "size": [
         162,
         242
@@ -474,13 +474,13 @@
     "06_east__01_walk_contact": {
       "bbox": [
         13,
-        0,
-        161,
+        54,
+        123,
         241
       ],
-      "content_height": 242,
+      "content_height": 188,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 54,
       "size": [
         162,
         242
@@ -489,13 +489,13 @@
     "06_east__02_walk_passing": {
       "bbox": [
         0,
-        0,
-        161,
+        54,
+        120,
         241
       ],
-      "content_height": 242,
+      "content_height": 188,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 54,
       "size": [
         162,
         242
@@ -504,13 +504,13 @@
     "06_east__03_run_extension": {
       "bbox": [
         0,
-        0,
-        161,
+        54,
+        133,
         241
       ],
-      "content_height": 242,
+      "content_height": 188,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 54,
       "size": [
         162,
         242
@@ -519,13 +519,13 @@
     "06_east__04_run_recovery": {
       "bbox": [
         0,
-        0,
-        139,
+        59,
+        137,
         241
       ],
-      "content_height": 242,
+      "content_height": 183,
       "foot_row": 241,
-      "head_row": 0,
+      "head_row": 59,
       "size": [
         162,
         242
@@ -534,13 +534,13 @@
     "07_southeast__00_idle": {
       "bbox": [
         29,
-        0,
+        32,
         136,
         231
       ],
-      "content_height": 232,
+      "content_height": 200,
       "foot_row": 231,
-      "head_row": 0,
+      "head_row": 32,
       "size": [
         162,
         242
@@ -549,13 +549,13 @@
     "07_southeast__01_walk_contact": {
       "bbox": [
         13,
-        0,
+        31,
         121,
         231
       ],
-      "content_height": 232,
+      "content_height": 201,
       "foot_row": 231,
-      "head_row": 0,
+      "head_row": 31,
       "size": [
         162,
         242
@@ -564,13 +564,13 @@
     "07_southeast__02_walk_passing": {
       "bbox": [
         0,
-        0,
-        161,
+        32,
+        108,
         231
       ],
-      "content_height": 232,
+      "content_height": 200,
       "foot_row": 231,
-      "head_row": 0,
+      "head_row": 32,
       "size": [
         162,
         242
@@ -579,13 +579,13 @@
     "07_southeast__03_run_extension": {
       "bbox": [
         0,
-        0,
-        161,
+        37,
+        112,
         226
       ],
-      "content_height": 227,
+      "content_height": 190,
       "foot_row": 226,
-      "head_row": 0,
+      "head_row": 37,
       "size": [
         162,
         242
@@ -594,13 +594,13 @@
     "07_southeast__04_run_recovery": {
       "bbox": [
         0,
-        0,
-        120,
+        39,
+        117,
         224
       ],
-      "content_height": 225,
+      "content_height": 186,
       "foot_row": 224,
-      "head_row": 0,
+      "head_row": 39,
       "size": [
         162,
         242

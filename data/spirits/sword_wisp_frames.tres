@@ -1,68 +1,68 @@
-[gd_resource type="SpriteFrames" load_steps=8 format=3]
+[gd_resource type="SpriteFrames" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__02_aim_or_windup.png" id="1_ft1jg"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__03_attack.png" id="2_met70"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__04_attack_recover.png" id="3_g37yi"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__05_hit.png" id="4_qaey5"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__00_idle.png" id="5_yngc4"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__01_move.png" id="6_87hi1"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__06_reform.png" id="7_fdwaf"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__02_aim_or_windup.png" id="1_f05lo"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__03_attack.png" id="2_38qhv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__04_attack_recover.png" id="3_4f6ri"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__05_hit.png" id="4_xdixt"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__00_idle.png" id="5_p0ub6"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__01_move.png" id="6_6o8jv"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/01_sword_wisp__06_reform.png" id="7_2vwyl"]
 
 [resource]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_ft1jg")
+"texture": ExtResource("1_f05lo")
 }],
-"loop": false,
+"loop": 0,
 "name": &"aim_or_windup",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("2_met70")
+"texture": ExtResource("2_38qhv")
 }],
-"loop": false,
+"loop": 0,
 "name": &"attack",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("3_g37yi")
+"texture": ExtResource("3_4f6ri")
 }],
-"loop": false,
+"loop": 0,
 "name": &"attack_recover",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("4_qaey5")
+"texture": ExtResource("4_xdixt")
 }],
-"loop": false,
+"loop": 0,
 "name": &"hit",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("5_yngc4")
+"texture": ExtResource("5_p0ub6")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("6_87hi1")
+"texture": ExtResource("6_6o8jv")
 }],
-"loop": true,
+"loop": 1,
 "name": &"move",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("7_fdwaf")
+"texture": ExtResource("7_2vwyl")
 }],
-"loop": true,
+"loop": 1,
 "name": &"reform",
 "speed": 8.0
 }]

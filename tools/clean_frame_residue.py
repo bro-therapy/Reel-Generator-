@@ -43,6 +43,13 @@ DASH_FRAMES = [
     pathlib.Path("assets/actors/hero_action_frames/00_top__02_dash_streak_or_convergence_start.png"),
     pathlib.Path("assets/actors/hero_action_frames/00_top__03_dash_recover_or_convergence.png"),
 ]
+# The summon action frames carry the same bleed — neighbouring cells' slash
+# arcs poking across borders in 12 of 21 frames (largest: 5,569 px of someone
+# else's crescent on the rune hound's hit frame). Verified by eye with border
+# components tinted before enabling: every summon's OWN detached pieces (the
+# wisp's orbit sparks) sit interior and never touch a border.
+SUMMON_DIR = pathlib.Path("assets/actors/summon_action_frames")
+
 ALPHA_FLOOR = 8  # below this, a pixel is already invisible
 
 
@@ -86,6 +93,8 @@ def main() -> int:
     cleaned = 0
     removed_px = 0
     targets = sorted(FRAME_DIR.glob("*.png")) + [f for f in DASH_FRAMES if f.exists()]
+    if SUMMON_DIR.is_dir():
+        targets += sorted(SUMMON_DIR.glob("*.png"))
     for path in targets:
         img = np.array(Image.open(path).convert("RGBA"))
         h, w = img.shape[:2]

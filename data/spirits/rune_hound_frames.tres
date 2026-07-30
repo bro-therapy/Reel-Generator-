@@ -1,68 +1,68 @@
-[gd_resource type="SpriteFrames" load_steps=8 format=3]
+[gd_resource type="SpriteFrames" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__02_aim_or_windup.png" id="1_5jp0d"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__03_attack.png" id="2_rw8pe"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__04_attack_recover.png" id="3_mfxv6"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__05_hit.png" id="4_u4m3t"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__00_idle.png" id="5_snhjy"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__01_move.png" id="6_vka3l"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__06_reform.png" id="7_qwaw4"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__02_aim_or_windup.png" id="1_qvjut"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__03_attack.png" id="2_g8xub"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__04_attack_recover.png" id="3_cqlu2"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__05_hit.png" id="4_ugumh"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__00_idle.png" id="5_fk5kf"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__01_move.png" id="6_g880w"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/00_rune_hound__06_reform.png" id="7_qnreg"]
 
 [resource]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_5jp0d")
+"texture": ExtResource("1_qvjut")
 }],
-"loop": false,
+"loop": 0,
 "name": &"aim_or_windup",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("2_rw8pe")
+"texture": ExtResource("2_g8xub")
 }],
-"loop": false,
+"loop": 0,
 "name": &"attack",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("3_mfxv6")
+"texture": ExtResource("3_cqlu2")
 }],
-"loop": false,
+"loop": 0,
 "name": &"attack_recover",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("4_u4m3t")
+"texture": ExtResource("4_ugumh")
 }],
-"loop": false,
+"loop": 0,
 "name": &"hit",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("5_snhjy")
+"texture": ExtResource("5_fk5kf")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("6_vka3l")
+"texture": ExtResource("6_g880w")
 }],
-"loop": true,
+"loop": 1,
 "name": &"move",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("7_qwaw4")
+"texture": ExtResource("7_qnreg")
 }],
-"loop": true,
+"loop": 1,
 "name": &"reform",
 "speed": 8.0
 }]

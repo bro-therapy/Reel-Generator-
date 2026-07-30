@@ -135,9 +135,21 @@ func fire_at(target: Node3D) -> bool:
 	var crit := bool(roll[1])
 
 	projectile.launch(origin, direction, weapon, dmg, crit)
+	_last_fire_direction = direction.normalized()
 	shots_fired += 1
 	fired.emit(target, dmg, crit)
 	return true
+
+
+## Where the last shot left from and where it went — for the muzzle flash.
+func muzzle_position() -> Vector3:
+	return _origin()
+
+
+var _last_fire_direction := Vector3.FORWARD
+
+func last_fire_direction() -> Vector3:
+	return _last_fire_direction
 
 
 func cooldown_remaining() -> float:

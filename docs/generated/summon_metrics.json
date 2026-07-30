@@ -128,7 +128,7 @@
         "reform/0": 0
       },
       "recommended_world_height_units": 1.676,
-      "target_screen_px": 46,
+      "target_screen_px": 46.0,
       "tier": "ascendant"
     },
     "burst_golem": {
@@ -258,7 +258,7 @@
         "reform/0": -1
       },
       "recommended_world_height_units": 1.7489,
-      "target_screen_px": 46,
+      "target_screen_px": 46.0,
       "tier": "awakened"
     },
     "gun_construct": {
@@ -303,7 +303,7 @@
         },
         "attack_recover": {
           "bbox": [
-            0,
+            7,
             46,
             219,
             206
@@ -318,7 +318,7 @@
         },
         "hit": {
           "bbox": [
-            0,
+            38,
             56,
             216,
             204
@@ -335,7 +335,7 @@
           "bbox": [
             29,
             31,
-            219,
+            187,
             202
           ],
           "content_height": 172,
@@ -388,7 +388,7 @@
         "reform/0": -11
       },
       "recommended_world_height_units": 1.9987,
-      "target_screen_px": 46,
+      "target_screen_px": 46.0,
       "tier": "bound"
     },
     "halo_blade_seraph": {
@@ -518,22 +518,22 @@
         "reform/0": -1
       },
       "recommended_world_height_units": 1.9792,
-      "target_screen_px": 58,
+      "target_screen_px": 58.0,
       "tier": "ascendant"
     },
     "rune_hound": {
-      "baseline_foot_row": 298,
-      "baseline_spread_px": 16,
+      "baseline_foot_row": 296,
+      "baseline_spread_px": 14,
       "cell": [
         220,
         342
       ],
-      "corrected_frame_count": 6,
+      "corrected_frame_count": 5,
       "evolution_line": "rune_hound",
       "frames": {
         "aim_or_windup": {
           "bbox": [
-            0,
+            56,
             132,
             219,
             282
@@ -548,7 +548,7 @@
         },
         "attack": {
           "bbox": [
-            0,
+            37,
             142,
             219,
             298
@@ -563,7 +563,7 @@
         },
         "attack_recover": {
           "bbox": [
-            0,
+            21,
             140,
             219,
             308
@@ -578,14 +578,14 @@
         },
         "hit": {
           "bbox": [
-            0,
-            165,
+            40,
+            176,
             219,
-            304
+            296
           ],
-          "content_height": 140,
-          "foot_row": 304,
-          "head_row": 165,
+          "content_height": 121,
+          "foot_row": 296,
+          "head_row": 176,
           "size": [
             220,
             342
@@ -623,7 +623,7 @@
         },
         "reform": {
           "bbox": [
-            0,
+            10,
             138,
             176,
             291
@@ -639,16 +639,16 @@
       },
       "median_content_height_px": 155,
       "pivot_offsets": {
-        "aim_or_windup/0": 16,
-        "attack/0": 0,
-        "attack_recover/0": -10,
-        "hit/0": -6,
-        "idle/0": -2,
-        "move/0": 2,
-        "reform/0": 7
+        "aim_or_windup/0": 14,
+        "attack/0": -2,
+        "attack_recover/0": -12,
+        "hit/0": 0,
+        "idle/0": -4,
+        "move/0": 0,
+        "reform/0": 5
       },
       "recommended_world_height_units": 2.3469,
-      "target_screen_px": 52,
+      "target_screen_px": 52.0,
       "tier": "bound"
     },
     "sword_wisp": {
@@ -665,7 +665,7 @@
           "bbox": [
             34,
             69,
-            219,
+            160,
             297
           ],
           "content_height": 229,
@@ -678,9 +678,9 @@
         },
         "attack": {
           "bbox": [
-            0,
+            4,
             47,
-            219,
+            216,
             297
           ],
           "content_height": 251,
@@ -693,9 +693,9 @@
         },
         "attack_recover": {
           "bbox": [
-            0,
+            2,
             54,
-            219,
+            208,
             294
           ],
           "content_height": 241,
@@ -708,7 +708,7 @@
         },
         "hit": {
           "bbox": [
-            0,
+            81,
             45,
             213,
             296
@@ -778,7 +778,7 @@
         "reform/0": 17
       },
       "recommended_world_height_units": 1.6629,
-      "target_screen_px": 58,
+      "target_screen_px": 58.0,
       "tier": "bound"
     },
     "tempest_fenrir": {
@@ -908,7 +908,7 @@
         "reform/0": 0
       },
       "recommended_world_height_units": 2.1524,
-      "target_screen_px": 52,
+      "target_screen_px": 52.0,
       "tier": "ascendant"
     },
     "twin_oath_blades": {
@@ -1038,7 +1038,7 @@
         "reform/0": 0
       },
       "recommended_world_height_units": 2.4296,
-      "target_screen_px": 58,
+      "target_screen_px": 58.0,
       "tier": "awakened"
     },
     "volt_hound": {
@@ -1168,7 +1168,7 @@
         "reform/0": 0
       },
       "recommended_world_height_units": 2.317,
-      "target_screen_px": 52,
+      "target_screen_px": 52.0,
       "tier": "awakened"
     }
   }

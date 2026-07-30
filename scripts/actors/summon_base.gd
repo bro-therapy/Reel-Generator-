@@ -164,6 +164,7 @@ func _physics_process(delta: float) -> void:
 			_process_follow(delta, lane)
 
 	_update_animation()
+	_hover(delta)
 
 
 # ---------------------------------------------------------------- states
@@ -368,6 +369,25 @@ func _update_animation() -> void:
 			_play("attack_recover")
 		_:
 			_play("move" if _is_moving() else "idle")
+
+
+## Spirits float. A gentle vertical bob on the visual pivot — never the body,
+## so lanes, targeting and collision are untouched. Phase comes from the node
+## name so three summons never bob in lockstep, which reads as one animation
+## stamped three times. Suppressed while attacking: a windup that drifts
+## vertically ruins the pose's read.
+var _hover_time := 0.0
+
+func _hover(delta: float) -> void:
+	if _visual_pivot == null:
+		return
+	_hover_time += delta
+	var attacking := _fsm.state in [SummonStateMachine.State.WINDUP,
+		SummonStateMachine.State.ATTACK, SummonStateMachine.State.RECOVER]
+	var amp := 0.0 if attacking else 0.05
+	var phase := float(hash(name) % 628) / 100.0
+	var target_y := sin(_hover_time * 2.4 + phase) * amp
+	_visual_pivot.position.y = lerpf(_visual_pivot.position.y, target_y, minf(1.0, delta * 6.0))
 
 
 func _is_moving() -> bool:

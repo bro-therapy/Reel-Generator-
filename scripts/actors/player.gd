@@ -12,6 +12,9 @@ extends CharacterBody3D
 signal health_changed(current: int, maximum: int)
 signal died
 signal dashed
+## A foot hits the ground: walk's contact frame, run's extension and recovery
+## frames. The presentation layer turns these into dust puffs and step sounds.
+signal stepped
 signal damage_taken(amount: int)
 signal damage_ignored_during_grace(amount: int)
 
@@ -91,6 +94,8 @@ func _configure_sprite() -> void:
 	_apply_sprite_offset(0)
 
 	_play_animation("idle_%s" % DIRECTION_NAMES[facing_index])
+	if not _sprite.frame_changed.is_connected(_on_frame_changed):
+		_sprite.frame_changed.connect(_on_frame_changed)
 
 
 func _configure_bodies() -> void:
@@ -373,6 +378,18 @@ func _play_animation(anim: String) -> void:
 
 ## Applies the generated per-frame correction so the feet stay on the origin
 ## across every frame, including the ones whose source art floats.
+## Contact frames per gait: walk frame 0 is walk_contact; run frames 0 and 2
+## are extension and recovery, the two ground strikes of the stride.
+func _on_frame_changed() -> void:
+	if _sprite == null:
+		return
+	var anim := String(_sprite.animation)
+	var f := _sprite.frame
+	if (anim.begins_with("walk_") and f == 0) \
+			or (anim.begins_with("run_") and (f == 0 or f == 2)):
+		stepped.emit()
+
+
 func _sync_pivot_offset() -> void:
 	if _sprite == null:
 		return

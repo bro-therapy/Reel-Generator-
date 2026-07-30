@@ -103,6 +103,7 @@ func _process(_delta: float) -> bool:
 		return false
 
 	_check_soak()
+	_check_feedback_fired()
 	_summary()
 	return true
 
@@ -111,6 +112,16 @@ func _process(_delta: float) -> bool:
 ## true at the end: enemies actually died (the no-aim promise — summons fight
 ## effectively with nobody touching aim), and the run got there without a script
 ## error (enforced by check_project.sh, which fails any suite that emits one).
+## 25 s of walking, dashing enemies, shots and deaths — if no particle burst
+## fired in all that, the layer is decorative. Steps alone fire dozens.
+func _check_feedback_fired() -> void:
+	var fired: int = _slice.presentation.particles.bursts_fired()
+	if fired >= 10:
+		_ok("feedback bursts fired during the fight", "%d bursts" % fired)
+	else:
+		_no("feedback layer", "only %d particle bursts in a full driven fight" % fired)
+
+
 func _check_soak() -> void:
 	if _spawned_at_soak <= 0:
 		_no("combat soak", "combat_b spawned nothing to fight")
@@ -470,6 +481,30 @@ func _check_combat_triggers() -> void:
 	else:
 		_no("wave data", "combat_a totals %d, same as its first wave — "
 			% declared + "the multi-wave path cannot be exercised")
+
+	# The per-action feedback layer. The second playtest's "I don't see anything
+	# on the screen" was three unconnected pieces: a weapon with a fired signal,
+	# audio slots for it, and no listener. Assert the bindings so the gap cannot
+	# silently reopen.
+	var weapon := (_slice.hero as Player).focus_weapon()
+	if weapon != null and weapon.fired.get_connections().size() > 0:
+		_ok("the hero's shots have a listener")
+	else:
+		_no("fired binding", "nothing is connected to the focus weapon's fired signal")
+	if _slice.hero.stepped.get_connections().size() > 0 \
+			and _slice.hero.dashed.get_connections().size() > 0:
+		_ok("footsteps and dashes have listeners")
+	else:
+		_no("movement feedback", "stepped: %d, dashed: %d connections" % [
+			_slice.hero.stepped.get_connections().size(),
+			_slice.hero.dashed.get_connections().size()])
+	if _slice.presentation.particles != null \
+			and _slice.presentation.particles.emitter_count() > 0:
+		_ok("particle pool built", "%d emitters across %d kinds" % [
+			_slice.presentation.particles.emitter_count(),
+			_slice.presentation.particles.kinds().size()])
+	else:
+		_no("particles", "presentation has no particle pool")
 
 	# Free-asset packs are optional (assets/ is untracked), but when they ARE
 	# installed they must actually take effect — a manifest that silently falls

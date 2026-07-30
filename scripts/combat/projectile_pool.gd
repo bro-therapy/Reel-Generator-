@@ -1,6 +1,10 @@
 class_name ProjectilePool
 extends Node3D
 
+## Re-broadcast of every pooled projectile's impact, so the presentation layer
+## makes ONE connection per pool instead of one per projectile.
+signal projectile_impacted(at: Vector3)
+
 ## Fixed-capacity projectile pool.
 ##
 ## Master guide §17 asks for pooling of repeated projectiles so node churn stays
@@ -34,6 +38,7 @@ func _ready() -> void:
 		if hostile:
 			p.make_hostile()
 		p.expired.connect(_on_expired)
+		p.impacted.connect(func(at: Vector3) -> void: projectile_impacted.emit(at))
 		add_child(p)
 		_free.append(p)
 	if hostile:

@@ -37,6 +37,7 @@ const BOSS_MOVES := {
 
 var audio: AudioDirector
 var vfx: AdditiveVfxPool
+var particles: ParticleFx
 
 ## Set false to run the game silent and unadorned without tearing the wiring out.
 @export var enabled := true
@@ -55,9 +56,59 @@ func _ready() -> void:
 		vfx.name = "Vfx"
 		add_child(vfx)
 		vfx.load_effects()
+	if particles == null:
+		particles = ParticleFx.new()
+		particles.name = "Particles"
+		add_child(particles)
+		particles.initialize()
 
 
 # ------------------------------------------------------------------------ boss
+
+## Every per-action feedback the hero produces: muzzle flash and shot sound on
+## fire, impact burst on a landed bolt, dash burst, footstep dust. This is the
+## binding whose absence the second playtest reported as "I don't see anything
+## on the screen" — the weapon had a signal, the audio had the slots, and
+## nothing connected them.
+func bind_hero(hero: Player) -> void:
+	if hero == null:
+		return
+	var weapon := hero.focus_weapon()
+	if weapon != null and not weapon.fired.is_connected(_on_hero_fired):
+		weapon.fired.connect(_on_hero_fired.bind(weapon))
+	var pool := hero.get_node_or_null("ProjectilePool") as ProjectilePool
+	if pool != null and not pool.projectile_impacted.is_connected(_on_hero_bolt_impact):
+		pool.projectile_impacted.connect(_on_hero_bolt_impact)
+	if not hero.dashed.is_connected(_on_hero_dashed):
+		hero.dashed.connect(_on_hero_dashed.bind(hero))
+	if not hero.stepped.is_connected(_on_hero_stepped):
+		hero.stepped.connect(_on_hero_stepped.bind(hero))
+
+
+func _on_hero_fired(_target: Node3D, _damage: int, _crit: bool, weapon: FocusWeaponController) -> void:
+	if particles != null:
+		particles.burst(&"muzzle_violet", weapon.muzzle_position(), weapon.last_fire_direction())
+	_sound(&"staff_shot", weapon.muzzle_position())
+
+
+func _on_hero_bolt_impact(at: Vector3) -> void:
+	if particles != null:
+		particles.burst(&"impact_violet", at)
+	_sound(&"staff_impact", at)
+
+
+func _on_hero_dashed(hero: Player) -> void:
+	if particles != null:
+		particles.burst(&"dash_burst", hero.global_position + Vector3(0, 0.25, 0),
+			-hero.facing_vector())
+	_sound(&"hero_dash", hero.global_position)
+
+
+func _on_hero_stepped(hero: Player) -> void:
+	if particles != null:
+		particles.burst(&"dust_puff", hero.global_position + Vector3(0, 0.06, 0))
+	_sound(&"hero_step", hero.global_position)
+
 
 func bind_boss(boss: FirstBellBoss) -> void:
 	if boss == null or boss in _bound:
@@ -179,10 +230,15 @@ func bind_enemy(enemy: EnemyBase) -> void:
 			_sound(StringName("%s_attack" % family), _origin(enemy)))
 	enemy.died.connect(
 		func(_e: EnemyBase) -> void:
-			_sound(StringName("%s_death" % family), _origin(enemy)))
+			_sound(StringName("%s_death" % family), _origin(enemy))
+			# Warm ember burst — the hostile side's colour, never violet.
+			if particles != null:
+				particles.burst(&"death_warm", _origin(enemy) + Vector3(0, 0.5, 0)))
 	enemy.damaged.connect(
 		func(_amount: int, _remaining: int) -> void:
-			_sound(StringName("%s_hit" % family), _origin(enemy)))
+			_sound(StringName("%s_hit" % family), _origin(enemy))
+			if particles != null:
+				particles.burst(&"hit_warm", _origin(enemy) + Vector3(0, 0.6, 0)))
 
 
 ## The enemy's own id *is* the slot name — `enemy_<id>_<event>` — because the audio

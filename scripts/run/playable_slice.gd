@@ -189,6 +189,7 @@ func _build_presentation() -> void:
 	presentation.name = "Presentation"
 	add_child(presentation)
 	presentation.bind_convergence(convergence)
+	presentation.bind_hero(hero as Player)
 
 
 func _build_hud() -> void:

@@ -1,68 +1,68 @@
-[gd_resource type="SpriteFrames" load_steps=8 format=3]
+[gd_resource type="SpriteFrames" format=3]
 
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__02_aim_or_windup.png" id="1_qjsc5"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__03_attack.png" id="2_0lc21"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__04_attack_recover.png" id="3_bjrbr"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__05_hit.png" id="4_d2ynv"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__00_idle.png" id="5_enaoe"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__01_move.png" id="6_s060q"]
-[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__06_reform.png" id="7_oat87"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__02_aim_or_windup.png" id="1_almtq"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__03_attack.png" id="2_obd6a"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__04_attack_recover.png" id="3_aqnsb"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__05_hit.png" id="4_mus4r"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__00_idle.png" id="5_78ydo"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__01_move.png" id="6_0qdhi"]
+[ext_resource type="Texture2D" path="res://assets/actors/summon_action_frames/02_gun_construct__06_reform.png" id="7_dr0bl"]
 
 [resource]
 animations = [{
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("1_qjsc5")
+"texture": ExtResource("1_almtq")
 }],
-"loop": false,
+"loop": 0,
 "name": &"aim_or_windup",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("2_0lc21")
+"texture": ExtResource("2_obd6a")
 }],
-"loop": false,
+"loop": 0,
 "name": &"attack",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("3_bjrbr")
+"texture": ExtResource("3_aqnsb")
 }],
-"loop": false,
+"loop": 0,
 "name": &"attack_recover",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("4_d2ynv")
+"texture": ExtResource("4_mus4r")
 }],
-"loop": false,
+"loop": 0,
 "name": &"hit",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("5_enaoe")
+"texture": ExtResource("5_78ydo")
 }],
-"loop": true,
+"loop": 1,
 "name": &"idle",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("6_s060q")
+"texture": ExtResource("6_0qdhi")
 }],
-"loop": true,
+"loop": 1,
 "name": &"move",
 "speed": 8.0
 }, {
 "frames": [{
 "duration": 1.0,
-"texture": ExtResource("7_oat87")
+"texture": ExtResource("7_dr0bl")
 }],
-"loop": true,
+"loop": 1,
 "name": &"reform",
 "speed": 8.0
 }]

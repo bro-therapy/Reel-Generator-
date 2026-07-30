@@ -1,4 +1,4 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/combat/focus_projectile.gd" id="1_proj"]
 
@@ -11,6 +11,30 @@ height = 0.32
 radial_segments = 8
 rings = 4
 
+[sub_resource type="StandardMaterial3D" id="Mat_proj"]
+shading_mode = 0
+albedo_color = Color(0.85, 0.78, 1, 1)
+emission_enabled = true
+emission = Color(0.62, 0.45, 1, 1)
+emission_energy_multiplier = 2.4
+
+[sub_resource type="Gradient" id="Grad_trail"]
+colors = PackedColorArray(0.92, 0.88, 1, 1, 0.5, 0.32, 0.95, 0)
+
+[sub_resource type="GradientTexture1D" id="GradTex_trail"]
+gradient = SubResource("Grad_trail")
+
+[sub_resource type="ParticleProcessMaterial" id="PPM_trail"]
+spread = 8.0
+initial_velocity_min = 0.2
+initial_velocity_max = 0.6
+gravity = Vector3(0, 0, 0)
+damping_min = 1.0
+damping_max = 2.0
+scale_min = 0.5
+scale_max = 1.0
+color_ramp = SubResource("GradTex_trail")
+
 [node name="FocusProjectile" type="Area3D"]
 collision_layer = 32
 collision_mask = 16
@@ -22,3 +46,11 @@ shape = SubResource("SphereShape3D_proj")
 
 [node name="Mesh" type="MeshInstance3D" parent="."]
 mesh = SubResource("SphereMesh_proj")
+surface_material_override/0 = SubResource("Mat_proj")
+
+[node name="Trail" type="GPUParticles3D" parent="."]
+emitting = false
+amount = 14
+lifetime = 0.3
+local_coords = false
+process_material = SubResource("PPM_trail")
