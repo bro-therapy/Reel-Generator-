@@ -62,6 +62,11 @@ for path, meta in spec.get("generated_stills", {}).items():
 PY
 fi
 
+# CC0 packs (props, music) — same policy: URLs in the repo, binaries fetched.
+if [[ -f tools/fetch_free_assets.sh ]]; then
+  bash tools/fetch_free_assets.sh || echo "  (asset packs unavailable — blockout primitives still work)"
+fi
+
 echo
 echo "✓ now at: $(git log --oneline -1)"
 echo

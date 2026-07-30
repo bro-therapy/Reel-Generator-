@@ -223,6 +223,10 @@ for path, meta in spec.get("generated_stills", {}).items():
     urllib.request.urlretrieve(url, dest)
 PY
 
+# CC0 asset packs (3D props, real music) recorded in docs/FREE_ASSETS.json.
+say "Fetching free CC0 asset packs"
+bash tools/fetch_free_assets.sh || printf "  Packs unavailable — the blockout primitives and synthesized audio still work.\n"
+
 # ---------------------------------------------------------------- build & test
 
 if [[ -z "$GODOT" ]]; then

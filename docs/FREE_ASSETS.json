@@ -1,0 +1,238 @@
+{
+  "_comment": "Free CC0 assets applied on top of the blockout. Assets stay untracked (LFS uploads are blocked from the build environment) \u2014 this file carries provenance and URLs; tools/fetch_free_assets.sh restores everything from it. Scales were computed from measured model AABBs against the primitive sizes they replace (see git history).",
+  "packs": {
+    "kenney_fantasy_town": {
+      "name": "Kenney Fantasy Town Kit 1.1",
+      "license": "CC0 1.0",
+      "license_evidence": "License.txt shipped with the kit: 'Creative Commons Zero, CC0 ... free to use in personal, educational and commercial projects.' Copy installed at assets/environment/models/kenney_fantasy_town/LICENSE.txt",
+      "clone_url": "https://github.com/LaggerP/ic-godot-project2.git",
+      "clone_path": "assets/kenney_fantasy-town-kit",
+      "note": "kenney.nl is blocked from the build environment; this GitHub mirror ships the kit verbatim including Kenney's License.txt. stallRed/bannerRed deliberately not installed \u2014 red is the hostile side's colour.",
+      "files": [
+        "Models/GLTF format/stall.glb",
+        "Models/GLTF format/stallGreen.glb",
+        "Models/GLTF format/stallBench.glb",
+        "Models/GLTF format/stallStool.glb",
+        "Models/GLTF format/lantern.glb",
+        "Models/GLTF format/hedge.glb",
+        "Models/GLTF format/hedgeLarge.glb",
+        "Models/GLTF format/rockSmall.glb",
+        "Models/GLTF format/rockLarge.glb",
+        "Models/GLTF format/rockWide.glb",
+        "Models/GLTF format/cart.glb",
+        "Models/GLTF format/tree.glb",
+        "Models/GLTF format/treeHighRound.glb",
+        "License.txt"
+      ]
+    },
+    "kaykit_restaurant": {
+      "name": "KayKit Restaurant Bits 1.0",
+      "license": "CC0 1.0",
+      "license_evidence": "LICENSE.txt in Kay Lousberg's official repo: 'Creative Commons Zero, CC0 ... free to use in personal, educational and commercial projects.' Copy installed at assets/environment/models/kaykit_restaurant/LICENSE.txt",
+      "clone_url": "https://github.com/KayKit-Game-Assets/KayKit-Restaurant-Bits-1.0.git",
+      "clone_path": "addons/kaykit_restaurant_bits/Assets",
+      "files": [
+        "gltf/crate.gltf",
+        "gltf/crate.bin",
+        "gltf/crate_buns.gltf",
+        "gltf/crate_buns.bin",
+        "gltf/crate_carrots.gltf",
+        "gltf/crate_carrots.bin",
+        "gltf/crate_cheese.gltf",
+        "gltf/crate_cheese.bin",
+        "gltf/crate_lettuce.gltf",
+        "gltf/crate_lettuce.bin",
+        "gltf/jar_A_large.gltf",
+        "gltf/jar_A_large.bin",
+        "gltf/jar_C_large.gltf",
+        "gltf/jar_C_large.bin",
+        "gltf/restaurantbits_texture.png",
+        "LICENSE.txt"
+      ]
+    }
+  },
+  "prop_models": {
+    "crate": [
+      {
+        "file": "kaykit_restaurant/crate.gltf",
+        "scale": 0.65,
+        "collider": [
+          1.3,
+          0.6,
+          1.3
+        ]
+      },
+      {
+        "file": "kaykit_restaurant/crate_buns.gltf",
+        "scale": 0.65,
+        "collider": [
+          1.3,
+          0.6,
+          1.3
+        ]
+      },
+      {
+        "file": "kaykit_restaurant/crate_carrots.gltf",
+        "scale": 0.65,
+        "collider": [
+          1.3,
+          0.65,
+          1.3
+        ]
+      },
+      {
+        "file": "kaykit_restaurant/crate_cheese.gltf",
+        "scale": 0.65,
+        "collider": [
+          1.3,
+          0.65,
+          1.3
+        ]
+      },
+      {
+        "file": "kaykit_restaurant/crate_lettuce.gltf",
+        "scale": 0.65,
+        "collider": [
+          1.3,
+          0.7,
+          1.3
+        ]
+      }
+    ],
+    "barrel": [
+      {
+        "file": "kaykit_restaurant/jar_A_large.gltf",
+        "scale": 1.7,
+        "collider": [
+          0.9,
+          1.3,
+          0.9
+        ]
+      },
+      {
+        "file": "kaykit_restaurant/jar_C_large.gltf",
+        "scale": 1.7,
+        "collider": [
+          0.9,
+          1.3,
+          0.9
+        ]
+      }
+    ],
+    "bench": [
+      {
+        "file": "kenney_fantasy_town/stallBench.glb",
+        "scale": 2.4,
+        "collider": [
+          0.7,
+          0.6,
+          2.3
+        ]
+      },
+      {
+        "file": "kenney_fantasy_town/stallStool.glb",
+        "scale": 2.2,
+        "collider": [
+          0.6,
+          0.6,
+          0.6
+        ]
+      }
+    ],
+    "stall": [
+      {
+        "file": "kenney_fantasy_town/stallGreen.glb",
+        "scale": 2.8
+      },
+      {
+        "file": "kenney_fantasy_town/stall.glb",
+        "scale": 2.8
+      },
+      {
+        "file": "kenney_fantasy_town/cart.glb",
+        "scale": 2.2,
+        "y_offset": 0.55
+      }
+    ],
+    "lantern": [
+      {
+        "file": "kenney_fantasy_town/lantern.glb",
+        "scale": 1.5,
+        "collider": [
+          0.3,
+          2.2,
+          0.3
+        ]
+      }
+    ],
+    "planter": [
+      {
+        "file": "kenney_fantasy_town/hedgeLarge.glb",
+        "scale": 2.0,
+        "collider": [
+          0.9,
+          1.2,
+          2.0
+        ]
+      },
+      {
+        "file": "kenney_fantasy_town/tree.glb",
+        "scale": 1.2,
+        "collider": [
+          0.5,
+          2.4,
+          0.5
+        ]
+      },
+      {
+        "file": "kenney_fantasy_town/treeHighRound.glb",
+        "scale": 1.2,
+        "collider": [
+          0.5,
+          2.6,
+          0.5
+        ]
+      }
+    ],
+    "rubble": [
+      {
+        "file": "kenney_fantasy_town/rockSmall.glb",
+        "scale": 1.0
+      },
+      {
+        "file": "kenney_fantasy_town/rockWide.glb",
+        "scale": 1.1
+      },
+      {
+        "file": "kenney_fantasy_town/rockLarge.glb",
+        "scale": 1.0
+      }
+    ]
+  },
+  "music": {
+    "music_sunfall_explore": {
+      "file": "assets/audio/music/external/market_day.ogg",
+      "url": "https://raw.githubusercontent.com/arianne/stendhal/master/data/music/market_day.ogg",
+      "title": "Market Day",
+      "artist": "RandomMind",
+      "license": "CC0",
+      "license_evidence": "Stendhal's per-track audit file doc/sources/audio-music.txt: 'market_day.ogg  RandomMind; CC0; https://opengameart.org/node/93955'"
+    },
+    "music_sunfall_combat": {
+      "file": "assets/audio/music/external/battle_ready.mp3",
+      "url": "https://raw.githubusercontent.com/0lhi/FreePD/2022/Epic/Battle%20Ready.mp3",
+      "title": "Battle Ready",
+      "artist": "FreePD catalog",
+      "license": "CC0",
+      "license_evidence": "0lhi/FreePD repo root LICENSE is the full CC0 1.0 Universal text covering the catalog (FreePD: 'Free Public Domain Music')"
+    },
+    "music_first_bell": {
+      "file": "assets/audio/music/external/epic_boss_battle.mp3",
+      "url": "https://raw.githubusercontent.com/0lhi/FreePD/2022/Epic/Epic%20Boss%20Battle.mp3",
+      "title": "Epic Boss Battle",
+      "artist": "FreePD catalog",
+      "license": "CC0",
+      "license_evidence": "Same blanket CC0 1.0 Universal LICENSE at the mirror repo root"
+    }
+  }
+}

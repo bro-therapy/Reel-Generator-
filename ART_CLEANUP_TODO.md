@@ -128,3 +128,12 @@ are built.
   behaviour is per guide §6 and stays; the fix is art: a side-walk cycle per
   species (mirrorable, so one side is enough), same grids and pivots as the
   existing locomotion rows. *(high — visible every second of play)*
+
+## Free-pack props with green accents (low priority)
+
+Kenney's `stallBench.glb`/`stallGreen.glb` and the kit lantern carry muted
+green paint. Colour ownership reserves gold/teal/soft-green for rewards —
+these are small set dressing and read as neutral in practice, but if a
+playtester ever confuses a bench for a pickup, tint those materials toward
+wood-brown at import (do not repaint the source files; they are pristine CC0
+copies restored by tools/fetch_free_assets.sh).

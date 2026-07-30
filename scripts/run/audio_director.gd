@@ -162,7 +162,29 @@ func load_manifest() -> int:
 				"loop": bool(e.get("loop", false)),
 				"stream": null,
 			}
+	_apply_free_asset_music()
 	return _slots.size()
+
+
+## Real music from docs/FREE_ASSETS.json replaces the synthesized bed for any
+## slot whose fetched file is actually present. Absent file, absent manifest:
+## the placeholder plays, so a fresh checkout still has music of some kind.
+func _apply_free_asset_music() -> void:
+	if not FileAccess.file_exists("res://docs/FREE_ASSETS.json"):
+		return
+	var parsed: Variant = JSON.parse_string(
+		FileAccess.get_file_as_string("res://docs/FREE_ASSETS.json"))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	var overrides: Dictionary = (parsed as Dictionary).get("music", {})
+	for slot_name in overrides:
+		var slot := StringName(slot_name)
+		if not _slots.has(slot):
+			continue
+		var path := "res://%s" % String(overrides[slot_name].get("file", ""))
+		if ResourceLoader.exists(path):
+			_slots[slot]["path"] = path
+			_slots[slot]["stream"] = null
 
 
 func has_slot(slot: StringName) -> bool:
@@ -445,9 +467,15 @@ func play_music(slot: StringName) -> bool:
 		sound_dropped.emit(slot, &"missing_stream")
 		return false
 	# Placeholder beds are written as an exact number of bars so the seam lands on
-	# a beat; the loop flag has to be set for that to be worth anything.
+	# a beat; the loop flag has to be set for that to be worth anything. Real
+	# tracks from FREE_ASSETS.json arrive as OGG/MP3, which carry their own loop
+	# property instead of WAV's loop_mode.
 	if stream is AudioStreamWAV:
 		(stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
+	elif stream is AudioStreamOggVorbis:
+		(stream as AudioStreamOggVorbis).loop = true
+	elif stream is AudioStreamMP3:
+		(stream as AudioStreamMP3).loop = true
 	_music.stream = stream
 	_music.pitch_scale = 1.0
 	_music.play()

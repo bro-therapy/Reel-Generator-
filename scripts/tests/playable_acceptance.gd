@@ -471,6 +471,31 @@ func _check_combat_triggers() -> void:
 		_no("wave data", "combat_a totals %d, same as its first wave — "
 			% declared + "the multi-wave path cannot be exercised")
 
+	# Free-asset packs are optional (assets/ is untracked), but when they ARE
+	# installed they must actually take effect — a manifest that silently falls
+	# back to primitives is indistinguishable from working until someone looks.
+	if DirAccess.dir_exists_absolute("res://assets/environment/models/kenney_fantasy_town"):
+		var model_props: int = _slice.ward.model_prop_count("combat_b")
+		if model_props >= 5:
+			_ok("installed packs replace blockout props", "%d model props in combat_b" % model_props)
+		else:
+			_no("model props", "packs installed but only %d model props in combat_b" % model_props)
+	else:
+		print("        - model packs not installed; primitive fallback in use (run tools/fetch_free_assets.sh)")
+
+	if FileAccess.file_exists("res://assets/audio/music/external/market_day.ogg"):
+		var explore_path := String(_slice.presentation.audio._slots[&"music_sunfall_explore"]["path"])
+		var combat_path := String(_slice.presentation.audio._slots[&"music_sunfall_combat"]["path"])
+		if explore_path.ends_with("external/market_day.ogg") \
+				and combat_path.ends_with("external/battle_ready.mp3"):
+			_ok("real music overrides the synthesized beds",
+				"Market Day (explore), Battle Ready (combat)")
+		else:
+			_no("music override", "fetched files exist but slots point at %s / %s"
+				% [explore_path, combat_path])
+	else:
+		print("        - real music not fetched; synthesized beds in use")
+
 	# Every enemy must be hunting the hero, or the fight never starts.
 	var untargeted := 0
 	for e in _slice.enemies:
