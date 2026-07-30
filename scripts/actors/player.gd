@@ -330,6 +330,18 @@ func _update_animation() -> void:
 	var top_speed := data.move_speed_units_per_second if data != null else 6.2
 	var running := state == State.DASH or planar_speed >= top_speed * RUN_SPEED_FRACTION
 
+	# The dash has its own animation — an east-facing lunge with the violet
+	# streak, flipped for leftward dashes. Falls through to run_* on a checkout
+	# whose SpriteFrames predate the action atlas.
+	if state == State.DASH and _sprite != null and _sprite.sprite_frames != null \
+			and _sprite.sprite_frames.has_animation("dash"):
+		_sprite.flip_h = _dash_direction.x < -0.01
+		_play_animation("dash")
+		_sync_pivot_offset()
+		return
+	if _sprite != null:
+		_sprite.flip_h = false
+
 	var prefix := "idle"
 	if moving or state == State.DASH:
 		prefix = "run" if running else "walk"
@@ -377,6 +389,16 @@ func _apply_sprite_offset(correction_px: int) -> void:
 	if _sprite == null:
 		return
 	_sprite.offset = Vector2(0.0, _base_sprite_offset_px - float(correction_px))
+
+
+## The sprite's frame library, or null before _ready. For the acceptance tests.
+func sprite_frames_or_null() -> SpriteFrames:
+	return _sprite.sprite_frames if _sprite != null else null
+
+
+## The animation the sprite is showing right now, for the acceptance tests.
+func current_animation() -> String:
+	return String(_sprite.animation) if _sprite != null else ""
 
 
 ## Current pivot correction in pixels, for the acceptance tests.

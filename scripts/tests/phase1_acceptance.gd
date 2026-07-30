@@ -28,6 +28,7 @@ var _mark := 0.0
 var _mark_vec := Vector3.ZERO
 var _dash_start := Vector3.ZERO
 var _dash_ticks := 0
+var _dash_anim_checked := false
 var _accel_ticks := 0
 var _reach_ticks := 0
 var _decel_ticks := 0
@@ -160,6 +161,19 @@ func _stage_dash_start() -> void:
 func _stage_dash_watch() -> void:
 	_dash_ticks += 1
 	if _player.is_dashing():
+		# Mid-dash is the only window where the dash animation can be observed.
+		# Checked once, on the second dashing tick (the first tick's animation
+		# update may not have run yet when the stage saw the state flip).
+		if _dash_ticks == 2 and not _dash_anim_checked:
+			_dash_anim_checked = true
+			var frames := _player.sprite_frames_or_null()
+			if frames != null and frames.has_animation("dash"):
+				if _player.current_animation() == "dash":
+					_ok("dash plays its own animation", "the action-atlas lunge")
+				else:
+					_no("dash animation", "dashing but showing '%s'" % _player.current_animation())
+			else:
+				print("        - no dash animation in SpriteFrames (action frames not installed)")
 		if _dash_ticks > 60:
 			_no("dash ends", "still dashing after 1s")
 			_stage = 5
