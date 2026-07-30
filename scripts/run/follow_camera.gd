@@ -43,7 +43,12 @@ extends Camera3D
 ## see most of a fight. Going closer starts hiding enemies that are about to hit
 ## you, which is a fairness problem, not a taste one.
 @export var pitch_degrees := 34.0
-@export var distance := 16.0
+## Third zoom-in this project. 16.0 still read as too far in play; the hero is
+## the thing the eye tracks and he was competing with a 32 m room for attention.
+## 12.5 puts him at roughly 190 px on a 1080p screen — nearly a fifth of the
+## frame height — while still showing enough floor to read an incoming wave.
+## The in-game dial (mouse wheel, or -/=) still overrides this at runtime.
+@export var distance := 12.5
 ## How high above the hero's feet the camera aims. Roughly chest height, so the
 ## hero sits slightly below frame centre and there is room to see what is ahead.
 @export var look_height := 1.6

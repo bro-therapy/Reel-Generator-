@@ -292,6 +292,11 @@ func unlock_summon(spirit_id: StringName) -> bool:
 	add_child(s)
 	s.snap_to_lane()
 	summons.append(s)
+	# Without this the spirit fights silently and invisibly: damage is applied
+	# straight through CombatDamage, so a Gun Construct "burst" was pure
+	# bookkeeping. Binding here rather than in _build_presentation because
+	# summons arrive mid-run, one level-up at a time.
+	presentation.bind_summon(s)
 
 	presentation.play_signature(spirit_id)
 	summon_unlocked.emit(spirit_id, run.level)
@@ -366,7 +371,8 @@ func _spawn_boss(space: WardLayout.Space) -> void:
 	boss.global_position = space.centre
 	# Escalation reaches the boss too, but through its own health rather than
 	# the per-instance path the mob spawner uses.
-	boss.max_hp = maxi(1, int(round(float(boss.max_hp) * difficulty_scale())))
+	var boss_mult := float(Balance.progression().get("boss_health_multiplier", 1.0))
+	boss.max_hp = maxi(1, int(round(float(boss.max_hp) * difficulty_scale() * boss_mult)))
 	boss.hp = boss.max_hp
 
 	presentation.bind_boss(boss)
@@ -411,6 +417,20 @@ func boss_is_unlocked() -> bool:
 	return combat_rooms_cleared() and run.level >= boss_required_level()
 
 
+## How many times each combat room must be cleared. The owner asked that "you
+## shouldn't be able to enter the boss room until all the other rooms are
+## cleared at least maybe twice" — one pass through the ward is no longer enough.
+func boss_required_clears() -> int:
+	return maxi(1, int(Balance.progression().get("boss_required_clears", 1)))
+
+
+## Times a given room has been cleared, first clear included.
+func clears_of(space_id: StringName) -> int:
+	if not _cleared.has(space_id):
+		return 0
+	return 1 + int(_reclears.get(space_id, 0))
+
+
 func boss_required_level() -> int:
 	return int(Balance.progression().get("boss_required_level", 7))
 
@@ -419,7 +439,7 @@ func boss_required_level() -> int:
 ## space and is deliberately not counted among them.
 func combat_rooms_cleared() -> bool:
 	for id in required_encounters():
-		if not _cleared.has(id):
+		if clears_of(id) < boss_required_clears():
 			return false
 	return true
 
@@ -432,7 +452,11 @@ func _warn_boss_locked() -> void:
 	_boss_warned = true
 	var reason := ""
 	if not combat_rooms_cleared():
-		reason = "clear every combat room first"
+		var need := boss_required_clears()
+		var parts: Array[String] = []
+		for id in required_encounters():
+			parts.append("%s %d/%d" % [id, clears_of(id), need])
+		reason = "clear every combat room %d times (%s)" % [need, ", ".join(parts)]
 	else:
 		reason = "reach level %d (currently %d)" % [boss_required_level(), run.level]
 	print("[play] the boss door is sealed — %s" % reason)

@@ -273,18 +273,20 @@
   },
   "progression": {
     "_note": "Owner-requested leveling (Vampire Survivors shape). The master guide has no leveling; see docs/PROGRESSION_DESIGN.md. Tuning lives here, never in behaviour scripts.",
-    "xp_per_threat": 4,
-    "xp_base_per_level": 12,
+    "xp_per_threat": 3,
+    "xp_base_per_level": 18,
     "orb_magnet_radius_units": 4.5,
     "orb_magnet_speed_units_per_second": 11.0,
     "orb_lifetime_seconds": 30.0,
     "summon_unlock_levels": {
-      "rune_hound": 2,
-      "sword_wisp": 4,
-      "gun_construct": 6
+      "rune_hound": 3,
+      "sword_wisp": 6,
+      "gun_construct": 9
     },
-    "boss_required_level": 7,
-    "escalation_per_minute": 0.08,
-    "escalation_cap": 1.5
+    "boss_required_level": 6,
+    "escalation_per_minute": 0.11,
+    "escalation_cap": 1.9,
+    "boss_required_clears": 2,
+    "boss_health_multiplier": 1.6
   }
 }

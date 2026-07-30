@@ -21,6 +21,10 @@ extends SceneTree
 const PLAYABLE := "res://scenes/playable.tscn"
 const ENEMY_SCENE := preload("res://scenes/enemies/enemy_base.tscn")
 const STEP := 1.0 / 60.0
+## See _check_camera: a runaway-zoom guard expressed in hero pixels, not a
+## framing target. Raised from 175 when the owner asked for a closer camera a
+## second time.
+const HERO_PX_CEILING := 200.0
 
 var _pass := 0
 var _fail := 0
@@ -122,6 +126,7 @@ func _process(_delta: float) -> bool:
 
 	_check_soak()
 	_check_feedback_fired()
+	_check_summons_are_bound()
 	_check_progression()
 	_check_damage_numbers()
 	_check_boss_gate()
@@ -137,6 +142,31 @@ func _process(_delta: float) -> bool:
 ## error (enforced by check_project.sh, which fails any suite that emits one).
 ## 25 s of walking, dashing enemies, shots and deaths — if no particle burst
 ## fired in all that, the layer is decorative. Steps alone fire dozens.
+## A summon that reaches the world unbound fights in silence.
+##
+## The presentation suite proves bind_summon works; this proves the run actually
+## calls it. Summons are spawned one level-up at a time by unlock_summon, so the
+## binding lives there rather than in _build_presentation — which is exactly the
+## kind of placement that gets missed.
+func _check_summons_are_bound() -> void:
+	_slice._apply_summon_unlocks()
+	for spirit_id in ["rune_hound", "sword_wisp", "gun_construct"]:
+		_slice.unlock_summon(StringName(spirit_id))
+
+	var unbound: Array[String] = []
+	for s in _slice.summons:
+		if (s as SummonBase).attacked.get_connections().is_empty():
+			unbound.append(String((s as SummonBase).name))
+
+	if _slice.summons.is_empty():
+		_no("summon binding", "no summons in the run to check")
+	elif unbound.is_empty():
+		_ok("every summon in the run has its effects bound",
+			"%d bonded" % _slice.summons.size())
+	else:
+		_no("summon binding", "fights silently: %s" % ", ".join(unbound))
+
+
 func _check_feedback_fired() -> void:
 	var fired: int = _slice.presentation.particles.bursts_fired()
 	if fired >= 10:
@@ -163,31 +193,38 @@ func _check_boss_gate() -> void:
 	var saved_level: int = run.level
 	var required: Array = _slice.required_encounters()
 
+	var need_clears: int = _slice.boss_required_clears()
 	var results: Array[String] = []
 	var wrong: Array[String] = []
-	for rooms_done in [false, true]:
+	# Three states for the rooms axis now, not two: the owner asked that rooms be
+	# cleared more than once, so "cleared exactly once" has to be a distinct case
+	# and it has to REFUSE. A two-value table could not express that.
+	for clears in [0, need_clears - 1, need_clears]:
 		for level_ok in [false, true]:
 			_slice._cleared.clear()
-			if rooms_done:
+			_slice._reclears.clear()
+			if clears > 0:
 				for id in required:
 					_slice._cleared[id] = true
+					_slice._reclears[id] = clears - 1
 			run.level = needed if level_ok else 1
 
 			var open: bool = _slice.boss_is_unlocked()
-			var should_open: bool = rooms_done and level_ok
-			results.append("rooms=%s level=%s -> %s"
-				% [rooms_done, level_ok, "open" if open else "shut"])
+			var should_open: bool = clears >= need_clears and level_ok
+			results.append("clears=%d level=%s -> %s"
+				% [clears, level_ok, "open" if open else "shut"])
 			if open != should_open:
-				wrong.append("rooms=%s level=%s gave %s, expected %s"
-					% [rooms_done, level_ok, "open" if open else "shut",
+				wrong.append("clears=%d/%d level=%s gave %s, expected %s"
+					% [clears, need_clears, level_ok, "open" if open else "shut",
 						"open" if should_open else "shut"])
 
 	_slice._cleared = saved_cleared
 	run.level = saved_level
 
 	if wrong.is_empty():
-		_ok("the boss door needs every room AND the level",
-			"only opens at level %d with all %d cleared" % [needed, required.size()])
+		_ok("the boss door needs every room cleared %d times AND the level" % need_clears,
+			"%d rooms, opens only at level %d with %d clears each"
+			% [required.size(), needed, need_clears])
 	else:
 		_no("boss gate", "; ".join(wrong))
 
@@ -207,7 +244,13 @@ const FRIENDLY_ATTACK_MASK := 1 << 4     # what a friendly projectile scans for
 func _open_boss_door_and_enter() -> void:
 	for id in _slice.required_encounters():
 		_slice._cleared[id] = true
+		_slice._reclears[id] = _slice.boss_required_clears() - 1
+	# Forcing the level directly does not emit levelled_up, so the unlocks a real
+	# level-6 hero would have earned must be applied too. Without this the run is
+	# in a state no player could reach — level 6 with no summons — and the
+	# progression check reads that as a broken unlock.
 	_slice.run.level = _slice.boss_required_level()
+	_slice._apply_summon_unlocks()
 	var arena := WardLayout.space(&"boss")
 	if arena != null:
 		_slice.hero.global_position = arena.centre
@@ -598,14 +641,24 @@ func _check_camera() -> void:
 
 	# Guide: "Hero reads at 88 px tall at 1920x1080." That is a readability FLOOR,
 	# not a framing target — the first playtest at exactly 88 px came back as
-	# "really zoomed out", and the owner set the framing closer. The check now
-	# guards the floor and a sanity ceiling instead of pinning one number.
+	# "really zoomed out", and the owner has since asked twice for closer framing
+	# ("he still feels too far away"). The check guards the floor and a runaway
+	# ceiling instead of pinning one number.
+	#
+	# The ceiling is NOT about the hero. A combat room is 32 m across, so no
+	# distance in this range shows a whole room; what the ceiling protects is
+	# reaction time — how far ahead of the hero the screen reaches before an
+	# enemy is on top of them. HERO_PX_CEILING is the framing at which that
+	# lead distance is still about two dash lengths.
 	var visible_height := 2.0 * cam.distance * tan(deg_to_rad(cam.fov * 0.5))
 	var hero_px := 1.8 / visible_height * 1080.0
-	if hero_px >= 88.0 and hero_px <= 175.0:
-		_ok("the hero clears the 88 px readability floor", "%.0f px at %.1f m" % [hero_px, cam.distance])
+	if hero_px >= 88.0 and hero_px <= HERO_PX_CEILING:
+		_ok("the hero clears the 88 px readability floor",
+			"%.0f px at %.1f m, %.1f m of world on screen" % [
+				hero_px, cam.distance, visible_height])
 	else:
-		_no("hero size", "%.0f px at %.1f m — floor 88, ceiling 175" % [hero_px, cam.distance])
+		_no("hero size", "%.0f px at %.1f m — floor 88, ceiling %.0f" % [
+			hero_px, cam.distance, HERO_PX_CEILING])
 
 	# A framing change must ease rather than cut. Guide §12: 0.35-0.6 s.
 	var before := cam.framing()

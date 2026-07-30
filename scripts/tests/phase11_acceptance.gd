@@ -37,6 +37,8 @@ func _initialize() -> void:
 func _spawn() -> FirstBellBoss:
 	var b := FirstBellBoss.new()
 	root.add_child(b)
+	# _ready() has not fired yet for a node added during _initialize().
+	b.initialize()
 	return b
 
 
@@ -59,14 +61,32 @@ func _check_balance_wiring() -> void:
 
 
 func _check_height() -> void:
-	# Guide §11: approximately 2.5x the hero's gameplay height.
+	# Guide §11 said 2.5x. The owner overrode it after playing the arena — "I
+	# need the boss scaled up much larger, I couldn't even tell I was at the
+	# last room" — so the rule is now a FLOOR, not a target: The First Bell must
+	# read as a landmark from the doorway. 3.5x is the smallest ratio that does;
+	# the upper bound stops it growing past the arena walls.
 	var hero := load(HERO) as CharacterData
 	var boss := _spawn()
 	var ratio := boss.world_height / hero.world_height_units
-	if absf(ratio - 2.5) <= 0.15:
-		_ok("the boss stands 2.5x the hero", "%.2f u vs %.2f u (%.2fx)" % [boss.world_height, hero.world_height_units, ratio])
+	if ratio >= 3.5 and ratio <= 6.0:
+		_ok("the boss towers over the hero",
+			"%.2f u vs %.2f u (%.2fx)" % [boss.world_height, hero.world_height_units, ratio])
+	elif ratio < 3.5:
+		_no("boss height", "%.2fx the hero — too small to read as a boss" % ratio)
 	else:
-		_no("boss height", "%.2fx the hero" % ratio)
+		_no("boss height", "%.2fx the hero — taller than the arena" % ratio)
+
+	# And it has to be VISIBLE. Twelve frames shipped since Phase 11 and nothing
+	# displayed them; the boss was a bare logic node, so the arena looked empty.
+	var visual := false
+	for child in boss.get_children():
+		if child is AnimatedSprite3D or child is MeshInstance3D:
+			visual = true
+	if visual:
+		_ok("the boss has a body on screen")
+	else:
+		_no("boss visual", "no sprite or mesh — the arena renders empty")
 	boss.queue_free()
 
 

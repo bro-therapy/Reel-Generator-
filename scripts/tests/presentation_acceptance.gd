@@ -37,6 +37,8 @@ func _process(_delta: float) -> bool:
 	_check_boss_fight()
 	_check_convergence()
 	_check_enemy_wiring()
+	_check_summon_wiring()
+	_check_slash_alternates()
 	_check_presentation_cannot_change_combat()
 	_check_colour_ownership_of_wired_effects()
 	_summary()
@@ -211,6 +213,124 @@ func _check_enemy_wiring() -> void:
 		_no("enemy wiring", "; ".join(problems))
 
 
+# ---------------------------------------------------------------------- summons
+
+## Every summon attack has to produce something the player can see and hear.
+##
+## Before this existed the spirits fought in total silence and left nothing on
+## screen: damage went straight through CombatDamage, and the species sound slots
+## that had been authored months earlier — rune_hound_bite, sword_wisp_slash,
+## gun_construct_burst — had never once been played by anything. Which is why the
+## playtest note said the robot needed "machine gun sounds coming out of him and
+## shooting bullets that you can see".
+##
+## The signal is emitted through the real summon rather than called directly, so
+## an unbound species or a renamed signal fails here.
+##
+## WANTED is written out rather than read from CombatPresentation.SUMMON_FX. The
+## first version of this check took its expectations from that table, which made
+## it a tautology: turning the Gun Construct's tracers off turned the requirement
+## off with them, and the mutant passed. These are the owner's words — the robot
+## shoots bullets you can see, the sword cuts an arc you can see — and they hold
+## whatever the table says.
+const WANTED := {
+	"rune_hound": {"sound": &"rune_hound_bite", "bolts": false, "arc": false},
+	"sword_wisp": {"sound": &"sword_wisp_slash", "bolts": false, "arc": true},
+	"gun_construct": {"sound": &"gun_construct_burst", "bolts": true, "arc": false},
+}
+
+func _check_summon_wiring() -> void:
+	var packed := load("res://scenes/actors/summon_base.tscn") as PackedScene
+	var target := Node3D.new()
+	root.add_child(target)
+	target.global_position = Vector3(4.0, 0.0, 0.0)
+
+	var problems: Array[String] = []
+	var confirmed: Array[String] = []
+
+	for id in ["rune_hound", "sword_wisp", "gun_construct"]:
+		_drain()
+		var spirit := load("res://data/spirits/%s.tres" % id) as SpiritData
+		if spirit == null:
+			problems.append("%s: no spirit resource" % id)
+			continue
+		var summon := packed.instantiate() as SummonBase
+		summon.data = spirit
+		root.add_child(summon)
+		summon.global_position = Vector3.ZERO
+		_show.bind_summon(summon)
+
+		var heard: Array[StringName] = []
+		var handle := func(slot: StringName, _p: int) -> void: heard.append(slot)
+		_show.audio.sound_played.connect(handle)
+
+		var tracers_before := _show.particles.tracers_fired()
+		var slashes_before := _show.particles.slashes_cut()
+		summon.attacked.emit(target, 5)
+		_show.audio.sound_played.disconnect(handle)
+
+		var cfg: Dictionary = WANTED[id]
+		var want: StringName = cfg["sound"]
+		var notes: Array[String] = []
+		if want not in heard:
+			problems.append("%s: expected %s, heard %s" % [id, want, str(heard)])
+		else:
+			notes.append(String(want))
+
+		# The Gun Construct must put visible bolts in the air; the Sword Wisp must
+		# cut a visible arc. Asserted per species, because a version that fired
+		# tracers for everything would be just as wrong as one that fired none.
+		var tracers := _show.particles.tracers_fired() - tracers_before
+		var slashes := _show.particles.slashes_cut() - slashes_before
+		var wants_tracer := bool(cfg["bolts"])
+		var wants_slash := bool(cfg["arc"])
+
+		if wants_tracer and tracers <= 0:
+			problems.append("%s: fires no visible bolts" % id)
+		elif not wants_tracer and tracers > 0:
+			problems.append("%s: fired %d bolts it should not have" % [id, tracers])
+		elif wants_tracer:
+			notes.append("%d bolts" % tracers)
+
+		if wants_slash and slashes <= 0:
+			problems.append("%s: cuts no visible arc" % id)
+		elif not wants_slash and slashes > 0:
+			problems.append("%s: cut %d arcs it should not have" % [id, slashes])
+		elif wants_slash:
+			notes.append("%d arc" % slashes)
+
+		if not notes.is_empty():
+			confirmed.append("%s: %s" % [id, ", ".join(notes)])
+		if is_instance_valid(summon):
+			summon.queue_free()
+
+	target.queue_free()
+
+	if problems.is_empty():
+		_ok("every summon attack is seen and heard", "; ".join(confirmed))
+	else:
+		_no("summon wiring", "; ".join(problems))
+
+
+## Consecutive arcs must alternate direction — the owner asked to "actually see
+## the sword animation kind of slice back and forth", and a blade that cuts the
+## same way every time reads as one frame stamped repeatedly.
+func _check_slash_alternates() -> void:
+	var fx := _show.particles
+	var directions: Array[float] = []
+	for i in 4:
+		fx.slash(Vector3(0, 1, 0), 1.0)
+		directions.append(float(fx._slash_live.back()["direction"]))
+	var alternating := true
+	for i in range(1, directions.size()):
+		if directions[i] == directions[i - 1]:
+			alternating = false
+	if alternating:
+		_ok("consecutive slashes alternate direction", str(directions))
+	else:
+		_no("slash direction", "did not alternate: %s" % str(directions))
+
+
 # ------------------------------------------------- the property that matters
 
 ## Presentation must be incapable of changing the fight.
@@ -280,9 +400,25 @@ func _check_presentation_cannot_change_combat() -> void:
 ## goes on *which* event — the place a hostile effect could get attached to a
 ## friendly one.
 func _check_colour_ownership_of_wired_effects() -> void:
-	if _show.vfx == null or _show.vfx.effect_ids().is_empty():
-		return
 	var problems: Array[String] = []
+
+	# The summons' own geometry, which does not come from a VFX resource and so
+	# is not covered by the effect palette audit. A friendly bolt or arc has to
+	# be on the cool side of white: blue at least as strong as red. Gold tracers
+	# were the first thing this caught.
+	for name in ["gun bolt", "sword arc"]:
+		var c: Color = CombatPresentation.SUMMON_TRACER_COLOUR if name == "gun bolt" \
+			else ParticleFx.SLASH_COLOUR
+		if c.b < c.r:
+			problems.append("the %s is warm (r %.2f > b %.2f) — that is the hostile side"
+				% [name, c.r, c.b])
+
+	if _show.vfx == null or _show.vfx.effect_ids().is_empty():
+		if problems.is_empty():
+			_ok("summon bolts and arcs stay on the friendly side")
+		else:
+			_no("colour ownership", ", ".join(problems))
+		return
 
 	# Boss moves are hostile. Anything warm is fine; anything violet is not.
 	for kind in CombatPresentation.BOSS_MOVES:

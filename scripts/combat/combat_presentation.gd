@@ -128,6 +128,70 @@ func _on_hero_stepped(hero: Player) -> void:
 	_sound(&"hero_step", hero.global_position)
 
 
+## Every summon's attack gets a sight and a sound of its own.
+##
+## The species sound slots have existed since the audio pass — rune_hound_bite,
+## sword_wisp_slash, gun_construct_burst — and NOTHING ever played them, which
+## is why the playtest said the robot should "have machine gun sounds coming out
+## of him and shooting bullets that you can see". The damage was always applied
+## instantly and invisibly.
+## Blue-white, NOT the muzzle-flash gold a real gun would throw. Colour
+## ownership (guide §4) is absolute: warm-white belongs to the enemies, and
+## three warm bolts a second crossing the room is exactly the read that rule
+## exists to prevent. Named rather than inlined so the acceptance suite can
+## assert it stays on the cool side.
+const SUMMON_TRACER_COLOUR := Color(0.86, 0.90, 1.0)
+
+const SUMMON_FX := {
+	&"rune_hound": {
+		"sound": &"rune_hound_bite", "effect": &"pixel_hit_friendly",
+		"tracer": false, "scale": 0.7,
+	},
+	&"sword_wisp": {
+		"sound": &"sword_wisp_slash", "effect": &"pixel_magic_impact",
+		"tracer": false, "slash": 1.1, "scale": 0.9,
+	},
+	&"gun_construct": {
+		"sound": &"gun_construct_burst", "effect": &"pixel_hit_friendly",
+		"tracer": true, "scale": 0.55,
+	},
+}
+
+func bind_summon(summon: SummonBase) -> void:
+	if summon == null or summon in _bound:
+		return
+	_bound.append(summon)
+	summon.attacked.connect(_on_summon_attacked.bind(summon))
+
+
+func _on_summon_attacked(target: Node3D, _damage: int, summon: SummonBase) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	var id: StringName = summon.data.id if summon.data != null else &""
+	var cfg: Dictionary = SUMMON_FX.get(id, {})
+	if cfg.is_empty():
+		return
+
+	var from := summon.global_position + Vector3(0.0, 0.9, 0.0)
+	var to := target.global_position + Vector3(0.0, 0.8, 0.0)
+
+	if bool(cfg.get("tracer", false)) and particles != null:
+		# Three bolts a few centimetres apart, so a burst reads as automatic
+		# fire rather than as one shot.
+		for i in 3:
+			var jitter := Vector3(randf_range(-0.12, 0.12), randf_range(-0.1, 0.1),
+				randf_range(-0.12, 0.12))
+			particles.tracer(from + jitter, to + jitter, SUMMON_TRACER_COLOUR)
+		particles.burst(&"muzzle_violet", from, to - from)
+
+	var arc := float(cfg.get("slash", 0.0))
+	if arc > 0.0 and particles != null:
+		particles.slash(to, arc)
+
+	_effect(StringName(cfg["effect"]), to, float(cfg.get("scale", 1.0)))
+	_sound(StringName(cfg["sound"]), to)
+
+
 func bind_boss(boss: FirstBellBoss) -> void:
 	if boss == null or boss in _bound:
 		return

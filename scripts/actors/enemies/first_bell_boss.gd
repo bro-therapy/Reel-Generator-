@@ -27,7 +27,12 @@ enum Phase { ONE, TWO }
 enum Move { IDLE, SLAM, CHAIN_SWEEP, TOLL, CALL }
 
 ## Guide §11: "approximately 2.5 times the hero's gameplay height."
-const HERO_HEIGHT_MULTIPLE := 2.5
+## Guide §11 said 2.5x the hero. The owner overrode it after playtesting the
+## arena — "I need the boss to be scaled up much larger towards the end, I
+## couldn't even tell I was at the last room" — so The First Bell now stands
+## more than four times the hero's height. At 2.5x it read as a large enemy;
+## a boss has to read as a landmark from the doorway.
+const HERO_HEIGHT_MULTIPLE := 4.4
 const HERO_WORLD_HEIGHT := 1.8
 
 ## Time between rotation entries. Not in balance — the telegraph durations are
@@ -75,7 +80,96 @@ func _ready() -> void:
 	telegraph.name = "Telegraph"
 	add_child(telegraph)
 
+	initialize()
+
+
+## Public and idempotent. `_ready` does not fire for a node added during a
+## `--script` harness's `_initialize()`, which this project has been bitten by
+## five times now — most recently here, where the boss's brand-new sprite was
+## invisible to its own acceptance check for exactly that reason.
+var _initialized := false
+
+func initialize() -> void:
+	if _initialized:
+		return
+	_initialized = true
 	_build_hurtbox()
+	_build_sprite()
+
+
+## The boss was INVISIBLE. All twelve of its frames have shipped since Phase 11
+## and nothing ever displayed them — it was a bare logic node with a telegraph,
+## which is why the arena read as empty and the playtest said "I couldn't even
+## tell I was at the last room".
+const FRAME_DIR := "res://assets/enemies/boss_action_frames"
+const FRAMES := {
+	&"idle": "00_idle", &"move": "01_move",
+	&"slam_windup": "02_slam_windup", &"slam_impact": "03_slam_impact",
+	&"sweep_windup": "04_chain_sweep_windup", &"toll": "05_bell_toll",
+	&"stagger": "06_stagger_core_open", &"defeat": "07_defeat",
+	&"sweep_active": "08_chain_sweep_active", &"hit": "09_hit",
+	&"phase_two": "10_phase_two", &"enrage": "11_enrage",
+}
+
+var sprite: AnimatedSprite3D
+
+func _build_sprite() -> void:
+	if sprite != null:
+		return
+	var frames := SpriteFrames.new()
+	frames.remove_animation("default")
+	var loaded := 0
+	for key in FRAMES:
+		var path := "%s/00_the_first_bell__%s.png" % [FRAME_DIR, FRAMES[key]]
+		if not ResourceLoader.exists(path):
+			continue
+		var tex := load(path) as Texture2D
+		if tex == null:
+			continue
+		frames.add_animation(key)
+		frames.set_animation_loop(key, key in [&"idle", &"move"])
+		frames.set_animation_speed(key, 6.0)
+		frames.add_frame(key, tex)
+		loaded += 1
+	if loaded == 0:
+		# Assetless checkout: a violet monolith so the arena is never empty.
+		var stand_in := MeshInstance3D.new()
+		var box := BoxMesh.new()
+		box.size = Vector3(2.4, world_height, 2.4)
+		stand_in.mesh = box
+		stand_in.position = Vector3(0.0, world_height * 0.5, 0.0)
+		stand_in.layers = 2
+		add_child(stand_in)
+		return
+
+	sprite = AnimatedSprite3D.new()
+	sprite.name = "Sprite"
+	sprite.sprite_frames = frames
+	sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
+	sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
+	sprite.shaded = false
+	sprite.transparent = true
+	sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
+	sprite.centered = true
+	sprite.layers = 2
+	# Scaled from the source art's own height so the on-screen size follows
+	# world_height rather than being a second number that can drift from it.
+	var source_h := 724.0
+	sprite.pixel_size = world_height / source_h
+	sprite.position = Vector3(0.0, world_height * 0.5, 0.0)
+	add_child(sprite)
+	sprite.play(&"idle")
+
+
+## Shows the pose for what the boss is doing. Falls through silently when a
+## frame is absent, so a partial art install degrades rather than breaks.
+func _show(anim: StringName) -> void:
+	if sprite == null or sprite.sprite_frames == null:
+		return
+	if not sprite.sprite_frames.has_animation(anim):
+		return
+	if sprite.animation != anim:
+		sprite.play(anim)
 
 
 ## Without this the boss is unkillable, and nothing noticed for eleven phases.
