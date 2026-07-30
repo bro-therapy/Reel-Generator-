@@ -44,6 +44,24 @@ fi
 git reset --hard "origin/$BRANCH"
 git checkout -B "$BRANCH" "origin/$BRANCH" 2>/dev/null || true
 
+# Generated stills (title key art etc.) ship as URLs in VFX_SOURCES.json, not
+# binaries — same policy as the effect sheets. Fetch whatever this build added
+# that this copy does not have yet. Non-fatal: CDN links can expire, and the
+# game falls back cleanly (the title screen goes plain indigo, nothing breaks).
+if command -v python3 >/dev/null; then
+  python3 - <<'PY' || echo "  (could not fetch new art — the game still runs)"
+import json, pathlib, urllib.request
+spec = json.loads(pathlib.Path("docs/VFX_SOURCES.json").read_text())
+for path, meta in spec.get("generated_stills", {}).items():
+    dest = pathlib.Path(path)
+    if dest.exists() or not meta.get("source_url"):
+        continue
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    print("  fetching %s" % path, flush=True)
+    urllib.request.urlretrieve(meta["source_url"], dest)
+PY
+fi
+
 echo
 echo "✓ now at: $(git log --oneline -1)"
 echo
