@@ -36,7 +36,15 @@ Getting the art onto your machine: `docs/ASSET_DELIVERY.md`
 | 14 | Save and results | **complete** — 16/16 acceptance checks |
 | 15 | Performance and QA | **complete** — 12/12 acceptance checks |
 
-**All sixteen phases are built.** The vertical slice is ready to play.
+**All sixteen phases are built, and F5 now plays.** `scenes/playable.tscn` is the
+main scene: the Ward, the hero, three bonded summons, a follow camera, the HUD, the
+audio mixer, the realistic effects, and enemies that spawn from the balance file
+when you walk into a combat space.
+
+Not yet chained into one run: room-to-room progression through
+`EncounterController`'s gates, the reward screen between rooms, the merchant, the
+Rift, and the boss fight. All are built and tested — see the phase table — but the
+playable build is a ward you can fight in, not the full 8–12 minute loop yet.
 
 Four realistic effects — fire, beam, lightning, shockwave — are generated,
 installed and drawn additively over the pixel actors. They are the only generated
@@ -90,7 +98,7 @@ Finished regeneration prompts for all three are in
 ## Running it
 
 ```bash
-godot --path .                      # boot scene
+godot --path .                      # the playable build — this is the game
 godot --path . scenes/tests/hero_sandbox.tscn   # Phase 1 hero sandbox
 godot --path . scenes/tests/focus_range.tscn    # Phase 2 targeting range
 godot --path . scenes/tests/summon_field.tscn   # Phase 3 summon field
@@ -120,8 +128,8 @@ measuring 80 px against his locked 88 px target, which eight phases of headless
 acceptance checks had not caught: the Phase 1 check projects the sprite *cell*
 rather than the drawn character. See `ART_CLEANUP_TODO.md`.
 
-All sixteen phases plus the effects, audio and presentation suites:
-**357 checks, 0 failures.** One command runs everything:
+All sixteen phases plus the effects, audio, presentation and playable suites:
+**375 checks, 0 failures.** One command runs everything:
 
 ```bash
 ./tools/check_project.sh

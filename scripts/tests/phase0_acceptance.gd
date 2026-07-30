@@ -243,10 +243,22 @@ func _check_balance_data() -> void:
 func _check_boot_scene() -> void:
 	_section("Boot scene")
 	var main := String(ProjectSettings.get_setting("application/run/main_scene", ""))
-	if main == "res://scenes/boot.tscn":
-		_ok("main scene configured", main)
+	# The main scene is the playable build, not the Phase 0 diagnostic. This check
+	# originally pinned it to scenes/boot.tscn, which was right while boot.tscn was
+	# the only scene there was — and became wrong the moment the game had something
+	# to play, because it made "F5 shows a diagnostic screen" the asserted, passing
+	# behaviour. scenes/boot.tscn is kept and still checked below, since the
+	# foundation it verifies is worth being able to run on its own.
+	if main == "res://scenes/playable.tscn":
+		_ok("main scene is the playable build", main)
 	else:
-		_no("main scene", "expected res://scenes/boot.tscn, got '%s'" % main)
+		_no("main scene", "expected res://scenes/playable.tscn, got '%s'" % main)
+
+	if ResourceLoader.exists("res://scenes/boot.tscn"):
+		_ok("the Phase 0 diagnostic scene is still available",
+			"godot --path . scenes/boot.tscn")
+	else:
+		_no("boot scene", "res://scenes/boot.tscn is gone")
 
 	if not ResourceLoader.exists(main):
 		_no("boot scene loads", "%s does not exist" % main)

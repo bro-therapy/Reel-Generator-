@@ -93,6 +93,23 @@ func _make_materials() -> void:
 
 # ---------------------------------------------------------------- primitives
 
+## Hides the mesh of walls on the camera side of a room while keeping their
+## collision. Guide §12 fixes the camera — it never rotates — so the +Z wall of
+## every space is always the one between the viewer and the floor, and drawing it
+## means its lit outer face fills the bottom third of the screen while the room you
+## are standing in occupies a band in the middle.
+##
+## Only `visible` is touched. The StaticBody is a child of the mesh and physics
+## does not care about visibility, so the player still cannot walk out through a
+## wall they cannot see. Turn it off to inspect the blockout as solid geometry.
+@export var hide_camera_side_walls := true
+
+## Anything whose near face sits at or beyond this much +Z from its room centre is
+## a camera-side wall. Half a wall thickness of slack, so a wall exactly on the
+## boundary counts.
+const CAMERA_SIDE_EPSILON := 0.51
+
+
 func _box(parent: Node3D, centre: Vector3, size: Vector3, mat: Material, collide := true) -> MeshInstance3D:
 	var mesh := BoxMesh.new()
 	mesh.size = size
@@ -293,7 +310,10 @@ func _build_box_walls(room: Node3D, s: WardLayout.Space, openings: Dictionary) -
 			var length := v.y - v.x
 			if length <= 0.01:
 				continue
-			_box(room, Vector3((v.x + v.y) * 0.5, y, z), Vector3(length, h, t), _wall_mat)
+			var wall := _box(room, Vector3((v.x + v.y) * 0.5, y, z), Vector3(length, h, t), _wall_mat)
+			# South is +Z, which is the side the fixed camera looks from.
+			if hide_camera_side_walls and side == "south":
+				wall.visible = false
 
 
 ## The boss plaza is circular, so its wall is a ring of short segments with a gap
@@ -435,7 +455,11 @@ func _corridor_leg(parent: Node3D, from: Vector3, to: Vector3, width: float, mat
 	for sign_value in [-1.0, 1.0]:
 		var offset := Vector3(0, h * 0.5, sign_value * width * 0.5) if along_x else Vector3(sign_value * width * 0.5, h * 0.5, 0)
 		var wall_size := Vector3(length, h, t) if along_x else Vector3(t, h, length)
-		_box(parent, centre + offset, wall_size, _wall_mat)
+		var wall := _box(parent, centre + offset, wall_size, _wall_mat)
+		# A corridor running along X has a +Z side wall, and it is in the way for
+		# the same reason a room's south wall is. One running along Z does not.
+		if hide_camera_side_walls and along_x and sign_value > 0.0:
+			wall.visible = false
 
 
 ## A violet frame across the opening. Route map draws the Rift branch and the

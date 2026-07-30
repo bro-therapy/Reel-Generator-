@@ -69,6 +69,7 @@ done
 run_suite "realistic vfx" "scripts/tests/vfx_acceptance.gd"
 run_suite "audio" "scripts/tests/audio_acceptance.gd"
 run_suite "presentation" "scripts/tests/presentation_acceptance.gd"
+run_suite "playable" "scripts/tests/playable_acceptance.gd"
 
 echo
 echo "────────────────────────────────────────────"
