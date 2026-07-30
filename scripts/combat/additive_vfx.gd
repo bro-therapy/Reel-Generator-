@@ -76,6 +76,7 @@ func configure(d: AdditiveVfxData) -> void:
 	_material.set_shader_parameter("energy", data.energy * energy_scale)
 	_material.set_shader_parameter("fade", 1.0)
 	_material.set_shader_parameter("facing", int(data.facing))
+	_material.set_shader_parameter("tint", data.tint)
 	# Not a per-effect choice: it comes from the palette, so a friendly effect
 	# cannot be authored on top of a hostile telegraph by mistake.
 	_material.render_priority = data.render_priority()
@@ -146,7 +147,7 @@ func _apply(frame: int) -> void:
 		return
 	if frame != _frame:
 		_frame = frame
-		_material.set_shader_parameter("frame", frame)
+		_material.set_shader_parameter("frame", data.cell_for(frame))
 	_material.set_shader_parameter("fade", _fade_at(_elapsed))
 
 

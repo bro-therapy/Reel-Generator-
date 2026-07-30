@@ -39,6 +39,16 @@ enum Palette {
 @export var cols: int = 4
 @export var rows: int = 6
 @export var frame_count: int = 24
+
+## Index of the first cell to play, for sheets whose grid does not start at 0.
+##
+## Measured, not hypothetical: three of the four CodeManu sheets installed here
+## have an EMPTY cell at index 0 and their animation starting at index 1
+## (10_weaponhit blanks [0, 31..35], 5_magickahit blanks [0, 37..43],
+## 1_magicspell blanks [0, 75..80]). Playing from 0 puts a one-frame hole at the
+## exact instant the player is looking at the hit. Trailing blanks need no
+## handling — frame_count already excludes them.
+@export var first_frame: int = 0
 @export var fps: float = 24.0
 @export var loop: bool = false
 
@@ -52,6 +62,25 @@ enum Palette {
 @export var facing: Facing = Facing.UPRIGHT
 @export var palette: Palette = Palette.HOSTILE
 
+## Multiplied into the sheet's own colour.
+##
+## Exists for NEUTRAL source art. The best free effect sheets are 97-100% white
+## on purpose — CodeManu's weapon-hit, tbbk's sword slash — precisely so the game
+## decides the side. White art plus this tint is how one sheet serves both the
+## violet friendly bolt and a warm hostile one, which the shader always supported
+## (`uniform vec4 tint`) and nothing ever set.
+##
+## Left white by default so every existing effect renders byte-identically: the
+## four authored sheets already carry their own correct colour.
+@export var tint: Color = Color(1.0, 1.0, 1.0, 1.0)
+
+
+## The tint a neutral sheet should get for its declared side, when no explicit
+## tint is set. Not applied automatically — a sheet that already carries colour
+## must not be re-tinted — but available to whoever authors a .tres.
+static func palette_tint(side: Palette) -> Color:
+	return Color(0.62, 0.45, 1.0) if side == Palette.FRIENDLY else Color(1.0, 0.5, 0.15)
+
 ## Multiplies the light added to the frame. Above 1.0 blows the core out to white,
 ## which is what sells a hot effect.
 @export var energy: float = 1.0
@@ -59,6 +88,11 @@ enum Palette {
 ## Fraction of the animation spent fading out, so a one-shot does not vanish on a
 ## hard cut. Loops ignore it — they are stopped explicitly.
 @export_range(0.0, 1.0) var fade_out_fraction: float = 0.25
+
+
+## The sheet cell for a playback index, honouring first_frame.
+func cell_for(index: int) -> int:
+	return first_frame + clampi(index, 0, maxi(0, frame_count - 1))
 
 
 func duration() -> float:

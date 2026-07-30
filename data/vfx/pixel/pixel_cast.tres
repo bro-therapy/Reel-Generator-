@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AdditiveVfxData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/additive_vfx_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/vfx/pixel/1_magicspell.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"pixel_cast"
+texture = ExtResource("2_tex")
+cols = 9
+rows = 9
+frame_count = 74
+first_frame = 1
+fps = 30.0
+loop = false
+aspect = 1.0
+world_height = 3.4
+facing = 0
+palette = 0
+energy = 0.85
+fade_out_fraction = 0.3
+tint = Color(1, 1, 1, 1)

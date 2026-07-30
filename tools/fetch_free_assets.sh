@@ -35,11 +35,18 @@ spec = json.loads(pathlib.Path("docs/FREE_ASSETS.json").read_text())
 MODEL_ROOT = pathlib.Path("assets/environment/models")
 
 for key, pack in spec.get("packs", {}).items():
-    dest = MODEL_ROOT / key
-    def installed_name(f):
+    # Most packs are 3D props under assets/environment/models/<key>/; a pack may
+    # override with install_dir (the pixel FX sheets go to assets/vfx/pixel).
+    dest = pathlib.Path(pack["install_dir"]) if pack.get("install_dir") \
+        else MODEL_ROOT / key
+    renames = pack.get("rename", {})
+    def installed_name(f, _renames=None):
         name = pathlib.Path(f).name
+        renamed = (_renames or {}).get(name)
+        if renamed:
+            return renamed
         return "LICENSE.txt" if name.lower().startswith("license") else name
-    missing = [f for f in pack["files"] if not (dest / installed_name(f)).exists()]
+    missing = [f for f in pack["files"] if not (dest / installed_name(f, renames)).exists()]
     if not missing:
         print("  %s: already installed" % key)
         continue
@@ -60,8 +67,7 @@ for key, pack in spec.get("packs", {}).items():
                 # Installed flat, license normalised to LICENSE.txt. No root
                 # fallback for licenses: installing the MIRROR repo's license
                 # next to a Kenney pack would misstate what the files are under.
-                name = pathlib.Path(f).name
-                out = dest / ("LICENSE.txt" if name.lower().startswith("license") else name)
+                out = dest / installed_name(f, renames)
                 if out.exists():
                     continue
                 found = src / f

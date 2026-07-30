@@ -341,6 +341,7 @@ func _check_pool() -> void:
 		_no("pool", "loaded no effects")
 		pool.queue_free()
 		return
+	_check_tint_ownership(pool)
 
 	var id: StringName = pool.effect_ids()[0]
 	var one_shot: StringName = &""
@@ -538,6 +539,38 @@ func _okq(label: String) -> void:
 func _no(label: String, detail: String) -> void:
 	_fail += 1
 	print("  FAIL  %s  -> %s" % [label, detail])
+
+
+
+## Colour ownership, asserted on the RESOURCE rather than the source sheet.
+##
+## The four authored sheets were validated at build time by hue histogram
+## (tools/vfx_from_video.py refuses to write a wrong-side sheet). The CC0 pixel
+## sheets are deliberately near-white and take their side from the resource's
+## tint instead — so the guarantee has to be re-checked here, at the layer that
+## actually decides what the player sees.
+func _check_tint_ownership(pool: AdditiveVfxPool) -> void:
+	var wrong: Array[String] = []
+	for id in pool.effect_ids():
+		var d: AdditiveVfxData = pool.data_for(id)
+		if d == null:
+			continue
+		var t := d.tint
+		var warm := t.r > t.b + 0.12
+		var cool := t.b > t.r + 0.12
+		if d.palette == AdditiveVfxData.Palette.FRIENDLY and warm:
+			wrong.append("%s is FRIENDLY but tinted warm %s" % [id, t])
+		elif d.palette == AdditiveVfxData.Palette.HOSTILE and cool:
+			wrong.append("%s is HOSTILE but tinted cool %s" % [id, t])
+		# A cell overrun renders garbage from the next row.
+		if d.cell_for(d.frame_count - 1) >= d.cols * d.rows:
+			wrong.append("%s plays past its last cell (%d of %d)"
+				% [id, d.cell_for(d.frame_count - 1), d.cols * d.rows])
+	if wrong.is_empty():
+		_ok("every effect's tint matches its declared side",
+			"%d effects checked" % pool.effect_ids().size())
+	else:
+		_no("colour ownership", "; ".join(wrong))
 
 
 func _summary() -> void:

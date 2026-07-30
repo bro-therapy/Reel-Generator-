@@ -21,6 +21,10 @@ signal effect_started(id: StringName)
 signal effect_dropped(id: StringName)
 
 const EFFECT_DIR := "res://data/vfx/realtime"
+## Second source: the CC0 pixel effect sheets (CodeManu). Kept in its own
+## directory rather than mixed in, because realtime/ is rebuilt from generated
+## video by tools/vfx_from_video.py and would otherwise clobber them.
+const PIXEL_EFFECT_DIR := "res://data/vfx/pixel"
 
 ## Per-effect ceiling. Past this, a request is dropped rather than queued: a
 ## fifth simultaneous shockwave adds nothing a player can see, and dropping is
@@ -42,16 +46,25 @@ func _ready() -> void:
 ## hardcoded list so a new sheet is available as soon as it is built.
 func load_effects() -> int:
 	_data.clear()
-	var dir := DirAccess.open(EFFECT_DIR)
-	if dir == null:
-		push_warning("no effect directory at %s — run build_additive_vfx.gd" % EFFECT_DIR)
-		return 0
+	var found := false
+	for effect_dir in [EFFECT_DIR, PIXEL_EFFECT_DIR]:
+		if _load_dir(effect_dir):
+			found = true
+	if not found:
+		push_warning("no effects in %s or %s — run build_additive_vfx.gd"
+			% [EFFECT_DIR, PIXEL_EFFECT_DIR])
+	return _data.size()
 
+
+func _load_dir(effect_dir: String) -> bool:
+	var dir := DirAccess.open(effect_dir)
+	if dir == null:
+		return false
 	for file in dir.get_files():
 		# Exported builds rename .tres to .tres.remap, so match on the stem.
 		if not file.ends_with(".tres") and not file.ends_with(".tres.remap"):
 			continue
-		var path := "%s/%s" % [EFFECT_DIR, file.trim_suffix(".remap")]
+		var path := "%s/%s" % [effect_dir, file.trim_suffix(".remap")]
 		var d := load(path) as AdditiveVfxData
 		if d == null:
 			push_warning("%s did not load as AdditiveVfxData" % path)
@@ -60,7 +73,7 @@ func load_effects() -> int:
 		_data[key] = d
 		_free[key] = [] as Array[AdditiveVfx]
 		_live[key] = [] as Array[AdditiveVfx]
-	return _data.size()
+	return true
 
 
 func has_effect(id: StringName) -> bool:

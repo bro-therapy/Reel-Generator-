@@ -29,6 +29,33 @@ first-party GitHub repo or a pinned-commit mirror, fetched over git.
   The current package textures already read well, so these are held until a
   side-by-side comparison says they are better, not just newer.
 
+### Pixel attack/magic effects — INSTALLED (second research round)
+- **CodeManu / DavitMasia "Free Pixel Effects Pack"** — public domain, its own
+  README ships with the PNGs. 4 of 20 sheets installed as 5 effect resources:
+  `pixel_hit_friendly` / `pixel_hit_hostile` (one 97%-white sheet, two tints),
+  `pixel_magic_impact`, `pixel_cast`, `pixel_phantom`. Fetched via a pinned
+  GitHub mirror; opengameart.org is blocked from the build environment.
+  **Gotcha found by measuring:** every sheet has an EMPTY cell at grid index 0,
+  so the resources carry `first_frame = 1`. Playing from 0 puts a one-frame hole
+  at the instant of impact.
+- **Still available from the same pack, not yet wired:** 16 more sheets —
+  `4_casting`, `19_freezing`, `12_nebula`, `18_midnight`, `3_bluefire` (cool /
+  friendly); `11_fire`, `7_firespin`, `9_brightfire`, `16_sunburn`,
+  `6_flamelash`, `13_vortex` (warm / hostile); `8_protectioncircle`,
+  `15_loading`, `17_felspell`, `20_magicbubbles`, `2_magic8`.
+
+### Rejected on license grounds (recorded so nobody re-researches them)
+See `_rejected_fx_packs` in docs/FREE_ASSETS.json for the quoted terms:
+untiedgames (no raw redistribution), BDragon1727 (non-commercial only),
+Zerie (contested), pimen (no license file travels with the art).
+
+**One genuinely blocked item:** the only redistribution-plausible pixel **slash
+arc** found anywhere (tbbk's, 3x3 of 64x47, 100% white — ideal for the Sword
+Wisp) has its CC0 claim only in a third-party README, and opengameart.org cannot
+be reached from here to confirm. Not installed. If you can open
+https://opengameart.org/content/pixel-art-sword-slash-effect and it says CC0,
+say so and it goes in immediately.
+
 ### Sound effects (the next audio pass)
 - **Kenney Impact Sounds / Interface Sounds / RPG Audio / Digital Audio** — CC0,
   via the ETdoFresh/kenney.nl GitHub mirror (`https://github.com/ETdoFresh/kenney.nl.git`).

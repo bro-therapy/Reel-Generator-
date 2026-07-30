@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AdditiveVfxData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/additive_vfx_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/vfx/pixel/14_phantom.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"pixel_phantom"
+texture = ExtResource("2_tex")
+cols = 8
+rows = 8
+frame_count = 61
+first_frame = 0
+fps = 30.0
+loop = false
+aspect = 1.0
+world_height = 3.2
+facing = 0
+palette = 0
+energy = 0.80
+fade_out_fraction = 0.3
+tint = Color(1, 1, 1, 1)

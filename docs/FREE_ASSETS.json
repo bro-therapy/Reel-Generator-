@@ -49,6 +49,29 @@
         "gltf/restaurantbits_texture.png",
         "LICENSE.txt"
       ]
+    },
+    "codemanu_pixel_fx": {
+      "name": "CodeManu / DavitMasia \u2014 Free Pixel Effects Pack",
+      "license": "Public domain (CC0)",
+      "license_evidence": "The pack's own README.txt travels with the PNGs: 'This is a public domain asset, you can use it for both personal and comercial purposes. No credit required but feel free to show us where you used it on @DavitMasia and @CodeManuPro at twitter. Frame size is 100x100px.' Installed at assets/vfx/pixel/LICENSE_codemanu.txt. NOTE: opengameart.org is unreachable from the build environment, so the upstream page was NOT read directly \u2014 this rests on the license file shipped alongside the pixels, corroborated by several independent integrators. One catalog lists it as CC-BY-4.0, so the credit line above is included in-repo regardless.",
+      "clone_url": "https://github.com/tomzlabs/generative-agents-ts.git",
+      "clone_path": "public/static/assets/rpg/free-pixel-effects-pack/extracted",
+      "install_dir": "assets/vfx/pixel",
+      "note": "100x100 cells. EVERY sheet used here has an EMPTY cell at grid index 0 and trailing padding blanks \u2014 data/vfx/pixel/*.tres carry first_frame=1 and an exact frame_count for that reason. 10_weaponhit is 97% white and is installed twice as one texture with two tints (friendly violet, hostile warm).",
+      "files": [
+        "10_weaponhit_spritesheet.png",
+        "5_magickahit_spritesheet.png",
+        "1_magicspell_spritesheet.png",
+        "14_phantom_spritesheet.png",
+        "README.txt"
+      ],
+      "rename": {
+        "10_weaponhit_spritesheet.png": "10_weaponhit.png",
+        "5_magickahit_spritesheet.png": "5_magickahit.png",
+        "1_magicspell_spritesheet.png": "1_magicspell.png",
+        "14_phantom_spritesheet.png": "14_phantom.png",
+        "README.txt": "LICENSE_codemanu.txt"
+      }
     }
   },
   "prop_models": {
@@ -234,5 +257,13 @@
       "license": "CC0",
       "license_evidence": "Same blanket CC0 1.0 Universal LICENSE at the mirror repo root"
     }
+  },
+  "_rejected_fx_packs": {
+    "_note": "Evaluated and REJECTED on license grounds. Recorded so nobody re-researches them.",
+    "untiedgames_super_pixel_effects": "license.txt: 'You may not publicly distribute the contents of this zip file in whole or in part, unless as part of a game or application product' \u2014 forbids raw files in a source repo.",
+    "BDragon1727_effect_packs": "'Free to use on non-commercial games' \u2014 this project may be sold.",
+    "zerie_tiny_rpg": "Contested: one integrator claims CC0, another's audit says raw redistribution is restricted. Treated as unusable until confirmed at source.",
+    "pimen_spell_packs": "No license file travels with the files; vendored credits contradict each other ('Author License' vs 'CC 4.0'). Unverified.",
+    "tbbk_sword_slash": "The ONLY redistribution-plausible pixel slash arc found (192x141, 3x3 of 64x47, 100% white, ideal for the Sword Wisp). CC0 1.0 is asserted only by a third-party README (BlueRaddish/primordial-countdown), not by a license file travelling with the art, and opengameart.org is unreachable from here. NOT installed pending confirmation from an unblocked machine: https://opengameart.org/content/pixel-art-sword-slash-effect"
   }
 }

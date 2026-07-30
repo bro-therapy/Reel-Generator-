@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="AdditiveVfxData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/data/additive_vfx_data.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/vfx/pixel/10_weaponhit.png" id="2_tex"]
+
+[resource]
+script = ExtResource("1_script")
+id = &"pixel_hit_friendly"
+texture = ExtResource("2_tex")
+cols = 6
+rows = 6
+frame_count = 30
+first_frame = 1
+fps = 34.0
+loop = false
+aspect = 1.0
+world_height = 2.2
+facing = 1
+palette = 0
+energy = 0.85
+fade_out_fraction = 0.3
+tint = Color(0.62, 0.45, 1, 1)

@@ -94,6 +94,10 @@ func _on_hero_fired(_target: Node3D, _damage: int, _crit: bool, weapon: FocusWea
 func _on_hero_bolt_impact(at: Vector3) -> void:
 	if particles != null:
 		particles.burst(&"impact_violet", at)
+	# CC0 pixel flipbook over the particles: the sheet is 97% white and gets its
+	# violet from the resource's tint, so the same art also serves the hostile
+	# side without a second download.
+	_effect(&"pixel_hit_friendly", at, 1.0)
 	_sound(&"staff_impact", at)
 
 
@@ -233,12 +237,14 @@ func bind_enemy(enemy: EnemyBase) -> void:
 			_sound(StringName("%s_death" % family), _origin(enemy))
 			# Warm ember burst — the hostile side's colour, never violet.
 			if particles != null:
-				particles.burst(&"death_warm", _origin(enemy) + Vector3(0, 0.5, 0)))
+				particles.burst(&"death_warm", _origin(enemy) + Vector3(0, 0.5, 0))
+			_effect(&"pixel_hit_hostile", _origin(enemy) + Vector3(0, 0.7, 0), 1.3))
 	enemy.damaged.connect(
 		func(_amount: int, _remaining: int) -> void:
 			_sound(StringName("%s_hit" % family), _origin(enemy))
 			if particles != null:
-				particles.burst(&"hit_warm", _origin(enemy) + Vector3(0, 0.6, 0)))
+				particles.burst(&"hit_warm", _origin(enemy) + Vector3(0, 0.6, 0))
+			_effect(&"pixel_hit_hostile", _origin(enemy) + Vector3(0, 0.6, 0), 0.8))
 
 
 ## The enemy's own id *is* the slot name — `enemy_<id>_<event>` — because the audio
