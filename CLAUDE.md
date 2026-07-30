@@ -63,6 +63,21 @@ gameplay work waiting on sound.
 - Godot rewrites `project.godot` and regenerates resource UIDs on first open; that diff
   is expected.
 
+## Handing work back to the owner
+
+**End every finished change with the terminal command to pull it.** Requested directly.
+The owner works on a Mac with the repo at `~/Desktop/project-zero-climb`, and a summary
+they cannot act on is a summary they have to come back and ask about.
+
+Paste-ready, and it must include the asset fetch — `assets/` is untracked, so a `git pull`
+alone leaves every new pack missing and the game quietly falls back to primitives:
+
+```bash
+cd ~/Desktop/project-zero-climb && \
+  git pull origin claude/repository-cleanup-reset-uyhypz && \
+  bash tools/fetch_free_assets.sh
+```
+
 ## Original work
 
 All creatures, names, designs, and systems are original to this project. Creature-collection
