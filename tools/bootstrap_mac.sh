@@ -51,10 +51,17 @@ for candidate in godot /Applications/Godot.app/Contents/MacOS/Godot \
   fi
 done
 if [[ -n "$GODOT" ]]; then
-  printf "  Godot: %s\n" "$("$GODOT" --version 2>/dev/null | head -1)"
+  GODOT_VERSION="$("$GODOT" --version 2>/dev/null | head -1)"
+  printf "  Godot: %s\n" "$GODOT_VERSION"
+  # Verified on 4.3 and 4.7. Anything in between is almost certainly fine; a 3.x
+  # is not, and would fail later with a wall of parse errors instead of one line.
+  case "$GODOT_VERSION" in
+    4.*) ;;
+    *) die "this project needs Godot 4 (4.7 recommended); found $GODOT_VERSION" ;;
+  esac
 else
   printf "  Godot not found — the art will still install, but the build and test\n"
-  printf "  steps will be skipped. Get 4.3 from godotengine.org/download.\n"
+  printf "  steps will be skipped. Get 4.7 from godotengine.org/download.\n"
 fi
 
 # Pillow and numpy do the chroma keying and the audio synthesis; PyAV reads the
@@ -155,7 +162,7 @@ fi
 
 if [[ -z "$GODOT" ]]; then
   say "Done — art installed"
-  printf "Install Godot 4.3, then open %s/project.godot\n" "$DIR"
+  printf "Install Godot 4.7, then open %s/project.godot\n" "$DIR"
   exit 0
 fi
 

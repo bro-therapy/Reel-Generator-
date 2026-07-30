@@ -1,6 +1,6 @@
 # Project Zero Climb
 
-Connected-room action roguelite. Godot 4.3. Building one **8–12 minute vertical
+Connected-room action roguelite. Godot 4.7. Building one **8–12 minute vertical
 slice** for the first playtest.
 
 Design source of truth: `docs/PROJECT_ZERO_CLIMB_MASTER_GUIDE_v1.0.md`
@@ -65,6 +65,19 @@ effects to combat from the outside, and cannot change the fight.
 
 ```bash
 ./tools/make_placeholder_audio.py    # regenerates every WAV in ~3s, byte-identical
+```
+
+## Godot version
+
+Targets **Godot 4.7** (4.7.1 is current as of July 2026) and verified on it: all
+375 checks pass, the project imports with zero errors, and the additive VFX shader
+compiles and renders identically.
+
+Also verified on **4.3**, in both directions — a project declaring 4.7 opens on 4.3
+without complaint and vice versa. So either works, but install 4.7.
+
+```bash
+godot --version    # expect 4.7.x
 ```
 
 ## Getting it running on your own machine

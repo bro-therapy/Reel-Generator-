@@ -8,7 +8,7 @@ config_version=5
 config/name="Project Zero Climb"
 config/description="Connected-room action roguelite. First-playtest vertical slice."
 run/main_scene="res://scenes/playable.tscn"
-config/features=PackedStringArray("4.3", "Forward Plus")
+config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
 

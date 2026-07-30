@@ -1,6 +1,6 @@
 # Project Zero Climb
 
-Connected-room action roguelite. Godot 4.x. The current goal is **one 8–12 minute
+Connected-room action roguelite. Godot 4.7 (also verified on 4.3). The current goal is **one 8–12 minute
 vertical slice** for the first playtest — not a full game.
 
 Design source of truth: `docs/PROJECT_ZERO_CLIMB_MASTER_GUIDE_v1.0.md`.
