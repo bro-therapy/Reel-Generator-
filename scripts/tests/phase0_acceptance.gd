@@ -54,6 +54,7 @@ func _initialize() -> void:
 	_check_input_map()
 	_check_texture_filtering()
 	_check_balance_data()
+	_check_boss_gate_reachable()
 	_check_boot_scene()
 	_check_debug_overlay()
 	_summary()
@@ -238,6 +239,62 @@ func _check_balance_data() -> void:
 		_ok("brief-critical values match the JSON")
 	else:
 		_no("balance values", "; ".join(wrong))
+
+
+## The boss gate must be reachable WITHOUT the optional Rift.
+##
+## This is the check that would have caught a real dead end: the boss door was
+## set to level 7 while the critical path only granted enough experience for
+## level 6, so the door could never open unless the player detoured through the
+## Rift — which guide §10 makes optional. A gate nobody can pass is worse than
+## no gate, and nothing else in the suite could see it, because every part was
+## individually correct.
+##
+## Recomputed from the balance file rather than hardcoded, so retuning an
+## encounter or the curve re-derives the answer instead of drifting away from it.
+func _check_boss_gate_reachable() -> void:
+	_section("Boss gate reachability")
+	var prog := Balance.progression()
+	if prog.is_empty():
+		_no("progression block", "LEVEL1_BALANCE.json has no `progression`")
+		return
+
+	var per_threat := int(prog.get("xp_per_threat", 4))
+	var base := int(prog.get("xp_base_per_level", 12))
+	var required_level := int(prog.get("boss_required_level", 7))
+
+	# Only spaces on the critical path count. The Rift is deliberately excluded:
+	# including it is precisely the mistake being guarded against.
+	var critical: Array = WardLayout.critical_path()
+	var available := 0
+	var enemy_total := 0
+	for encounter in Balance.data().get("encounters", []):
+		var space_id := StringName(String(encounter.get("id", "")))
+		if not critical.has(space_id):
+			continue
+		for wave in encounter.get("waves", []):
+			var i := 0
+			while i + 1 < wave.size():
+				var eid := String(wave[i])
+				var count := int(wave[i + 1])
+				var threat := int(Balance.enemy(eid).get("threat", 1))
+				available += threat * per_threat * count
+				enemy_total += count
+				i += 2
+
+	var needed := 0
+	for lvl in range(1, required_level):
+		needed += base * lvl
+
+	if available >= needed:
+		var margin := available - needed
+		_ok("the boss gate is reachable on the critical path",
+			"%d enemies grant %d xp; level %d costs %d (margin %d)"
+			% [enemy_total, available, required_level, needed, margin])
+	else:
+		_no("boss unreachable", "the critical path grants %d xp but level %d costs "
+			% [available, required_level] + "%d — the boss door can never open "
+			% needed + "without the OPTIONAL Rift")
 
 
 func _check_boot_scene() -> void:

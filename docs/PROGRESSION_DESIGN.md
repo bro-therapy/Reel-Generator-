@@ -98,3 +98,33 @@ The acceptance suite drives all four combinations explicitly. Its first version
 only checked "refuses while rooms remain" *if* rooms remained — and the soak had
 already cleared them, so it silently asserted nothing. A conditional assertion
 that can skip is not an assertion.
+
+## The dead end this nearly shipped with
+
+`boss_required_level` was set to 7 by eye. Computed against the actual encounter
+data afterwards, the critical path granted only enough experience for **level
+6** — so the boss door could never open unless the player detoured through the
+Rift, which guide §10 makes optional. A gate nobody can pass is worse than no
+gate, and every individual part of it was correct: the encounters were fine, the
+curve was fine, the gate was fine. Only the relationship between them was broken.
+
+Phase 0 now recomputes this from the balance file on every run and fails if the
+critical path cannot reach the threshold. Mutation-tested from both sides —
+raising the gate to level 9, and cutting `xp_per_threat` — because the defect
+can arrive from either direction.
+
+Current margin: the critical path grants **352 xp** across **48 enemies**;
+level 7 costs **252**. The Rift remains a genuine optional bonus.
+
+## Escalation
+
+`escalation_per_minute` (0.08) and `escalation_cap` (1.5) drift enemy **health**
+upward with elapsed run time. Health only, never damage: tougher enemies
+lengthen a fight, while harder-hitting ones kill a player who was coping a
+minute ago — the "way too difficult" the owner ruled out. The cap means a
+twenty-minute run is no worse than an eight-minute one.
+
+Scaling is applied per spawned instance (`EnemyBase.health_scale`), never
+written back into the shared `EnemyData` resource, for the same reason upgrade
+effects are run-scoped: a shared `.tres` mutated in place compounds across
+spawns and leaks into the next run.

@@ -154,6 +154,10 @@
         [
           "rift_crawler",
           3
+        ],
+        [
+          "rift_crawler",
+          4
         ]
       ],
       "reward": "starter_core"
@@ -170,6 +174,12 @@
           4,
           "lantern_hexer",
           2
+        ],
+        [
+          "rift_crawler",
+          5,
+          "blade_mite",
+          3
         ]
       ],
       "reward": "three_card_choice"
@@ -211,6 +221,14 @@
         [
           "gilded_bellguard",
           1
+        ],
+        [
+          "blade_mite",
+          4,
+          "siphon_eye",
+          2,
+          "lantern_hexer",
+          2
         ]
       ],
       "reward": "elite_gate_key"

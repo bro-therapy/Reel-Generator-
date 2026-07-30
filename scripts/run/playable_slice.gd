@@ -337,6 +337,24 @@ func _process(delta: float) -> void:
 		camera.tick(delta)
 
 
+## How much tougher enemies are right now, from elapsed run time.
+##
+## The owner asked that "it should increase in difficulty the longer it takes
+## you to clear out all the mobs, but don't make it way too difficult" — so this
+## is a slow drift with a hard ceiling, both from the balance file. At the
+## shipped 8%/minute and 1.5x cap, a brisk 8-minute run ends around 1.5x while a
+## player who dawdles for twenty minutes still faces 1.5x, never 2.6x.
+##
+## Applied to health only, never to damage. Tougher enemies lengthen a fight;
+## harder-hitting ones kill a player who was doing fine a minute ago, which is
+## the "way too difficult" the owner explicitly ruled out.
+func difficulty_scale() -> float:
+	var prog := Balance.progression()
+	var per_minute := float(prog.get("escalation_per_minute", 0.08))
+	var cap := float(prog.get("escalation_cap", 1.5))
+	return minf(1.0 + (_elapsed / 60.0) * per_minute, cap)
+
+
 ## Both conditions for the boss door: every other combat room cleared, AND the
 ## level threshold met. The owner asked for both — "you can't go to the boss
 ## room until you defeat all the other rooms" and "make a leveling system to
@@ -491,6 +509,10 @@ func _spawn_wave(space: WardLayout.Space, index: int) -> void:
 		for _i in how_many:
 			var enemy := ENEMY.instantiate() as EnemyBase
 			enemy.data = data
+			# Escalation is applied to the INSTANCE, never to `data` — that is a
+			# shared .tres, and scaling it would compound across every later
+			# spawn and leak into the next run.
+			enemy.health_scale = difficulty_scale()
 			add_child(enemy)
 			# A ring inside the room, away from the doorway the hero came through.
 			var angle := TAU * float(slot) / 8.0
@@ -554,6 +576,14 @@ func _wave_count(id: StringName) -> int:
 ## Deepest wave index this space has spawned, or -1 if it never started.
 func deepest_wave_reached(id: StringName) -> int:
 	return int(_deepest_wave.get(id, -1))
+
+
+## How many enemies one specific wave of a space declares.
+func wave_size_for(id: StringName, index: int) -> int:
+	var total := 0
+	for entry in _wave_for(id, index):
+		total += int(entry[1])
+	return total
 
 
 func total_enemies_for(id: StringName) -> int:

@@ -421,21 +421,39 @@ func _check_state_graph() -> void:
 
 func _check_encounter_parsing() -> void:
 	print("\nEncounters parsed from LEVEL1_BALANCE.json")
-	var expected := {
-		"arrival": [1, 3], "combat_a": [2, 12],
-		"optional_rift": [2, 12], "combat_b": [3, 12], "boss": [1, 1],
-	}
+	# Derived from the JSON, not pinned to a snapshot of it. The literal table
+	# that used to live here broke the moment an encounter was retuned, which
+	# says nothing about whether the PARSER works — the thing actually under
+	# test. What must hold is that every declared encounter round-trips: the
+	# parser sees the same wave count and the same enemy total the file states.
 	var wrong: Array[String] = []
-	for id in expected:
-		var d := EncounterData.from_balance(String(id))
+	var seen := 0
+	for entry in Balance.data().get("encounters", []):
+		var id := String(entry.get("id", ""))
+		if id == "":
+			continue
+		seen += 1
+		var waves: Array = entry.get("waves", [])
+		var declared_enemies := 0
+		for wave in waves:
+			var i := 1
+			while i < wave.size():
+				declared_enemies += int(wave[i])
+				i += 2
+
+		var d := EncounterData.from_balance(id)
 		if d == null:
 			wrong.append("%s missing" % id)
 			continue
-		var e: Array = expected[id]
-		if d.wave_count() != int(e[0]) or d.total_enemies() != int(e[1]):
-			wrong.append("%s %d waves/%d enemies, expected %d/%d" % [id, d.wave_count(), d.total_enemies(), int(e[0]), int(e[1])])
+		if d.wave_count() != waves.size() or d.total_enemies() != declared_enemies:
+			wrong.append("%s parsed %d waves/%d enemies, JSON declares %d/%d"
+				% [id, d.wave_count(), d.total_enemies(), waves.size(), declared_enemies])
+
+	if seen == 0:
+		wrong.append("no encounters declared in the balance file at all")
 	if wrong.is_empty():
-		_ok("all five encounters parse", "wave and enemy counts match the JSON")
+		_ok("every encounter round-trips from the JSON",
+			"%d encounters, wave and enemy counts match" % seen)
 	else:
 		_no("encounter parsing", "; ".join(wrong))
 

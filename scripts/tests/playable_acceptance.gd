@@ -507,13 +507,19 @@ func _check_combat_triggers() -> void:
 	# encounter — guide §9 gives it three Rift Crawlers, and they sat unspawned in
 	# the balance file until the trigger stopped requiring kind == COMBAT. So the
 	# baseline at boot is arrival's declared count, not zero.
-	var arrival_declared: int = _slice.total_enemies_for(&"arrival")
+	# Only the FIRST wave is on the floor at boot — the rest arrive as the fight
+	# progresses. This compared against the encounter's grand total, which was
+	# the same number while arrival had a single wave and stopped being so the
+	# moment it gained a second.
+	var arrival_declared: int = _slice.wave_size_for(&"arrival", 0)
 	if arrival_declared <= 0:
 		_no("arrival encounter", "balance file declares no arrival enemies")
 	elif _slice.enemies_alive() == arrival_declared \
 			and _slice.enemies_alive(&"arrival") == arrival_declared:
-		_ok("the arrival path spawns its declared intro fight",
-			"%d enemies, all tagged to arrival" % arrival_declared)
+		_ok("the arrival path spawns its first wave at boot",
+			"%d enemies, all tagged to arrival (of %d across %d waves)"
+			% [arrival_declared, _slice.total_enemies_for(&"arrival"),
+				_slice._wave_count(&"arrival")])
 	else:
 		_no("arrival encounter", "%d alive at boot (%d tagged arrival), balance says %d"
 			% [_slice.enemies_alive(), _slice.enemies_alive(&"arrival"), arrival_declared])

@@ -33,6 +33,13 @@ var target: Node3D
 
 var behavior: EnemyBehavior
 var hp := 1
+## Multiplier applied to starting health at spawn, for the run's difficulty
+## escalation. Set by whoever spawns this enemy, BEFORE it enters the tree.
+## Health only — scaling damage is how escalation becomes unfair.
+var health_scale := 1.0
+## This instance's actual starting health after escalation, so the HUD and the
+## checks read the real number rather than the resource's base value.
+var max_hp_scaled := 1
 
 ## Set by a role while it is open to extra damage — the Bellguard's exposed back
 ## after a failed slam, for instance.
@@ -56,7 +63,10 @@ func _ready() -> void:
 		push_error("EnemyBase: no EnemyData assigned")
 		return
 	data.apply_balance()
-	hp = data.max_hp
+	# Scaled per instance. `data` is a shared resource: writing the scaled value
+	# back into it would compound on every later spawn and leak into the next run.
+	max_hp_scaled = maxi(1, int(round(float(data.max_hp) * health_scale)))
+	hp = max_hp_scaled
 
 	_telegraph.shape = data.telegraph_shape
 	_telegraph.radius = data.telegraph_radius_units
