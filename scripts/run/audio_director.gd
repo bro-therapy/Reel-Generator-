@@ -102,8 +102,8 @@ func initialize() -> void:
 	_ensure_buses()
 	load_manifest()
 	_build_voices()
-	if settings_source == null and Engine.has_singleton("GameSettings"):
-		settings_source = Engine.get_singleton("GameSettings")
+	if settings_source == null:
+		settings_source = AutoloadRef.settings()
 	if settings_source != null and settings_source.has_signal("settings_changed"):
 		if not settings_source.settings_changed.is_connected(_on_setting_changed):
 			settings_source.settings_changed.connect(_on_setting_changed)

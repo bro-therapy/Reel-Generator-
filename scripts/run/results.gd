@@ -27,10 +27,7 @@ var save_service: Node = null
 func _save_service() -> Node:
 	if save_service != null:
 		return save_service
-	var loop := Engine.get_main_loop()
-	if loop is SceneTree:
-		return (loop as SceneTree).root.get_node_or_null("/root/SaveService")
-	return null
+	return AutoloadRef.save_service()
 
 
 ## Opens the result state. Latched: a boss defeat and a Stability wipe arriving

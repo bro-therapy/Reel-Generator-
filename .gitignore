@@ -1,6 +1,10 @@
 # ── Godot ────────────────────────────────────────────────────────────────────
 # Editor-generated import cache and derived data. Godot rebuilds this on open.
 .godot/
+# Godot 4.4+ drops a .uid beside every script on open. Upstream recommends
+# committing them, but this repo's update flow (tools/update_mac.sh) already
+# promises they stay untracked local files — one convention, kept.
+*.uid
 
 # Legacy Godot 3 import folder, harmless to keep ignored
 .import/

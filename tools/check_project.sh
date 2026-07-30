@@ -79,6 +79,48 @@ run_suite() {
   fi
 }
 
+# Scene-based suites run the project's main loop, so the autoloads are bound —
+# the one thing a --script suite can never test. The shell suite exists because
+# the autoload path broke while all twenty --script suites were green.
+run_scene_suite() {
+  local label="$1" scene="$2"
+  local out
+  out="$("$GODOT" --headless --path . --quit-after 3000 "$scene" 2>&1)"
+  local line
+  line="$(echo "$out" | grep -E "[0-9]+ passed, [0-9]+ failed" | tail -1)"
+
+  local script_errors
+  script_errors="$(echo "$out" | grep -c "^SCRIPT ERROR:")"
+  if [[ "$script_errors" != "0" ]]; then
+    printf "  %-22s ✗ %s script error(s) at runtime\n" "$label" "$script_errors"
+    echo "$out" | grep -A1 "^SCRIPT ERROR:" | head -6 | sed 's/^/      /'
+    failed_suites+=("$label")
+    total_fail=$((total_fail + 1))
+    return
+  fi
+
+  if [[ -z "$line" ]]; then
+    printf "  %-22s ✗ no result — suite did not report\n" "$label"
+    failed_suites+=("$label")
+    total_fail=$((total_fail + 1))
+    return
+  fi
+
+  local p f
+  p="$(echo "$line" | grep -oE '[0-9]+ passed' | grep -oE '[0-9]+')"
+  f="$(echo "$line" | grep -oE '[0-9]+ failed' | grep -oE '[0-9]+')"
+  total_pass=$((total_pass + p))
+  total_fail=$((total_fail + f))
+
+  if [[ "$f" == "0" ]]; then
+    printf "  %-22s %3d passed\n" "$label" "$p"
+  else
+    printf "  %-22s %3d passed, %d FAILED\n" "$label" "$p" "$f"
+    failed_suites+=("$label")
+    echo "$out" | grep -E "^  FAIL" | sed 's/^/      /'
+  fi
+}
+
 for i in $(seq 0 15); do
   run_suite "phase $i" "scripts/tests/phase${i}_acceptance.gd"
 done
@@ -86,6 +128,7 @@ run_suite "realistic vfx" "scripts/tests/vfx_acceptance.gd"
 run_suite "audio" "scripts/tests/audio_acceptance.gd"
 run_suite "presentation" "scripts/tests/presentation_acceptance.gd"
 run_suite "playable" "scripts/tests/playable_acceptance.gd"
+run_scene_suite "shell" "scenes/tests/shell_acceptance.tscn"
 
 echo
 echo "────────────────────────────────────────────"

@@ -243,16 +243,23 @@ func _check_balance_data() -> void:
 func _check_boot_scene() -> void:
 	_section("Boot scene")
 	var main := String(ProjectSettings.get_setting("application/run/main_scene", ""))
-	# The main scene is the playable build, not the Phase 0 diagnostic. This check
-	# originally pinned it to scenes/boot.tscn, which was right while boot.tscn was
-	# the only scene there was — and became wrong the moment the game had something
-	# to play, because it made "F5 shows a diagnostic screen" the asserted, passing
-	# behaviour. scenes/boot.tscn is kept and still checked below, since the
-	# foundation it verifies is worth being able to run on its own.
-	if main == "res://scenes/playable.tscn":
-		_ok("main scene is the playable build", main)
+	# The main scene is the game shell — title, run, results — not the Phase 0
+	# diagnostic and not the bare playable build. This check has now been wrong twice
+	# in the same way: it pinned boot.tscn while that was the only scene there was,
+	# then playable.tscn while that was the only thing you could play. Both times it
+	# made the current limitation the asserted, passing behaviour. What it is really
+	# asserting is "F5 lands on the outermost thing that exists", so both inner
+	# scenes are kept and still runnable on their own.
+	if main == "res://scenes/game.tscn":
+		_ok("main scene is the game shell", main)
 	else:
-		_no("main scene", "expected res://scenes/playable.tscn, got '%s'" % main)
+		_no("main scene", "expected res://scenes/game.tscn, got '%s'" % main)
+
+	if ResourceLoader.exists("res://scenes/playable.tscn"):
+		_ok("the playable build is still runnable on its own",
+			"godot --path . scenes/playable.tscn")
+	else:
+		_no("playable scene", "res://scenes/playable.tscn is gone")
 
 	if ResourceLoader.exists("res://scenes/boot.tscn"):
 		_ok("the Phase 0 diagnostic scene is still available",

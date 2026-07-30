@@ -1,6 +1,7 @@
+class_name PlayableSlice
 extends Node3D
 
-## The playable build. This is what F5 runs.
+## The playable build — one run of Sunfall Ward. The game shell instantiates it.
 ##
 ## Every phase built and tested its systems in isolation, and until this file
 ## existed nothing put them in the same scene — pressing play showed a Phase 0
@@ -36,6 +37,11 @@ const STARTING_SPIRITS := [
 ## door comes into view.
 const TRIGGER_RADIUS := 13.0
 
+## Emitted when the last combat encounter on the critical path is cleared.
+signal level_cleared(seconds: float)
+signal encounter_cleared(space_id: StringName)
+signal encounter_started(space_id: StringName, waves: int)
+
 var hero: Node3D
 var camera: FollowCamera
 var hud: CombatHUD
@@ -60,11 +66,14 @@ var _wave_gap := 0.0
 ## their first wave — the mutant that reverted progression passed against a
 ## cumulative count.
 var _deepest_wave: Dictionary = {}
+## Spaces whose encounter has been fully cleared, and the run clock.
+var _cleared: Dictionary = {}
+var _elapsed := 0.0
+var _level_done := false
 
 
 func _ready() -> void:
-	if Engine.has_singleton("SceneFlow"):
-		SceneFlow.set_state(SceneFlow.State.RUN)
+	AutoloadRef.set_flow_state("RUN")
 
 	_build_world()
 	_build_hero()
@@ -79,8 +88,7 @@ func _ready() -> void:
 	# would keep its shadows and particles whatever the settings say.
 	quality = QualityController.new()
 	quality.name = "Quality"
-	if Engine.has_singleton("GameSettings"):
-		quality.settings_source = GameSettings
+	quality.settings_source = AutoloadRef.settings()
 	add_child(quality)
 	quality.apply_to(self)
 
@@ -202,6 +210,7 @@ func _build_pause() -> void:
 # -------------------------------------------------------------------- combat
 
 func _process(delta: float) -> void:
+	_elapsed += delta
 	_check_combat_triggers()
 	_prune_enemies()
 	_advance_waves(delta)
@@ -228,8 +237,14 @@ func _advance_waves(delta: float) -> void:
 	var remaining := _wave_count(_active_space) - (_wave_index + 1)
 	if remaining <= 0:
 		# Encounter finished. Music is already back to explore via _prune_enemies.
+		var done := _active_space
+		_cleared[done] = true
 		_active_space = &""
 		_wave_gap = 0.0
+		encounter_cleared.emit(done)
+		presentation.audio.play(&"gate")
+		print("[play] %s cleared" % String(done))
+		_check_level_cleared()
 		return
 
 	_wave_gap += delta
@@ -259,6 +274,7 @@ func _check_combat_triggers() -> void:
 		_triggered[space.id] = true
 		_active_space = space.id
 		_wave_index = 0
+		encounter_started.emit(space.id, _wave_count(space.id))
 		_spawn_wave(space, 0)
 
 
@@ -426,6 +442,50 @@ func _handle_input() -> void:
 			rally.mark(nearest)
 			for s in summons:
 				s.set_rally_target(nearest)
+
+
+## The stage is clear when every COMBAT space on the critical path is clear.
+##
+## The Rift is deliberately excluded — WardLayout.critical_path() leaves it out,
+## and guide §10 makes it an optional detour. Requiring it would turn an optional
+## room into a mandatory one, which is a design change, not a completion rule.
+func _check_level_cleared() -> void:
+	if _level_done:
+		return
+	var required := required_encounters()
+	for id in required:
+		if not _cleared.has(id):
+			return
+	_level_done = true
+	presentation.audio.play_music(&"music_sunfall_explore")
+	presentation.audio.play(&"evolve")
+	print("[play] STAGE CLEAR — %d encounters in %.1fs" % [required.size(), _elapsed])
+	level_cleared.emit(_elapsed)
+
+
+## Combat spaces on the critical path, in route order. Read from WardLayout rather
+## than listed, so moving a room in the layout moves the win condition with it.
+func required_encounters() -> Array[StringName]:
+	var out: Array[StringName] = []
+	for id in WardLayout.critical_path():
+		var space := WardLayout.space(id)
+		if space != null and space.kind == WardLayout.Kind.COMBAT:
+			out.append(id)
+	return out
+
+
+func cleared_encounters() -> Array:
+	var out: Array = _cleared.keys()
+	out.sort()
+	return out
+
+
+func is_level_cleared() -> bool:
+	return _level_done
+
+
+func elapsed_seconds() -> float:
+	return _elapsed
 
 
 func _nearest_enemy() -> Node3D:

@@ -30,8 +30,8 @@ var _applied := {}
 
 
 func _ready() -> void:
-	if settings_source == null and Engine.has_singleton("GameSettings"):
-		settings_source = Engine.get_singleton("GameSettings")
+	if settings_source == null:
+		settings_source = AutoloadRef.settings()
 	_connect_source()
 
 
