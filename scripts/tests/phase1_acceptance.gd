@@ -348,22 +348,35 @@ func _check_pivot_correction() -> void:
 	# lands on the shared baseline.
 	var residuals: Array[String] = []
 	var worst := 0
-	var run_cols := [1, 2, 3, 4]
-	var col_names := ["idle", "walk_contact", "walk_passing", "run_extension", "run_recovery"]
 
+	# The gait layout comes from the generated file, not from a copy typed here.
+	# A hardcoded [1,2,3,4] -> run_* mapping is what broke when walk was split out
+	# of run: the check went on verifying corrections against frames that had been
+	# renumbered underneath it, and reported the mismatch as pivot bob.
+	var gaits: Dictionary = offsets_doc.get("gaits", {})
+	var col_names: Array = offsets_doc.get("column_names", [])
+	if gaits.is_empty() or col_names.is_empty():
+		_no("pivot layout", "the offsets file publishes no gait layout — rebuild with "
+			+ "scripts/tools/build_hero_spriteframes.gd")
+		return
+
+	var checked := 0
 	for dir_index in Player.DIRECTION_NAMES.size():
 		var dir_name: String = Player.DIRECTION_NAMES[dir_index]
-
-		var idle_key := "%02d_%s__00_idle" % [dir_index, dir_name]
-		worst = maxi(worst, _residual(frames, offsets, idle_key, "idle_%s/0" % dir_name, baseline, residuals))
-
-		for i in run_cols.size():
-			var col: int = run_cols[i]
-			var key := "%02d_%s__%02d_%s" % [dir_index, dir_name, col, col_names[col]]
-			worst = maxi(worst, _residual(frames, offsets, key, "run_%s/%d" % [dir_name, i], baseline, residuals))
+		for gait in gaits.keys():
+			var columns: Array = gaits[gait]
+			for i in columns.size():
+				var col := int(columns[i])
+				if col >= col_names.size():
+					continue
+				var key := "%02d_%s__%02d_%s" % [dir_index, dir_name, col, col_names[col]]
+				worst = maxi(worst, _residual(
+					frames, offsets, key, "%s_%s/%d" % [gait, dir_name, i],
+					baseline, residuals))
+				checked += 1
 
 	if residuals.is_empty():
-		_ok("no pivot bob after correction", "raw art spread was %d px, residual 0 px" % raw_spread)
+		_ok("no pivot bob after correction", "raw art spread was %d px, residual 0 px across %d animation frames" % [raw_spread, checked])
 	else:
 		_no("pivot bob", "worst residual %d px on %d frames: %s" % [worst, residuals.size(), ", ".join(residuals.slice(0, 4))])
 

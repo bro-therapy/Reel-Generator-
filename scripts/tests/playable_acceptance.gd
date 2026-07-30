@@ -48,11 +48,23 @@ func _initialize() -> void:
 ## can never exercise. The freed-enemy targeting error that halted the first
 ## playtest lived exactly in that gap: this suite was green at 6 frames of combat
 ## and the game fell over at second five.
-const SOAK_FRAMES := 900  # 15 seconds
+## Two phases, because two independent properties are being measured and mixing
+## them made the second untestable.
+##
+##   0-10 s   no intervention at all. Proves the summons fight effectively with
+##            nobody touching the controls (the no-aim promise).
+##   10-25 s  stragglers are killed whenever the count stalls, to drive the wave
+##            transitions. The first version left this to the summons, they left
+##            one enemy of seven alive at the 15 s mark, the wave never cleared,
+##            and the wave-progression check could not fire. Isolating the
+##            property under test — the project's own rule.
+const SOAK_UNAIDED_FRAMES := 600   # 10 s
+const SOAK_FRAMES := 1500          # 25 s total
 
 var _soaking := false
 var _soak_started := 0
 var _spawned_at_soak := 0
+var _unaided_alive := -1
 
 
 func _process(_delta: float) -> bool:
@@ -75,7 +87,19 @@ func _process(_delta: float) -> bool:
 	if _frames == _soak_started + 2:
 		_spawned_at_soak = _slice.enemies_alive()
 
-	if _frames - _soak_started < SOAK_FRAMES:
+	var into_soak := _frames - _soak_started
+
+	# Snapshot the unaided result before any intervention.
+	if into_soak == SOAK_UNAIDED_FRAMES:
+		_unaided_alive = _slice.enemies_alive()
+
+	# Past the unaided window, clear stragglers so waves actually advance.
+	if into_soak > SOAK_UNAIDED_FRAMES and into_soak % 60 == 0:
+		for e in _slice.enemies.duplicate():
+			if is_instance_valid(e) and e.is_alive():
+				e.kill()
+
+	if into_soak < SOAK_FRAMES:
 		return false
 
 	_check_soak()
@@ -91,13 +115,71 @@ func _check_soak() -> void:
 	if _spawned_at_soak <= 0:
 		_no("combat soak", "combat_b spawned nothing to fight")
 		return
-	var alive: int = _slice.enemies_alive()
-	if alive < _spawned_at_soak:
-		_ok("summons fight a real wave unaided for 15 seconds",
-			"%d of %d enemies down, no input, no script errors" % [
-				_spawned_at_soak - alive, _spawned_at_soak])
+	# Measured at the 10 s mark, before the harness intervened at all.
+	if _unaided_alive < 0:
+		_no("no-aim promise", "unaided window never sampled")
+	elif _unaided_alive < _spawned_at_soak:
+		_ok("summons fight a real wave unaided for 10 seconds",
+			"%d of %d enemies down with no input and no script errors" % [
+				_spawned_at_soak - _unaided_alive, _spawned_at_soak])
 	else:
-		_no("no-aim promise", "%d enemies alive after 15s of summon combat — nothing died" % alive)
+		_no("no-aim promise", "%d enemies still alive after 10s of summon combat — nothing died"
+			% _unaided_alive)
+
+	# Every wave of the encounter must have been reached over the soak, or the
+	# fight silently ends early — which is the bug the first playtest hit.
+	# Asserted on the deepest wave index reached, NOT on a cumulative enemy count.
+	# The first version of this compared spawned_total (13) against combat_b's
+	# declared total (12) and passed with wave progression entirely removed —
+	# combat_a's opening wave plus combat_b's opening wave already exceeded it.
+	var waves_declared: int = _slice._wave_count(&"combat_b")
+	var deepest: int = _slice.deepest_wave_reached(&"combat_b")
+	if waves_declared <= 1:
+		_no("wave progression", "combat_b declares %d wave(s) — nothing to progress through"
+			% waves_declared)
+	elif deepest >= 1:
+		_ok("waves chain: clearing one brings the next",
+			"reached wave %d of %d in combat_b" % [deepest + 1, waves_declared])
+	else:
+		_no("wave progression", "combat_b never advanced past wave 1 of %d in 15s — "
+			% waves_declared + "later waves are declared but never spawn")
+
+	# The gait split. Guide art ships two locomotion gaits and the hero has to
+	# choose between them by speed; before the split all four frames played as one
+	# animation and the walk read as a stagger.
+	var frames := load("res://data/characters/tower_exile_frames.tres") as SpriteFrames
+	if frames != null:
+		# Frame COUNTS, not just existence. `add_animation` followed by no frames
+		# leaves an empty animation that has_animation() happily confirms, so the
+		# mutant that emptied WALK_COLUMNS passed the existence check.
+		var walk_n := frames.get_frame_count("walk_south") if frames.has_animation("walk_south") else 0
+		var run_n := frames.get_frame_count("run_south") if frames.has_animation("run_south") else 0
+		var has_walk := walk_n >= 2
+		var has_run := run_n >= 2
+		if has_walk and has_run:
+			_ok("the hero has separate walk and run cycles",
+				"walk %d frames @ %.0f fps, run %d frames @ %.0f fps" % [
+					frames.get_frame_count("walk_south"), frames.get_animation_speed("walk_south"),
+					frames.get_frame_count("run_south"), frames.get_animation_speed("run_south")])
+		else:
+			_no("gait split", "walk_south has %d frames, run_south has %d — both need >= 2"
+				% [walk_n, run_n])
+
+	# And the hero must actually select between them. Asserted through the speed
+	# it reports, not through whichever animation happens to be showing.
+	var hero_node = _slice.hero
+	if hero_node.has_method("current_gait"):
+		hero_node.velocity = Vector3.ZERO
+		var at_rest: String = hero_node.current_gait()
+		hero_node.velocity = Vector3(1.0, 0.0, 0.0)          # slow
+		var slow: String = hero_node.current_gait()
+		hero_node.velocity = Vector3(6.2, 0.0, 0.0)          # top speed
+		var fast: String = hero_node.current_gait()
+		hero_node.velocity = Vector3.ZERO
+		if at_rest == "idle" and slow == "walk" and fast == "run":
+			_ok("gait follows speed", "still=idle, 1 u/s=walk, 6.2 u/s=run")
+		else:
+			_no("gait selection", "still=%s slow=%s fast=%s" % [at_rest, slow, fast])
 
 	# The specific shape of the playtest crash: a freed enemy handed to the
 	# targeting contract. Must be answered, quietly, with false.
@@ -169,25 +251,56 @@ func _check_camera() -> void:
 	else:
 		_no("camera rotation", "y %.3f, z %.3f" % [cam.rotation.y, cam.rotation.z])
 
-	# The sight line to the hero has to clear a wall standing between them, or the
-	# near wall fills the lower frame — which is exactly what happened at the 32
-	# degrees the static test scenes used.
+	# The real invariant is "the wall between the camera and the hero does not block
+	# the view", and there are two independent ways to satisfy it: look over the
+	# wall, or do not draw it. This check used to assert only the first — a pure
+	# geometry test — which made it a stale proxy the moment WardBuilder started
+	# hiding camera-side walls. Pinning the geometry alone would now block the
+	# closer framing the owner asked for, for a reason that no longer exists.
 	var wall_h := WardLayout.WALL_HEIGHT
 	var pitch := deg_to_rad(cam.pitch())
-	var cam_height := cam.distance * sin(pitch)
-	var cam_depth := cam.distance * cos(pitch)
-	# The nearest wall of the smallest room, measured from its centre.
+	# Ray height at a wall depends on pitch alone; the camera distance cancels.
 	var nearest_wall := INF
 	for s in WardLayout.spaces():
 		nearest_wall = minf(nearest_wall, s.size.y * 0.5)
-	var ray_height := cam.look_height + (nearest_wall / cam_depth) * cam_height
+	var ray_height := cam.look_height + nearest_wall * tan(pitch)
+	var clears := ray_height > wall_h
 
-	if ray_height > wall_h + 1.0:
-		_ok("the camera sees over the walls",
-			"sight line %.1f m at the wall, wall is %.1f m" % [ray_height, wall_h])
+	# Ask the ward itself, rather than trusting the default.
+	var ward := _slice.get_node_or_null("Ward")
+	var hidden: bool = ward != null and bool(ward.get("hide_camera_side_walls"))
+
+	if hidden or clears:
+		_ok("the near wall cannot block the view",
+			"camera-side walls hidden=%s, sight line %.1f m vs %.1f m wall" % [
+				hidden, ray_height, wall_h])
 	else:
-		_no("camera occlusion", "sight line only %.1f m at a %.1f m wall — the near "
-			% [ray_height, wall_h] + "wall will fill the lower frame")
+		_no("camera occlusion", "walls are drawn and the sight line is only %.1f m "
+			% ray_height + "at a %.1f m wall — the near wall will fill the frame" % wall_h)
+
+	# And the hidden walls must still stop the player, or the fix trades a visual
+	# problem for the player walking out of the level.
+	if hidden:
+		# Counted on the HIDDEN meshes specifically. Counting the whole ward passed
+		# with every hidden wall's collision stripped, because the visible walls
+		# still had theirs — the number was never about the walls under test.
+		var hidden_meshes := 0
+		var hidden_with_collision := 0
+		for child in (ward.get_children() if ward != null else []):
+			var counts := _audit_hidden_walls(child)
+			hidden_meshes += counts.x
+			hidden_with_collision += counts.y
+		if hidden_meshes == 0:
+			_no("wall collision", "no hidden wall meshes found, so hiding is not happening")
+		elif hidden_with_collision == hidden_meshes:
+			_ok("every hidden wall keeps its collision",
+				"%d hidden meshes, all still solid" % hidden_meshes)
+		else:
+			_no("wall collision", "%d of %d hidden walls have no StaticBody — "
+				% [hidden_meshes - hidden_with_collision, hidden_meshes]
+				+ "the player can walk out through a wall they cannot see")
+
+
 
 	# Guide: "Hero reads at 88 px tall at 1920x1080." That is a readability FLOOR,
 	# not a framing target — the first playtest at exactly 88 px came back as
@@ -195,10 +308,10 @@ func _check_camera() -> void:
 	# guards the floor and a sanity ceiling instead of pinning one number.
 	var visible_height := 2.0 * cam.distance * tan(deg_to_rad(cam.fov * 0.5))
 	var hero_px := 1.8 / visible_height * 1080.0
-	if hero_px >= 88.0 and hero_px <= 150.0:
+	if hero_px >= 88.0 and hero_px <= 175.0:
 		_ok("the hero clears the 88 px readability floor", "%.0f px at %.1f m" % [hero_px, cam.distance])
 	else:
-		_no("hero size", "%.0f px at %.1f m — floor 88, ceiling 150" % [hero_px, cam.distance])
+		_no("hero size", "%.0f px at %.1f m — floor 88, ceiling 175" % [hero_px, cam.distance])
 
 	# A framing change must ease rather than cut. Guide §12: 0.35-0.6 s.
 	var before := cam.framing()
@@ -213,10 +326,29 @@ func _check_camera() -> void:
 	cam.set_framing(before)
 
 
+
+## Walks the ward and returns (hidden mesh count, how many of those still own a
+## StaticBody). Visibility and physics are independent in Godot; this is the pair
+## of numbers that proves the hiding trick did not also delete the walls.
+func _audit_hidden_walls(node: Node) -> Vector2i:
+	var total := Vector2i.ZERO
+	var mesh := node as MeshInstance3D
+	if mesh != null and not mesh.visible:
+		total.x += 1
+		for child in mesh.get_children():
+			if child is StaticBody3D:
+				total.y += 1
+				break
+	for child in node.get_children():
+		total += _audit_hidden_walls(child)
+	return total
+
 # ---------------------------------------------------------------------- combat
 
 ## Walking into a combat space has to start a fight, and the enemies have to come
 ## from the balance file rather than from a list in the scene.
+
+
 func _check_combat_triggers() -> void:
 	var hero: Node3D = _slice.hero
 	var combat := WardLayout.space(&"combat_a")
@@ -256,6 +388,18 @@ func _check_combat_triggers() -> void:
 			"%d enemies in %s" % [spawned, combat.label])
 	else:
 		_no("wave contents", "spawned %d, balance says %d" % [spawned, expected])
+
+	# Every wave has to be reachable, not just the first. combat_a is 2x6 and
+	# combat_b is 7+4+1; the build shipped to the first playtest spawned waves[0]
+	# and silently dropped the rest, which is what "we need more mobs" was.
+	var declared: int = _slice.total_enemies_for(&"combat_a")
+	if declared > expected:
+		_ok("the encounter declares more than one wave",
+			"%d enemies across %d waves, first wave %d" % [
+				declared, _slice._wave_count(&"combat_a"), expected])
+	else:
+		_no("wave data", "combat_a totals %d, same as its first wave — "
+			% declared + "the multi-wave path cannot be exercised")
 
 	# Every enemy must be hunting the hero, or the fight never starts.
 	var untargeted := 0

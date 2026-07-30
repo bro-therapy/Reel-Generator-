@@ -313,12 +313,41 @@ func _update_facing() -> void:
 
 # ---------------------------------------------------------------- animation
 
+## Gait is chosen from actual speed, not from "is the stick held".
+##
+## The package ships two distinct gaits and the SpriteFrames builder now keeps
+## them apart, so the hero has to pick. The run threshold sits at 70% of top
+## speed: below it the subtle walk poses read correctly, above it the full stride
+## does. A dash is always a run — it is the fastest the hero ever moves.
+##
+## `_play_animation` falls through when an animation is missing, so a SpriteFrames
+## built before the split (walk_* absent) still plays run_* and nothing breaks.
+const RUN_SPEED_FRACTION := 0.7
+
 func _update_animation() -> void:
 	var planar_speed := Vector2(velocity.x, velocity.z).length()
 	var moving := planar_speed > IDLE_SPEED_EPSILON
-	var prefix := "run" if moving or state == State.DASH else "idle"
+	var top_speed := data.move_speed_units_per_second if data != null else 6.2
+	var running := state == State.DASH or planar_speed >= top_speed * RUN_SPEED_FRACTION
+
+	var prefix := "idle"
+	if moving or state == State.DASH:
+		prefix = "run" if running else "walk"
 	_play_animation("%s_%s" % [prefix, DIRECTION_NAMES[facing_index]])
 	_sync_pivot_offset()
+
+
+## The gait the hero would play right now. Exposed so a check can assert the
+## walk/run split actually engages at speed rather than trusting the animation
+## name it happens to be showing.
+func current_gait() -> String:
+	var planar_speed := Vector2(velocity.x, velocity.z).length()
+	if planar_speed <= IDLE_SPEED_EPSILON and state != State.DASH:
+		return "idle"
+	var top_speed := data.move_speed_units_per_second if data != null else 6.2
+	if state == State.DASH or planar_speed >= top_speed * RUN_SPEED_FRACTION:
+		return "run"
+	return "walk"
 
 
 func _play_animation(anim: String) -> void:

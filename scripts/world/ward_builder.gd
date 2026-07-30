@@ -338,6 +338,13 @@ func _build_round_wall(room: Node3D, s: WardLayout.Space, openings: Dictionary) 
 			_wall_mat,
 		)
 		mi.rotation.y = -a
+		# The boss plaza's +Z arc sits between the fixed camera and the floor for
+		# exactly the same reason a room's south wall does, so the same rule
+		# applies. sin(a) > 0 is the camera-facing half; the 0.25 margin keeps the
+		# segments at the east and west extremes, which frame the arena without
+		# ever standing in front of the fight.
+		if hide_camera_side_walls and sin(a) > 0.25:
+			mi.visible = false
 
 
 func _build_decal(room: Node3D, s: WardLayout.Space) -> void:

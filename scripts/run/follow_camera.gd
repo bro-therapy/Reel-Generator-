@@ -33,13 +33,17 @@ extends Camera3D
 ## so the occlusion constraint that forced 44° no longer exists, and 88 px is
 ## the guide's readability FLOOR ("reads at 88 px"), not a framing target.
 ##
-## So: 36°, which still clears a 7 m wall by 1.1 m everywhere one is visible
-## (ray height at a wall is look_height + wall_distance * tan(pitch); distance
-## cancels), and 20.5 m, which puts a 1.8 m hero at ~115 px in a 1080-tall
-## viewport — comfortably above the 88 px floor. Owner-approved framing beats
-## derived framing; the derivation only guards the floor now.
-@export var pitch_degrees := 36.0
-@export var distance := 20.5
+## 36°/20.5 m came back as still too far ("he's a little small"). Now 34°/16.0 m:
+## a 1.8 m hero reads at ~147 px, well over the 88 px floor and about 1.7x the
+## first build. The pitch drops with it so the view stays a touch more side-on,
+## which is what makes the character read as a character rather than a token.
+##
+## 16 m is close to the practical limit for this room scale — Combat B is 36 m
+## across, and at 16 m the visible width is about 24 m, so the player can still
+## see most of a fight. Going closer starts hiding enemies that are about to hit
+## you, which is a fairness problem, not a taste one.
+@export var pitch_degrees := 34.0
+@export var distance := 16.0
 ## How high above the hero's feet the camera aims. Roughly chest height, so the
 ## hero sits slightly below frame centre and there is room to see what is ahead.
 @export var look_height := 1.6

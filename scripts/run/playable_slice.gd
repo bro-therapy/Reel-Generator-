@@ -51,6 +51,15 @@ var enemies: Array[EnemyBase] = []
 
 var _triggered: Dictionary = {}
 var _spawned_total := 0
+## Which space is fighting, and how far through its wave list it is.
+var _active_space: StringName = &""
+var _wave_index := 0
+var _wave_gap := 0.0
+## Deepest wave index reached per space. Exists because "total enemies spawned"
+## cannot distinguish real wave progression from several rooms each firing only
+## their first wave — the mutant that reverted progression passed against a
+## cumulative count.
+var _deepest_wave: Dictionary = {}
 
 
 func _ready() -> void:
@@ -190,9 +199,42 @@ func _build_pause() -> void:
 func _process(delta: float) -> void:
 	_check_combat_triggers()
 	_prune_enemies()
+	_advance_waves(delta)
 	_handle_input()
 	if camera != null:
 		camera.tick(delta)
+
+
+## Clearing a wave brings the next one, after a beat.
+##
+## The pause is the point: guide §6 gives an encounter a rhythm, and a wave that
+## lands the instant the last enemy dies reads as an endless stream rather than a
+## fight with structure. It also gives the player a moment to see the room is
+## briefly clear, which is what makes the next wave feel like a wave.
+const WAVE_GAP_SECONDS := 1.6
+
+func _advance_waves(delta: float) -> void:
+	if _active_space == &"":
+		return
+	if enemies_alive() > 0:
+		_wave_gap = 0.0
+		return
+
+	var remaining := _wave_count(_active_space) - (_wave_index + 1)
+	if remaining <= 0:
+		# Encounter finished. Music is already back to explore via _prune_enemies.
+		_active_space = &""
+		_wave_gap = 0.0
+		return
+
+	_wave_gap += delta
+	if _wave_gap < WAVE_GAP_SECONDS:
+		return
+	_wave_gap = 0.0
+	_wave_index += 1
+	var space := WardLayout.space(_active_space)
+	if space != null:
+		_spawn_wave(space, _wave_index)
 
 
 ## Walking into a combat space starts its fight. A stand-in for
@@ -210,17 +252,19 @@ func _check_combat_triggers() -> void:
 		if hero.global_position.distance_to(space.centre) > TRIGGER_RADIUS:
 			continue
 		_triggered[space.id] = true
-		_spawn_wave(space)
+		_active_space = space.id
+		_wave_index = 0
+		_spawn_wave(space, 0)
 
 
 ## Wave contents come from the balance file, never from here.
-func _spawn_wave(space: WardLayout.Space) -> void:
-	var wave := _first_wave_for(space.id)
+func _spawn_wave(space: WardLayout.Space, index: int) -> void:
+	var wave := _wave_for(space.id, index)
 	if wave.is_empty():
-		push_warning("playable: no wave data for '%s'" % space.id)
 		return
 
-	var index := 0
+	# Placement counter, distinct from the wave `index` parameter.
+	var slot := 0
 	var count := 0
 	for entry in wave:
 		var enemy_id: StringName = entry[0]
@@ -234,41 +278,72 @@ func _spawn_wave(space: WardLayout.Space) -> void:
 			enemy.data = data
 			add_child(enemy)
 			# A ring inside the room, away from the doorway the hero came through.
-			var angle := TAU * float(index) / 8.0
+			var angle := TAU * float(slot) / 8.0
 			var radius := space.size.x * 0.28
 			enemy.global_position = space.centre + Vector3(
 				cos(angle) * radius, 0.0, sin(angle) * radius)
 			enemy.target = hero
 			presentation.bind_enemy(enemy)
 			enemies.append(enemy)
-			index += 1
+			slot += 1
 			count += 1
 
 	_spawned_total += count
+	_deepest_wave[space.id] = maxi(int(_deepest_wave.get(space.id, 0)), index)
 	presentation.audio.play_music(&"music_sunfall_combat")
-	print("[play] %s: %d enemies" % [space.label, count])
+	print("[play] %s wave %d/%d: %d enemies" % [
+		space.label, index + 1, _wave_count(space.id), count])
 
 
-## First wave of the encounter with this id, as [[enemy_id, count], ...].
+## Wave `index` of the encounter with this id, as [[enemy_id, count], ...].
 ##
 ## LEVEL1_BALANCE.json stores a wave as a flat alternating list — id, count, id,
 ## count — so it is unpacked here rather than assumed to be pairs.
-func _first_wave_for(id: StringName) -> Array:
+##
+## This used to read waves[0] and nothing else, which quietly discarded most of
+## every fight: combat_a has two waves of six, combat_b has three totalling
+## twelve. The owner asked for "more mobs" and the mobs were already in the
+## balance file, unspawned.
+func _wave_for(id: StringName, index: int) -> Array:
+	var waves := _waves_for(id)
+	if index < 0 or index >= waves.size():
+		return []
+	var flat: Array = waves[index]
+	var out: Array = []
+	var i := 0
+	while i + 1 < flat.size():
+		out.append([StringName(flat[i]), int(flat[i + 1])])
+		i += 2
+	return out
+
+
+func _waves_for(id: StringName) -> Array:
 	for entry in Balance.data().get("encounters", []):
 		var block: Dictionary = entry
-		if StringName(block.get("id", "")) != id:
-			continue
-		var waves: Array = block.get("waves", [])
-		if waves.is_empty():
-			return []
-		var flat: Array = waves[0]
-		var out: Array = []
-		var i := 0
-		while i + 1 < flat.size():
-			out.append([StringName(flat[i]), int(flat[i + 1])])
-			i += 2
-		return out
+		if StringName(block.get("id", "")) == id:
+			return block.get("waves", [])
 	return []
+
+
+func _wave_count(id: StringName) -> int:
+	return _waves_for(id).size()
+
+
+## Total enemies an encounter will spawn across every wave. Used by the checks so
+## they assert against the balance file rather than against one wave of it.
+## Deepest wave index this space has spawned, or -1 if it never started.
+func deepest_wave_reached(id: StringName) -> int:
+	return int(_deepest_wave.get(id, -1))
+
+
+func total_enemies_for(id: StringName) -> int:
+	var total := 0
+	for flat in _waves_for(id):
+		var i := 1
+		while i < (flat as Array).size():
+			total += int((flat as Array)[i])
+			i += 2
+	return total
 
 
 ## Dead enemies leave the list, and clearing a room puts the music back. Phase 15
@@ -285,8 +360,13 @@ func _prune_enemies() -> void:
 			e.queue_free()
 	enemies = alive
 	if before > 0 and enemies.is_empty():
-		presentation.audio.play_music(&"music_sunfall_explore")
-		print("[play] room clear")
+		# Only call it a clear when there is no next wave queued, or every gap
+		# between waves announces a room clear that has not happened.
+		var more := _active_space != &"" \
+			and _wave_count(_active_space) - (_wave_index + 1) > 0
+		if not more:
+			presentation.audio.play_music(&"music_sunfall_explore")
+			print("[play] room clear")
 
 
 func _handle_input() -> void:
