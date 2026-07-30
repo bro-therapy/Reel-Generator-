@@ -737,11 +737,67 @@ func _build_corridor(link: WardLayout.Link) -> void:
 	var mat := _rift_mat if link.optional else _floor_mat
 
 	var path := _corridor_path(a, b)
-	for i in path.size() - 1:
-		_corridor_leg(node, path[i], path[i + 1], w, mat)
+	if path.size() == 3:
+		# An L-shaped corridor. Both legs used to be built at full length, which
+		# put THREE defects at the single corner in this ward (x=94, z=-46, the
+		# far back right) and the playtest found all three:
+		#   * two coplanar floor boxes overlapping -> z-fighting, "the floor
+		#     glitching back and forth";
+		#   * each leg's side wall running across the OTHER leg's opening -> "a
+		#     tile you can't walk through";
+		#   * the outer corner left unwalled -> "open to blackness, you can walk
+		#     off the map".
+		# Fixed by making the corner its own piece: both legs stop half a width
+		# short of it, one floor patch fills it, and the two sides that are not
+		# openings get walls.
+		_corridor_corner(node, path[0], path[1], path[2], w, mat)
+	else:
+		for i in path.size() - 1:
+			_corridor_leg(node, path[i], path[i + 1], w, mat)
 
 	if link.gated:
 		_build_gate(node, path[0], path[1])
+
+
+## Builds an L: two shortened legs plus a filled, walled corner square.
+func _corridor_corner(parent: Node3D, from: Vector3, corner: Vector3, to: Vector3,
+		width: float, mat: Material) -> void:
+	var half := width * 0.5
+	var dir_in := _axis_unit(from - corner)
+	var dir_out := _axis_unit(to - corner)
+
+	# Legs stop at the corner square's edge rather than running through it.
+	_corridor_leg(parent, from, corner + dir_in * half, width, mat)
+	_corridor_leg(parent, corner + dir_out * half, to, width, mat)
+
+	# One floor for the corner itself. Nothing else covers this square, so there
+	# is no second surface to fight with.
+	_box(parent, corner + Vector3(0, -0.5, 0), Vector3(width, 1.0, width), mat)
+
+	# Wall every side that is not an opening. The two openings are exactly the
+	# directions the legs leave in; the remaining two are the outer corner, which
+	# is where the map used to end in blackness.
+	var h := WardLayout.WALL_HEIGHT
+	var t := WardLayout.WALL_THICKNESS
+	for side in [Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
+		if side.is_equal_approx(dir_in) or side.is_equal_approx(dir_out):
+			continue
+		var along_x := absf(side.x) > 0.5
+		var wall_size := Vector3(t, h, width + t) if along_x else Vector3(width + t, h, t)
+		var wall := _box(parent, corner + side * half + Vector3(0, h * 0.5, 0),
+			wall_size, _wall_mat)
+		# Same camera rule as a room's south wall: a +Z wall stands between the
+		# camera and the floor, so it keeps its collision and loses its mesh.
+		if hide_camera_side_walls and side.is_equal_approx(Vector3.BACK):
+			wall.visible = false
+
+
+## Nearest axis direction, as a unit vector. Corridors are axis-aligned, so this
+## is exact rather than an approximation.
+static func _axis_unit(v: Vector3) -> Vector3:
+	if absf(v.x) >= absf(v.z):
+		return Vector3(signf(v.x), 0.0, 0.0)
+	return Vector3(0.0, 0.0, signf(v.z))
 
 
 func _corridor_leg(parent: Node3D, from: Vector3, to: Vector3, width: float, mat: Material) -> void:

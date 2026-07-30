@@ -271,7 +271,8 @@
       "file": "assets/ui/title_key_art.png",
       "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3CqxjnFIineMHir3Lbt0KHCOqnm/hf_20260730_194100_851cc740-ba82-44ad-8013-2701ab8b0ab4.png",
       "source": "Generated for this project via Higgsfield (nano_banana_pro), 1376x768",
-      "note": "Anime key visual: the Tower Exile with all three summons in Sunfall Ward, bell tower behind. Owner-commissioned for the title screen. CDN links expire \u2014 if the fetch 404s, regenerate rather than chasing the URL."
+      "note": "Anime key visual: the Tower Exile with all three summons in Sunfall Ward, bell tower behind. Owner-commissioned for the title screen. CDN links expire \u2014 if the fetch 404s, regenerate rather than chasing the URL. `bytes` is checked on fetch: an existing file of a different size is a STALE copy from an older link and is replaced. Skipping on mere existence meant an earlier hand-downloaded image silently blocked this one forever.",
+      "bytes": 2621577
     }
   }
 }

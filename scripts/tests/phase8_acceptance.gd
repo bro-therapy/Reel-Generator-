@@ -144,6 +144,7 @@ func _process(delta: float) -> bool:
 		1:
 			_check_enclosure()
 			_check_decals_are_flat()
+			_check_corridor_corners()
 			_stage = 2
 		2:
 			_check_combat_centres_clear()
@@ -321,6 +322,87 @@ func _rooms_root() -> Node:
 		if child.get_child_count() > 0:
 			return child
 	return _world
+
+
+## Corridor corners must be sealed and single-surfaced.
+##
+## The one L-shaped corridor in this ward produced three separate playtest
+## reports from a single cause — overlapping floor boxes flickering, a leg's
+## side wall blocking the other leg, and an unwalled outer corner you could walk
+## out of. Both halves are geometric, so both are checkable.
+func _check_corridor_corners() -> void:
+	print("Corridor corners")
+	var floors: Array[Vector3] = []
+	var overlaps: Array[String] = []
+	var corners: Array[Vector3] = []
+
+	for child in _rooms_root().get_children():
+		if not String(child.name).begins_with("corridor_"):
+			continue
+		var boxes: Array[MeshInstance3D] = []
+		for node in child.get_children():
+			if node is MeshInstance3D and (node as MeshInstance3D).mesh is BoxMesh:
+				var m := node as MeshInstance3D
+				# Floor slabs sit centred half a unit below y=0.
+				if absf(m.position.y + 0.5) < 0.01:
+					boxes.append(m)
+		# Coplanar floor slabs whose footprints overlap will z-fight.
+		for i in boxes.size():
+			for j in range(i + 1, boxes.size()):
+				var a := boxes[i]
+				var b := boxes[j]
+				var sa: Vector3 = (a.mesh as BoxMesh).size
+				var sb: Vector3 = (b.mesh as BoxMesh).size
+				var overlap_x: float = minf(a.position.x + sa.x * 0.5, b.position.x + sb.x * 0.5) \
+					- maxf(a.position.x - sa.x * 0.5, b.position.x - sb.x * 0.5)
+				var overlap_z: float = minf(a.position.z + sa.z * 0.5, b.position.z + sb.z * 0.5) \
+					- maxf(a.position.z - sa.z * 0.5, b.position.z - sb.z * 0.5)
+				if overlap_x > 0.05 and overlap_z > 0.05:
+					overlaps.append("%s: two floors overlap %.1f x %.1f u"
+						% [child.name, overlap_x, overlap_z])
+		if boxes.size() >= 3:
+			corners.append(Vector3.ZERO)
+
+	if overlaps.is_empty():
+		_ok("no corridor floor z-fights", "%d corridors, no coplanar overlaps" % _corridor_count())
+	else:
+		_no("floor overlap", "; ".join(overlaps.slice(0, 3)))
+
+	# And the L corner must be walled on its outer sides. Probe just beyond the
+	# outer corner: if a ray from inside escapes to the void, the map is open.
+	var rift := WardLayout.space(&"optional_rift")
+	var well := WardLayout.space(&"spirit_well")
+	if rift == null or well == null:
+		return
+	var corner := Vector3(well.centre.x, 0.0, rift.centre.z)
+	var half := WardLayout.CORRIDOR_WIDTH * 0.5
+	var sealed_sides := 0
+	var open_sides: Array[String] = []
+	for side in [Vector3.LEFT, Vector3.RIGHT, Vector3.FORWARD, Vector3.BACK]:
+		var from: Vector3 = corner + Vector3(0.0, 1.0, 0.0)
+		var to: Vector3 = from + side * (half + 2.0)
+		var query := PhysicsRayQueryParameters3D.create(from, to)
+		query.collision_mask = WORLD_MASK
+		if not _space_state.intersect_ray(query).is_empty():
+			sealed_sides += 1
+		else:
+			open_sides.append("%.0f,%.0f" % [side.x, side.z])
+
+	# Two sides are corridor openings; the other two must be solid.
+	if sealed_sides >= 2:
+		_ok("the corridor corner is sealed on its outer sides",
+			"%d of 4 sides walled, 2 are the openings" % sealed_sides)
+	else:
+		_no("open corner", "only %d of 4 corner sides are walled (open toward %s) — "
+			% [sealed_sides, ", ".join(open_sides)] + "the player can walk off the map")
+
+
+func _corridor_count() -> int:
+	var n := 0
+	for child in _rooms_root().get_children():
+		if String(child.name).begins_with("corridor_"):
+			n += 1
+	return n
 
 
 func _check_decals_are_flat() -> void:

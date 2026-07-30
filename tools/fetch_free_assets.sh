@@ -80,9 +80,18 @@ for key, pack in spec.get("packs", {}).items():
 
 for name, meta in spec.get("images", {}).items():
     out = pathlib.Path(meta["file"])
+    # Existence is NOT enough. An image hand-downloaded from an older link sits
+    # at the same path and silently blocks the current one forever — which is
+    # exactly what stopped the title art from ever reaching the owner. When the
+    # manifest states a size, a local file of a different size is stale.
+    expected = int(meta.get("bytes", 0))
     if out.exists():
-        print("  image %s: already installed" % name)
-        continue
+        actual = out.stat().st_size
+        if expected == 0 or actual == expected:
+            print("  image %s: already installed" % name)
+            continue
+        print("  image %s: replacing a stale copy (%d bytes, expected %d)"
+              % (name, actual, expected))
     out.parent.mkdir(parents=True, exist_ok=True)
     print("  image %s: %s" % (name, meta.get("source", "")))
     try:
