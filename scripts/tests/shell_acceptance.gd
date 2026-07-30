@@ -204,10 +204,13 @@ func _check_run_started() -> void:
 		_ok("hero is in the world")
 	else:
 		_no("hero", "no hero in the tree")
-	if slice.summons.size() == 3:
-		_ok("three summons bonded")
+	# A fresh run starts with the Focus Weapon alone; summons are earned by
+	# levelling (docs/PROGRESSION_DESIGN.md). This used to assert three, which is
+	# the design the owner replaced.
+	if slice.summons.is_empty():
+		_ok("a fresh run starts with no summons", "the team is earned, not given")
 	else:
-		_no("summons", "expected 3, got %d" % slice.summons.size())
+		_no("starting team", "%d summons at level 1" % slice.summons.size())
 
 	if AutoloadRef.flow_state_name() == "RUN":
 		_ok("SceneFlow state is RUN")
@@ -267,10 +270,17 @@ func _check_victory() -> void:
 		_ok("a win records its clear time")
 	else:
 		_no("save", "expected one clear time of 212.5, got %s" % str(_save_stub.clear_times))
-	if _save_stub.starters.size() == 3:
-		_ok("all three starters recorded as discovered")
+	# However many spirits were bonded is how many get recorded — asserting a
+	# literal 3 pinned the OLD starting team and broke the moment summons became
+	# unlockable. The invariant that actually matters is that the save records
+	# exactly the run's bonds, whatever they are.
+	var bonded: Array = r.bonds
+	if _save_stub.starters.size() == bonded.size():
+		_ok("a win records exactly the spirits that were bonded",
+			"%d recorded" % _save_stub.starters.size())
 	else:
-		_no("starters", "expected 3, got %d" % _save_stub.starters.size())
+		_no("starters", "recorded %d but the run had %d bonds"
+			% [_save_stub.starters.size(), bonded.size()])
 
 	# The counts are read off the run *before* it is torn down. Reading them after
 	# is the obvious refactor and it silently reports "0 of 0".
