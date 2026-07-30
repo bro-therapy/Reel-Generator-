@@ -44,6 +44,8 @@ signal encounter_started(space_id: StringName, waves: int)
 ## Progression (owner-requested; docs/PROGRESSION_DESIGN.md).
 signal summon_unlocked(spirit_id: StringName, level: int)
 signal level_up_opened(level: int, offer: Array)
+signal room_entered(space_id: StringName)
+signal boss_door_refused(reason: String)
 
 var hero: Node3D
 var ward: Node3D
@@ -84,6 +86,7 @@ var level_up_screen: LevelUpScreen
 var _orbs: Array[ExperienceOrb] = []
 var _pending_levels := 0
 var _unlocked: Array[StringName] = []
+var _boss_warned := false
 
 
 func _ready() -> void:
@@ -332,6 +335,63 @@ func _process(delta: float) -> void:
 	_handle_input()
 	if camera != null:
 		camera.tick(delta)
+
+
+## Both conditions for the boss door: every other combat room cleared, AND the
+## level threshold met. The owner asked for both — "you can't go to the boss
+## room until you defeat all the other rooms" and "make a leveling system to
+## where the character has to be a certain level before you can reach the boss
+## room, so you have to revisit some of the rooms to level up".
+func boss_is_unlocked() -> bool:
+	return combat_rooms_cleared() and run.level >= boss_required_level()
+
+
+func boss_required_level() -> int:
+	return int(Balance.progression().get("boss_required_level", 7))
+
+
+## Every COMBAT space on the critical path, cleared. The boss room is a BOSS
+## space and is deliberately not counted among them.
+func combat_rooms_cleared() -> bool:
+	for id in required_encounters():
+		if not _cleared.has(id):
+			return false
+	return true
+
+
+## Why the door did not open, said once rather than every frame the player
+## stands in it.
+func _warn_boss_locked() -> void:
+	if _boss_warned:
+		return
+	_boss_warned = true
+	var reason := ""
+	if not combat_rooms_cleared():
+		reason = "clear every combat room first"
+	else:
+		reason = "reach level %d (currently %d)" % [boss_required_level(), run.level]
+	print("[play] the boss door is sealed — %s" % reason)
+	boss_door_refused.emit(reason)
+	presentation.audio.play_at(&"gate", hero.global_position)
+
+
+## A pulse of light on entry, then the fight. Uses the room's own lantern colour
+## so it reads as the ward waking up rather than as a UI overlay.
+func _flash_room(space: WardLayout.Space) -> void:
+	var flash := OmniLight3D.new()
+	flash.position = space.centre + Vector3(0.0, 3.0, 0.0)
+	flash.light_color = Color(1.0, 0.78, 0.45)
+	flash.omni_range = maxf(space.size.x, space.size.y) * 0.9
+	flash.shadow_enabled = false
+	flash.light_energy = 0.0
+	add_child(flash)
+
+	var tween := create_tween()
+	tween.tween_property(flash, "light_energy", 4.5, 0.18)
+	tween.tween_property(flash, "light_energy", 0.0, 0.85)
+	tween.tween_callback(flash.queue_free)
+	presentation.audio.play_at(&"gate", space.centre)
+	room_entered.emit(space.id)
 
 
 ## Clearing a wave brings the next one, after a beat.

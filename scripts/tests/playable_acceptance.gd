@@ -116,6 +116,8 @@ func _process(_delta: float) -> bool:
 	_check_soak()
 	_check_feedback_fired()
 	_check_progression()
+	_check_damage_numbers()
+	_check_boss_gate()
 	_summary()
 	return true
 
@@ -138,6 +140,60 @@ func _check_feedback_fired() -> void:
 ## were collected, levels were gained, upgrade choices were offered and taken,
 ## and summons appeared as a result. Every one of those is a separate link and
 ## any of them breaking silently would leave the others looking fine.
+## Damage numbers must actually have printed. A pool that exists but never
+## shows anything looks identical to a working one from the outside.
+## The boss door needs BOTH conditions, so all four combinations are driven
+## explicitly rather than checked against whatever state the soak happened to
+## leave behind. The first version of this asserted "refuses while rooms remain"
+## only IF rooms remained — and the soak had already cleared them, so it silently
+## checked nothing at all.
+func _check_boss_gate() -> void:
+	var run: RunState = _slice.run
+	var needed: int = _slice.boss_required_level()
+	var saved_cleared: Dictionary = _slice._cleared.duplicate()
+	var saved_level: int = run.level
+	var required: Array = _slice.required_encounters()
+
+	var results: Array[String] = []
+	var wrong: Array[String] = []
+	for rooms_done in [false, true]:
+		for level_ok in [false, true]:
+			_slice._cleared.clear()
+			if rooms_done:
+				for id in required:
+					_slice._cleared[id] = true
+			run.level = needed if level_ok else 1
+
+			var open: bool = _slice.boss_is_unlocked()
+			var should_open: bool = rooms_done and level_ok
+			results.append("rooms=%s level=%s -> %s"
+				% [rooms_done, level_ok, "open" if open else "shut"])
+			if open != should_open:
+				wrong.append("rooms=%s level=%s gave %s, expected %s"
+					% [rooms_done, level_ok, "open" if open else "shut",
+						"open" if should_open else "shut"])
+
+	_slice._cleared = saved_cleared
+	run.level = saved_level
+
+	if wrong.is_empty():
+		_ok("the boss door needs every room AND the level",
+			"only opens at level %d with all %d cleared" % [needed, required.size()])
+	else:
+		_no("boss gate", "; ".join(wrong))
+
+
+func _check_damage_numbers() -> void:
+	var dn: DamageNumbers = _slice.presentation.damage_numbers
+	if dn == null:
+		_no("damage numbers", "presentation has no damage number pool")
+		return
+	if dn.shown_count() > 0:
+		_ok("damage numbers printed over enemies", "%d during the fight" % dn.shown_count())
+	else:
+		_no("damage numbers", "pool built but nothing was ever shown in a full fight")
+
+
 func _check_progression() -> void:
 	var run: RunState = _slice.run
 	if run.level > 1:

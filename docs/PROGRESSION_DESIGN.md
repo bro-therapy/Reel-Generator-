@@ -81,3 +81,20 @@ Measured in the acceptance soak: a level-1 hero with **no summons at all** kills
 3 of 7 enemies unaided in the first 10 seconds, reaching level 3 and unlocking
 the Rune Hound partway through the first encounter. The weapon-only opening is
 viable rather than punishing, which was the risk of removing the starting team.
+
+## Room flow and the boss gate
+
+**Entering a combat room telegraphs before it spawns.** A warm light pulse from
+the room's centre, then the wave. Enemies materialising the instant you cross an
+invisible line reads as an ambush bug rather than a fight starting.
+
+**The boss door needs two things at once**, both owner-requested: every combat
+room on the critical path cleared, *and* a level threshold
+(`boss_required_level`). Either alone leaves it shut, which is what makes
+re-clearing rooms to level up a real decision rather than a suggestion. The door
+says which condition is missing, once, instead of silently refusing.
+
+The acceptance suite drives all four combinations explicitly. Its first version
+only checked "refuses while rooms remain" *if* rooms remained — and the soak had
+already cleared them, so it silently asserted nothing. A conditional assertion
+that can skip is not an assertion.

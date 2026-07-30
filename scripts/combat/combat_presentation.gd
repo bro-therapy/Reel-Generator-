@@ -38,6 +38,7 @@ const BOSS_MOVES := {
 var audio: AudioDirector
 var vfx: AdditiveVfxPool
 var particles: ParticleFx
+var damage_numbers: DamageNumbers
 
 ## Set false to run the game silent and unadorned without tearing the wiring out.
 @export var enabled := true
@@ -61,6 +62,11 @@ func _ready() -> void:
 		particles.name = "Particles"
 		add_child(particles)
 		particles.initialize()
+	if damage_numbers == null:
+		damage_numbers = DamageNumbers.new()
+		damage_numbers.name = "DamageNumbers"
+		add_child(damage_numbers)
+		damage_numbers.initialize()
 
 
 # ------------------------------------------------------------------------ boss
@@ -83,6 +89,14 @@ func bind_hero(hero: Player) -> void:
 		hero.dashed.connect(_on_hero_dashed.bind(hero))
 	if not hero.stepped.is_connected(_on_hero_stepped):
 		hero.stepped.connect(_on_hero_stepped.bind(hero))
+	if not hero.damage_taken.is_connected(_on_hero_damage_number):
+		hero.damage_taken.connect(_on_hero_damage_number.bind(hero))
+
+
+func _on_hero_damage_number(amount: int, hero: Player) -> void:
+	if damage_numbers != null:
+		damage_numbers.show_damage(amount, hero.global_position + Vector3(0, 2.0, 0),
+			false, true)
 
 
 func _on_hero_fired(_target: Node3D, _damage: int, _crit: bool, weapon: FocusWeaponController) -> void:
@@ -247,6 +261,8 @@ func bind_enemy(enemy: EnemyBase) -> void:
 			_effect(&"pixel_hit_hostile", _origin(enemy) + Vector3(0, 0.7, 0), 1.3))
 	enemy.damaged.connect(
 		func(_amount: int, _remaining: int) -> void:
+			if damage_numbers != null:
+				damage_numbers.show_damage(_amount, _origin(enemy) + Vector3(0, 1.5, 0))
 			_sound(StringName("%s_hit" % family), _origin(enemy))
 			if particles != null:
 				particles.burst(&"hit_warm", _origin(enemy) + Vector3(0, 0.6, 0))
