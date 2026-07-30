@@ -41,6 +41,9 @@ const TRIGGER_RADIUS := 13.0
 signal level_cleared(seconds: float)
 signal encounter_cleared(space_id: StringName)
 signal encounter_started(space_id: StringName, waves: int)
+## Progression (owner-requested; docs/PROGRESSION_DESIGN.md).
+signal summon_unlocked(spirit_id: StringName, level: int)
+signal level_up_opened(level: int, offer: Array)
 
 var hero: Node3D
 var ward: Node3D
@@ -72,6 +75,16 @@ var _cleared: Dictionary = {}
 var _elapsed := 0.0
 var _level_done := false
 
+## Progression. Summons are NOT bonded at the start any more — the owner asked
+## to begin with the Focus Weapon alone and earn the team, so STARTING_SPIRITS
+## is now an unlock ORDER rather than a starting roster.
+var upgrades: UpgradeEffects
+var catalog: UpgradeCatalog
+var level_up_screen: LevelUpScreen
+var _orbs: Array[ExperienceOrb] = []
+var _pending_levels := 0
+var _unlocked: Array[StringName] = []
+
 
 func _ready() -> void:
 	AutoloadRef.set_flow_state("RUN")
@@ -93,8 +106,80 @@ func _ready() -> void:
 	add_child(quality)
 	quality.apply_to(self)
 
+	_build_progression()
 	presentation.audio.play_music(&"music_sunfall_explore")
 	_report()
+
+
+## Experience orbs, upgrade rolling, and the level-up screen.
+const ORB_POOL_SIZE := 48
+
+func _build_progression() -> void:
+	upgrades = UpgradeEffects.new()
+	catalog = UpgradeCatalog.new()
+
+	var orbs := Node3D.new()
+	orbs.name = "Orbs"
+	add_child(orbs)
+	for i in ORB_POOL_SIZE:
+		var orb := ExperienceOrb.new()
+		orb.name = "Orb%d" % i
+		orbs.add_child(orb)
+		orb.collected.connect(_on_orb_collected)
+		_orbs.append(orb)
+
+	level_up_screen = LevelUpScreen.new()
+	level_up_screen.name = "LevelUp"
+	level_up_screen.visible = false
+	level_up_screen.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(level_up_screen)
+	level_up_screen.chosen.connect(_on_upgrade_chosen)
+
+	run.levelled_up.connect(_on_levelled_up)
+
+
+func _drop_orb(at: Vector3, xp: int) -> bool:
+	for orb in _orbs:
+		if not orb.is_active():
+			orb.drop(at, xp)
+			return true
+	# Pool exhausted. Award the experience anyway rather than silently losing a
+	# kill's worth of progress — a missing pickup is cosmetic, missing XP is not.
+	run.gain_experience(xp)
+	return false
+
+
+func _on_orb_collected(_orb: ExperienceOrb, amount: int) -> void:
+	run.gain_experience(amount)
+	presentation.audio.play_at(&"pickup", hero.global_position)
+
+
+## One screen per level gained, queued: a kill worth three levels owes three
+## choices, and showing them at once would collapse into one.
+func _on_levelled_up(level: int) -> void:
+	_pending_levels += 1
+	_apply_summon_unlocks()
+	if not level_up_screen.visible:
+		_show_level_up(level)
+
+
+func _show_level_up(level: int) -> void:
+	var offer := catalog.roll_offer(_unlocked, upgrades.taken())
+	level_up_screen.visible = true
+	level_up_screen.open(level, offer)
+	get_tree().paused = true
+	level_up_opened.emit(level, offer)
+
+
+func _on_upgrade_chosen(upgrade_id: StringName) -> void:
+	if upgrade_id != &"":
+		upgrades.take(upgrade_id)
+	_pending_levels = maxi(0, _pending_levels - 1)
+	if _pending_levels > 0:
+		_show_level_up(run.level)
+		return
+	level_up_screen.visible = false
+	get_tree().paused = false
 
 
 # ----------------------------------------------------------------------- world
@@ -167,21 +252,49 @@ func _build_run_state() -> void:
 	hero.dashed.connect(func() -> void: convergence.on_dash_dodge())
 
 
+## No summons at the start. The owner's call: "right off the gate I shouldn't
+## have all three summons — I should start off with just a basic shot, then once
+## I reach a certain level I can get the dog". This conflicts with guide §5
+## ("the starting team is one of each species"); the owner overrides the guide,
+## and the amendment is recorded in docs/PROGRESSION_DESIGN.md.
 func _build_summons() -> void:
-	for path in STARTING_SPIRITS:
-		var spirit := load(path) as SpiritData
-		if spirit == null:
-			push_warning("playable: cannot load %s" % path)
-			continue
-		run.bond(spirit)
+	pass
 
-		var s := SUMMON.instantiate() as SummonBase
-		s.name = String(spirit.id)
-		s.data = spirit
-		s.hero = hero
-		add_child(s)
-		s.snap_to_lane()
-		summons.append(s)
+
+## Bonds a spirit mid-run and puts it in the world. Idempotent: a second unlock
+## of the same species is ignored rather than spawning a duplicate.
+func unlock_summon(spirit_id: StringName) -> bool:
+	if _unlocked.has(spirit_id):
+		return false
+	var path := "res://data/spirits/%s.tres" % spirit_id
+	var spirit := load(path) as SpiritData
+	if spirit == null:
+		push_warning("playable: cannot load %s" % path)
+		return false
+
+	_unlocked.append(spirit_id)
+	run.bond(spirit)
+
+	var s := SUMMON.instantiate() as SummonBase
+	s.name = String(spirit.id)
+	s.data = spirit
+	s.hero = hero
+	add_child(s)
+	s.snap_to_lane()
+	summons.append(s)
+
+	presentation.play_signature(spirit_id)
+	summon_unlocked.emit(spirit_id, run.level)
+	print("[play] unlocked %s at level %d" % [spirit_id, run.level])
+	return true
+
+
+## Which species the current level entitles the player to, from the balance file.
+func _apply_summon_unlocks() -> void:
+	var thresholds: Dictionary = Balance.progression().get("summon_unlock_levels", {})
+	for spirit_id in thresholds:
+		if run.level >= int(thresholds[spirit_id]):
+			unlock_summon(StringName(spirit_id))
 
 
 func _build_presentation() -> void:
@@ -330,6 +443,7 @@ func _spawn_wave(space: WardLayout.Space, index: int) -> void:
 			# never stall Combat A's next wave.
 			enemy.set_meta(&"encounter_space", space.id)
 			presentation.bind_enemy(enemy)
+			enemy.died.connect(_on_enemy_died)
 			enemies.append(enemy)
 			slot += 1
 			count += 1
@@ -395,6 +509,18 @@ func total_enemies_for(id: StringName) -> int:
 ## Dead enemies leave the list, and clearing a room puts the music back. Phase 15
 ## asserts no growing node count across room clears, and this is the room-clear
 ## half of keeping that true.
+## An enemy that died leaves its experience where it fell. Worth is derived
+## from its own threat weight, so a new species is worth the right amount the
+## moment it exists.
+func _on_enemy_died(enemy: EnemyBase) -> void:
+	if enemy == null:
+		return
+	var threat := 1
+	if enemy.data != null:
+		threat = enemy.data.threat_weight
+	_drop_orb(enemy.global_position, RunState.experience_for_threat(threat))
+
+
 func _prune_enemies() -> void:
 	var before := enemies.size()
 	var alive: Array[EnemyBase] = []

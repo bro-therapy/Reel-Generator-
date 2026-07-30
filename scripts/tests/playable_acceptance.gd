@@ -65,6 +65,7 @@ var _soaking := false
 var _soak_started := 0
 var _spawned_at_soak := 0
 var _unaided_alive := -1
+var _upgrades_taken := 0
 
 
 func _process(_delta: float) -> bool:
@@ -93,6 +94,16 @@ func _process(_delta: float) -> bool:
 	if into_soak == SOAK_UNAIDED_FRAMES:
 		_unaided_alive = _slice.enemies_alive()
 
+	# A level-up pauses the tree and waits for a choice. Nobody is holding the
+	# controller here, so the soak takes the first card — exactly what a player
+	# does — otherwise the fight freezes on the first level and every downstream
+	# check reads as a combat failure. This is also the only place that proves
+	# the screen can be dismissed at all.
+	if _slice.level_up_screen != null and _slice.level_up_screen.visible:
+		_upgrades_taken += 1
+		_slice.level_up_screen.press(0)
+		return false
+
 	# Past the unaided window, clear stragglers so waves actually advance.
 	if into_soak > SOAK_UNAIDED_FRAMES and into_soak % 60 == 0:
 		for e in _slice.enemies.duplicate():
@@ -104,6 +115,7 @@ func _process(_delta: float) -> bool:
 
 	_check_soak()
 	_check_feedback_fired()
+	_check_progression()
 	_summary()
 	return true
 
@@ -120,6 +132,46 @@ func _check_feedback_fired() -> void:
 		_ok("feedback bursts fired during the fight", "%d bursts" % fired)
 	else:
 		_no("feedback layer", "only %d particle bursts in a full driven fight" % fired)
+
+
+## The whole progression loop, end to end, over a real fight: enemies died, orbs
+## were collected, levels were gained, upgrade choices were offered and taken,
+## and summons appeared as a result. Every one of those is a separate link and
+## any of them breaking silently would leave the others looking fine.
+func _check_progression() -> void:
+	var run: RunState = _slice.run
+	if run.level > 1:
+		_ok("the hero levelled from combat", "level %d, %d xp toward %d"
+			% [run.level, run.experience, run.experience_to_next])
+	else:
+		_no("leveling", "still level 1 after a full fight — enemies are not "
+			+ "granting experience, or orbs are not being collected")
+
+	if _upgrades_taken > 0:
+		_ok("level-ups offered a choice and accepted one", "%d taken" % _upgrades_taken)
+	else:
+		_no("upgrades", "no level-up screen appeared during the whole fight")
+
+	if _slice.upgrades.taken_count() > 0:
+		_ok("chosen upgrades were applied", "%d in effect" % _slice.upgrades.taken_count())
+	else:
+		_no("upgrade effects", "choices were made but nothing was applied")
+
+	# The unlock thresholds start at level 2, so a fight that reached level 2
+	# must have produced a summon.
+	var first_unlock := 99
+	var thresholds: Dictionary = Balance.progression().get("summon_unlock_levels", {})
+	for k in thresholds:
+		first_unlock = mini(first_unlock, int(thresholds[k]))
+	if run.level < first_unlock:
+		print("        - level %d is below the first unlock (%d); no summon expected"
+			% [run.level, first_unlock])
+	elif _slice.summons.size() > 0:
+		_ok("reaching the threshold materialised a summon",
+			"%d summon(s) by level %d" % [_slice.summons.size(), run.level])
+	else:
+		_no("summon unlock", "level %d is past the level-%d threshold and no summon "
+			% [run.level, first_unlock] + "was bonded")
 
 
 func _check_soak() -> void:
@@ -234,14 +286,32 @@ func _check_assembled() -> void:
 	else:
 		_no("assembly", "missing: %s" % ", ".join(missing))
 
-	# The starting team. Guide §5: one of each species, and all three have to be
-	# bonded *and* materialised — a bond with no summon in the world is invisible.
+	# The starting team is now EMPTY, and that is the point.
+	#
+	# Guide §5 said "one of each species" at the start. The owner overrode it:
+	# "right off the gate I shouldn't have all three summons — I should start off
+	# with just a basic shot, then once I reach a certain level I can get the
+	# dog". So the assertion is inverted: a run that begins with summons already
+	# bonded has regressed to the old design. docs/PROGRESSION_DESIGN.md records
+	# the amendment.
 	var summons: Array = _slice.summons
 	var bonded: Array = _slice.run.bonded_ids()
-	if summons.size() == 3 and bonded.size() == 3:
-		_ok("the starting team is bonded and in the world", ", ".join(bonded))
+	if summons.is_empty() and bonded.is_empty():
+		_ok("the run starts with the Focus Weapon alone", "no summons bonded at level 1")
 	else:
-		_no("starting team", "%d summons, %d bonds" % [summons.size(), bonded.size()])
+		_no("starting team", "%d summons and %d bonds at level 1 — summons are "
+			% [summons.size(), bonded.size()] + "supposed to be earned")
+
+	# ...and the unlock thresholds must be reachable, or they are decorative.
+	var thresholds: Dictionary = Balance.progression().get("summon_unlock_levels", {})
+	if thresholds.size() == 3:
+		var levels: Array = []
+		for k in thresholds:
+			levels.append("%s@%d" % [k, int(thresholds[k])])
+		levels.sort()
+		_ok("all three summons have an unlock level", ", ".join(levels))
+	else:
+		_no("unlock levels", "%d species have thresholds, expected 3" % thresholds.size())
 
 	# Each summon must have found the hero, or it will sit at the origin forever.
 	var orphans := 0

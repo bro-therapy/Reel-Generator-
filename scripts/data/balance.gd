@@ -77,5 +77,10 @@ static func overdrive() -> Dictionary:
 	return get_value("overdrive", {}) as Dictionary
 
 
+## Owner-requested leveling block. See docs/PROGRESSION_DESIGN.md.
+static func progression() -> Dictionary:
+	return data().get("progression", {})
+
+
 static func stability() -> Dictionary:
 	return get_value("stability", {}) as Dictionary

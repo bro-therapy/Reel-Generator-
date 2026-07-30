@@ -195,6 +195,12 @@ func _on_convergence_ended() -> void:
 ## it is violet by construction — the colour gate in the build tool and the VFX
 ## suite both refuse it otherwise — so a Convergence cannot come out looking
 ## hostile however loud it gets.
+## Public entry to the signature flourish, so an unlock can reuse the effect a
+## Convergence signature already plays.
+func play_signature(spirit_id: StringName) -> void:
+	_on_signature_fired(spirit_id)
+
+
 func _on_signature_fired(spirit_id: StringName) -> void:
 	if not enabled:
 		return

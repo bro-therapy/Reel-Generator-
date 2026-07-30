@@ -16,6 +16,12 @@ signal evolved(spirit_id: StringName, tier: int)
 signal currency_changed(total: int)
 signal relic_gained(relic_id: StringName)
 signal stability_changed(value: int)
+## Progression. Owner-requested addition (Vampire Survivors shape): enemies drop
+## experience, the hero levels, and each level offers a choice of upgrades. The
+## master guide predates this and has no leveling at all — see
+## docs/PROGRESSION_DESIGN.md for the amendment.
+signal experience_gained(amount: int, total: int)
+signal levelled_up(level: int)
 ## Emitted once when Stability reaches zero. Guide §7: zero ends the run.
 signal run_failed()
 
@@ -34,6 +40,13 @@ var reached_spirit_well: bool = false
 
 ## Guide §7. Every value comes from LEVEL1_BALANCE.json rather than being
 ## written here, so a balance pass does not need a code change.
+## Level 1 is the start, not level 0 — "level 1" reads as a beginning to a
+## player, "level 0" reads as a bug.
+var level: int = 1
+var experience: int = 0
+## Experience still needed for the NEXT level, recomputed on each level-up.
+var experience_to_next: int = 0
+
 var stability: int = 100
 var max_stability: int = 100
 ## The Spirit Well's heal is once per run (guide §9 Space 3).
@@ -46,6 +59,7 @@ func _init(weapon: FocusWeaponData = null) -> void:
 	var block := Balance.stability()
 	max_stability = int(block.get("start", 100))
 	stability = max_stability
+	experience_to_next = experience_for_level(level)
 
 
 # ---------------------------------------------------------------- stability
@@ -56,6 +70,57 @@ func _init(weapon: FocusWeaponData = null) -> void:
 ## that Stability can never exceed 100 or drop below zero, and there are several
 ## sources — Rift entry, elite rewards, the Spirit Well — that would each have to
 ## remember to clamp.
+## Experience needed to go FROM `from_level` to the next one.
+##
+## Deliberately a gentle curve, not exponential: the slice is 8-12 minutes, and
+## a curve that doubles every level would make level 5 unreachable inside it
+## while an entirely flat one would hand out upgrades faster than the player can
+## read them. 12 * level means level 2 costs 12, level 8 costs 84, and the
+## whole ward's enemy population is worth enough to reach roughly level 7-9.
+## Tuning lives in LEVEL1_BALANCE.json under `progression`, never here — the
+## project's standing rule. The literal is only the fallback for a checkout
+## whose balance file predates the block.
+static func experience_for_level(from_level: int) -> int:
+	var base := int(Balance.progression().get("xp_base_per_level", 12))
+	return base * maxi(1, from_level)
+
+
+## What one enemy is worth, from its own threat weight. Deriving it means a new
+## species is worth the right amount the moment it exists, with nothing to
+## forget to add.
+static func experience_for_threat(threat: int) -> int:
+	var per := int(Balance.progression().get("xp_per_threat", 4))
+	return per * maxi(1, threat)
+
+
+## Awards experience and levels up as many times as the amount covers.
+##
+## Loops rather than levelling once: a boss kill worth several levels must not
+## silently discard the surplus, and the player is owed one upgrade choice per
+## level gained. Returns how many levels were gained.
+func gain_experience(amount: int) -> int:
+	if amount <= 0 or _failed:
+		return 0
+	experience += amount
+	experience_gained.emit(amount, experience)
+
+	var gained := 0
+	while experience >= experience_to_next:
+		experience -= experience_to_next
+		level += 1
+		gained += 1
+		experience_to_next = experience_for_level(level)
+		levelled_up.emit(level)
+	return gained
+
+
+## Fraction of the way to the next level, for the HUD bar.
+func level_progress() -> float:
+	if experience_to_next <= 0:
+		return 0.0
+	return clampf(float(experience) / float(experience_to_next), 0.0, 1.0)
+
+
 func adjust_stability(delta: int) -> int:
 	var before := stability
 	stability = clampi(stability + delta, 0, max_stability)
