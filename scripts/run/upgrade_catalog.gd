@@ -27,53 +27,53 @@ enum Target { HERO, WEAPON, SUMMON, STABILITY }
 const ENTRIES := {
 	&"hero_swiftness": {
 		"target": Target.HERO, "summon": &"", "stat": &"move_speed", "amount": 0.08,
-		"title": "Swiftness", "text": "+8% movement speed", "repeatable": true,
+		"title": "Swiftness", "text": "+{pct}% movement speed", "repeatable": true,
 	},
 	&"hero_vigor": {
 		"target": Target.HERO, "summon": &"", "stat": &"max_hp", "amount": 0.12,
-		"title": "Vigor", "text": "+12% maximum health", "repeatable": true,
+		"title": "Vigor", "text": "+{pct}% maximum health", "repeatable": true,
 	},
 	&"weapon_cadence": {
 		"target": Target.WEAPON, "summon": &"", "stat": &"fire_rate", "amount": 0.12,
-		"title": "Cadence", "text": "Focus Weapon fires 12% faster", "repeatable": true,
+		"title": "Cadence", "text": "Focus Weapon fires {pct}% faster", "repeatable": true,
 	},
 	&"weapon_force": {
 		"target": Target.WEAPON, "summon": &"", "stat": &"damage", "amount": 0.15,
-		"title": "Force", "text": "+15% Focus Weapon damage", "repeatable": true,
+		"title": "Force", "text": "+{pct}% Focus Weapon damage", "repeatable": true,
 	},
 	&"weapon_reach": {
 		"target": Target.WEAPON, "summon": &"", "stat": &"range", "amount": 0.15,
-		"title": "Reach", "text": "+15% Focus Weapon range", "repeatable": true,
+		"title": "Reach", "text": "+{pct}% Focus Weapon range", "repeatable": true,
 	},
 	&"stability_ward": {
 		"target": Target.STABILITY, "summon": &"", "stat": &"max_stability", "amount": 0.15,
-		"title": "Ward", "text": "+15% maximum Stability", "repeatable": true,
+		"title": "Ward", "text": "+{pct}% maximum Stability", "repeatable": true,
 	},
 	# One damage and one cadence upgrade per species. Named for the creature so
 	# the card reads as "upgrade my dog" rather than as a stat line.
 	&"hound_fangs": {
 		"target": Target.SUMMON, "summon": &"rune_hound", "stat": &"damage", "amount": 0.2,
-		"title": "Rune Fangs", "text": "Rune Hound deals 20% more damage", "repeatable": true,
+		"title": "Rune Fangs", "text": "Rune Hound deals {pct}% more damage", "repeatable": true,
 	},
 	&"hound_pace": {
 		"target": Target.SUMMON, "summon": &"rune_hound", "stat": &"attack_speed", "amount": 0.15,
-		"title": "Hunting Pace", "text": "Rune Hound attacks 15% faster", "repeatable": true,
+		"title": "Hunting Pace", "text": "Rune Hound attacks {pct}% faster", "repeatable": true,
 	},
 	&"wisp_edge": {
 		"target": Target.SUMMON, "summon": &"sword_wisp", "stat": &"damage", "amount": 0.2,
-		"title": "Keen Edge", "text": "Sword Wisp deals 20% more damage", "repeatable": true,
+		"title": "Keen Edge", "text": "Sword Wisp deals {pct}% more damage", "repeatable": true,
 	},
 	&"wisp_flurry": {
 		"target": Target.SUMMON, "summon": &"sword_wisp", "stat": &"attack_speed", "amount": 0.15,
-		"title": "Flurry", "text": "Sword Wisp attacks 15% faster", "repeatable": true,
+		"title": "Flurry", "text": "Sword Wisp attacks {pct}% faster", "repeatable": true,
 	},
 	&"construct_calibre": {
 		"target": Target.SUMMON, "summon": &"gun_construct", "stat": &"damage", "amount": 0.2,
-		"title": "Calibre", "text": "Gun Construct deals 20% more damage", "repeatable": true,
+		"title": "Calibre", "text": "Gun Construct deals {pct}% more damage", "repeatable": true,
 	},
 	&"construct_autoloader": {
 		"target": Target.SUMMON, "summon": &"gun_construct", "stat": &"attack_speed", "amount": 0.15,
-		"title": "Autoloader", "text": "Gun Construct attacks 15% faster", "repeatable": true,
+		"title": "Autoloader", "text": "Gun Construct attacks {pct}% faster", "repeatable": true,
 	},
 }
 
@@ -122,12 +122,43 @@ func roll_offer(unlocked_summons: Array, taken: Dictionary = {}) -> Array:
 
 
 static func entry(id: StringName) -> Dictionary:
-	return ENTRIES.get(id, {})
+	var e: Dictionary = ENTRIES.get(id, {})
+	if e.is_empty():
+		return e
+	# The amount is BALANCE, and balance lives in LEVEL1_BALANCE.json — never in
+	# a behaviour script (CLAUDE.md). It sat in this table because the catalog
+	# was written before there was anywhere else to put it, which meant the one
+	# dial the owner asked to turn — "the power scaling. I need it just a little
+	# bit slower" — was buried in code.
+	var out := e.duplicate()
+	out["amount"] = amount_of(id)
+	return out
+
+
+## The tuned magnitude for one upgrade, before any per-run stacking.
+##
+## `upgrade_scale` is a single multiplier over every entry, so the whole curve
+## can be slowed in one number without re-tuning twelve of them; per-id entries
+## in `upgrade_amounts` override the catalog's default outright.
+static func amount_of(id: StringName) -> float:
+	var e: Dictionary = ENTRIES.get(id, {})
+	if e.is_empty():
+		return 0.0
+	var progression := Balance.progression()
+	var amounts: Dictionary = progression.get("upgrade_amounts", {})
+	var base := float(amounts.get(String(id), e.get("amount", 0.0)))
+	return base * float(progression.get("upgrade_scale", 1.0))
 
 
 static func title_of(id: StringName) -> String:
 	return String(ENTRIES.get(id, {}).get("title", String(id)))
 
 
+## The card's blurb, with the percentage filled in from the tuned amount rather
+## than written out beside it. A hand-written "+15%" next to a value that lives
+## somewhere else is a lie waiting to happen the first time the number moves.
 static func text_of(id: StringName) -> String:
-	return String(ENTRIES.get(id, {}).get("text", ""))
+	var template := String(ENTRIES.get(id, {}).get("text", ""))
+	if not template.contains("{pct}"):
+		return template
+	return template.replace("{pct}", str(int(round(amount_of(id) * 100.0))))

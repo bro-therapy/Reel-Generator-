@@ -44,6 +44,9 @@ signal encounter_started(space_id: StringName, waves: int)
 ## Progression (owner-requested; docs/PROGRESSION_DESIGN.md).
 signal summon_unlocked(spirit_id: StringName, level: int)
 signal level_up_opened(level: int, offer: Array)
+## The spirit-bonding page. Separate from level_up_opened because the two carry
+## different id namespaces — spirit ids here, upgrade ids there.
+signal summon_choice_opened(level: int, offer: Array)
 signal room_entered(space_id: StringName)
 signal boss_door_refused(reason: String)
 signal boss_engaged(max_hp: int)
@@ -88,6 +91,8 @@ var catalog: UpgradeCatalog
 var level_up_screen: LevelUpScreen
 var _orbs: Array[ExperienceOrb] = []
 var _pending_levels := 0
+## Spirit slots the player has earned and not yet filled.
+var _pending_summon_picks := 0
 var _unlocked: Array[StringName] = []
 var _boss_warned := false
 var boss: FirstBellBoss
@@ -170,7 +175,7 @@ func _on_levelled_up(level: int) -> void:
 	_pending_levels += 1
 	_apply_summon_unlocks()
 	if not level_up_screen.visible:
-		_show_level_up(level)
+		_show_next_choice(level)
 
 
 func _show_level_up(level: int) -> void:
@@ -181,15 +186,43 @@ func _show_level_up(level: int) -> void:
 	level_up_opened.emit(level, offer)
 
 
-func _on_upgrade_chosen(upgrade_id: StringName) -> void:
-	if upgrade_id != &"":
-		upgrades.take(upgrade_id)
-	_pending_levels = maxi(0, _pending_levels - 1)
+## Bonding comes before upgrading.
+##
+## A level that opens a spirit slot usually also owes an upgrade choice, and
+## offering the upgrades first means picking from a list that does not yet
+## include the spirit the same level just granted.
+func _show_next_choice(level: int) -> void:
+	if _pending_summon_picks > 0:
+		var offer := bondable_spirits()
+		if offer.is_empty():
+			# Every species already bonded. Drop the debt rather than opening a
+			# screen with nothing on it.
+			_pending_summon_picks = 0
+		else:
+			level_up_screen.visible = true
+			level_up_screen.open_summon_choice(level, offer)
+			get_tree().paused = true
+			summon_choice_opened.emit(level, offer)
+			return
 	if _pending_levels > 0:
-		_show_level_up(run.level)
+		_show_level_up(level)
 		return
 	level_up_screen.visible = false
 	get_tree().paused = false
+
+
+func _on_upgrade_chosen(chosen_id: StringName) -> void:
+	# One handler for both pages: the screen knows which one it was showing, and
+	# a second signal would be a second thing to keep in step.
+	if level_up_screen.mode() == LevelUpScreen.Mode.SUMMON:
+		if chosen_id != &"":
+			unlock_summon(chosen_id)
+		_pending_summon_picks = maxi(0, _pending_summon_picks - 1)
+	else:
+		if chosen_id != &"":
+			upgrades.take(chosen_id)
+		_pending_levels = maxi(0, _pending_levels - 1)
+	_show_next_choice(run.level)
 
 
 # ----------------------------------------------------------------------- world
@@ -304,12 +337,59 @@ func unlock_summon(spirit_id: StringName) -> bool:
 	return true
 
 
-## Which species the current level entitles the player to, from the balance file.
-func _apply_summon_unlocks() -> void:
+## The levels at which a spirit slot opens, ascending.
+##
+## The balance file lists a level per species. It is read here as "the Nth slot
+## opens at the Nth level", NOT as "this species arrives at this level" — the
+## owner asked to choose: "There should be a page where you can pick which
+## upgrade you want. If you want the wolf or the robot or the sword." The pacing
+## is untouched; only who fills each slot moved from the data to the player.
+func summon_unlock_levels() -> Array:
 	var thresholds: Dictionary = Balance.progression().get("summon_unlock_levels", {})
+	var levels: Array = []
 	for spirit_id in thresholds:
-		if run.level >= int(thresholds[spirit_id]):
-			unlock_summon(StringName(spirit_id))
+		levels.append(int(thresholds[spirit_id]))
+	levels.sort()
+	return levels
+
+
+## How many spirits the current level entitles the player to hold.
+func entitled_summon_count() -> int:
+	var n := 0
+	for level in summon_unlock_levels():
+		if run.level >= int(level):
+			n += 1
+	return n
+
+
+## Species that exist and are not bonded yet.
+func bondable_spirits() -> Array:
+	var out: Array = []
+	for spirit_id in Balance.progression().get("summon_unlock_levels", {}).keys():
+		var id := StringName(spirit_id)
+		if not _unlocked.has(id) and ResourceLoader.exists("res://data/spirits/%s.tres" % id):
+			out.append(id)
+	out.sort()
+	return out
+
+
+## Queues a bonding choice for every slot the level has opened and not filled.
+## Queued rather than granted — the screen is what actually bonds the spirit.
+func _apply_summon_unlocks() -> void:
+	var owed := entitled_summon_count() - _unlocked.size()
+	if owed > 0:
+		_pending_summon_picks += owed
+
+
+## Fills every open slot without asking, in the species order the balance file
+## happens to list. For headless runs and for tests that need a coherent team at
+## a given level without driving the UI — never called during play.
+func grant_entitled_summons() -> void:
+	for id in bondable_spirits():
+		if _unlocked.size() >= entitled_summon_count():
+			break
+		unlock_summon(id)
+	_pending_summon_picks = 0
 
 
 func _build_presentation() -> void:

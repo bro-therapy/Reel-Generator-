@@ -127,6 +127,7 @@ func _process(_delta: float) -> bool:
 	_check_soak()
 	_check_feedback_fired()
 	_check_summons_are_bound()
+	_check_summon_choice_is_offered()
 	_check_progression()
 	_check_damage_numbers()
 	_check_boss_gate()
@@ -149,7 +150,6 @@ func _process(_delta: float) -> bool:
 ## binding lives there rather than in _build_presentation — which is exactly the
 ## kind of placement that gets missed.
 func _check_summons_are_bound() -> void:
-	_slice._apply_summon_unlocks()
 	for spirit_id in ["rune_hound", "sword_wisp", "gun_construct"]:
 		_slice.unlock_summon(StringName(spirit_id))
 
@@ -165,6 +165,77 @@ func _check_summons_are_bound() -> void:
 			"%d bonded" % _slice.summons.size())
 	else:
 		_no("summon binding", "fights silently: %s" % ", ".join(unbound))
+
+
+## The player picks their spirit; the level does not pick it for them.
+##
+## Requested: "There should be a page where you can pick which upgrade you want.
+## If you want the wolf or the robot or the sword. So you have to level up to
+## earn that." Reaching the threshold used to bond a species outright, chosen by
+## whatever order the balance file listed.
+##
+## Driven on a private slice rather than the soaked one, because the soak has
+## already answered every page it was shown.
+func _check_summon_choice_is_offered() -> void:
+	var packed := load(PLAYABLE) as PackedScene
+	var slice := packed.instantiate() as Node3D
+	root.add_child(slice)
+
+	var first_threshold: int = int(slice.summon_unlock_levels()[0])
+	var pages: Array = []
+	slice.summon_choice_opened.connect(
+		func(_level: int, offer: Array) -> void: pages.append(offer))
+
+	# Cross the first threshold the way a player does — through experience, so
+	# levelled_up actually fires — and answer each page as it arrives. Pages
+	# QUEUE: a second level while one is open does not open a second screen, it
+	# waits. So a test that only gains levels never sees past the first card,
+	# which is what the first version of this check did.
+	var screen: LevelUpScreen = slice.level_up_screen
+	var guard := 0
+	while pages.is_empty() and guard < 200:
+		guard += 1
+		if screen.visible:
+			if screen.mode() == LevelUpScreen.Mode.SUMMON:
+				break
+			screen.press(0)
+			continue
+		if slice.run.level >= first_threshold and pages.is_empty():
+			break
+		slice.run.gain_experience(slice.run.experience_to_next)
+
+	var problems: Array[String] = []
+	if pages.is_empty():
+		problems.append("crossing level %d offered no choice" % first_threshold)
+	if not slice.summons.is_empty():
+		problems.append("bonded %s without being asked"
+			% String((slice.summons[0] as SummonBase).name))
+
+	# Answering the page is what bonds the spirit.
+	if not pages.is_empty():
+		var offered: Array = pages[0]
+		if offered.size() < 2:
+			problems.append("only %d species offered — that is not a choice"
+				% offered.size())
+		var wanted: StringName = offered[offered.size() - 1]
+		slice.level_up_screen.press(offered.size() - 1)
+		var got: Array[String] = []
+		for s in slice.summons:
+			got.append(String((s as SummonBase).name))
+		if got != [String(wanted)]:
+			problems.append("picked %s, got %s" % [wanted, str(got)])
+
+	root.remove_child(slice)
+	slice.queue_free()
+	# The choice screen paused the tree. This script IS the tree, so unpause
+	# directly — leaving it paused would freeze every check after this one.
+	paused = false
+
+	if problems.is_empty():
+		_ok("a spirit slot opens a choice, and the choice is what bonds",
+			"level %d offered %d species" % [first_threshold, (pages[0] as Array).size()])
+	else:
+		_no("summon choice", "; ".join(problems))
 
 
 func _check_feedback_fired() -> void:
@@ -250,7 +321,10 @@ func _open_boss_door_and_enter() -> void:
 	# in a state no player could reach — level 6 with no summons — and the
 	# progression check reads that as a broken unlock.
 	_slice.run.level = _slice.boss_required_level()
-	_slice._apply_summon_unlocks()
+	# grant_ rather than _apply_: the latter now QUEUES a bonding choice for the
+	# player instead of granting one, and a queued choice nobody answers leaves
+	# the team empty.
+	_slice.grant_entitled_summons()
 	var arena := WardLayout.space(&"boss")
 	if arena != null:
 		_slice.hero.global_position = arena.centre

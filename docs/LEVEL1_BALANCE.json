@@ -274,7 +274,7 @@
   "progression": {
     "_note": "Owner-requested leveling (Vampire Survivors shape). The master guide has no leveling; see docs/PROGRESSION_DESIGN.md. Tuning lives here, never in behaviour scripts.",
     "xp_per_threat": 3,
-    "xp_base_per_level": 18,
+    "xp_base_per_level": 26,
     "orb_magnet_radius_units": 4.5,
     "orb_magnet_speed_units_per_second": 11.0,
     "orb_lifetime_seconds": 30.0,
@@ -283,10 +283,13 @@
       "sword_wisp": 6,
       "gun_construct": 9
     },
-    "boss_required_level": 6,
+    "boss_required_level": 7,
     "escalation_per_minute": 0.11,
     "escalation_cap": 1.9,
     "boss_required_clears": 2,
-    "boss_health_multiplier": 1.6
+    "boss_health_multiplier": 1.6,
+    "_pacing_note": "Retuned after the playtest note: \"It's the power scaling. I need it just a little bit slower so I don't get so strong so quick. I need to struggle a bit before I get to the boss.\" Levels cost more (xp_base_per_level 18->26), every upgrade lands at three quarters of its old size (upgrade_scale 0.75), and the boss wants level 7 rather than 6. xp_per_threat is deliberately UNCHANGED: slowing the curve by making each kill worth less would have made killing things feel worse, which is not what was asked for. Escalation is untouched too \u2014 a longer run is already a harder one, so a slower curve raises the pressure by itself. Phase 0 re-derives boss reachability from these numbers; the margin is deliberately thin, because a comfortable margin is what \"I get so strong so quick\" describes.",
+    "upgrade_scale": 0.75,
+    "upgrade_amounts": {}
   }
 }

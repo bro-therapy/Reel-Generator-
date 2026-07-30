@@ -282,6 +282,14 @@ func _check_boss_gate_reachable() -> void:
 				enemy_total += count
 				i += 2
 
+	# Every critical-path room must be cleared `boss_required_clears` times
+	# before the door opens, so that many passes of experience are GUARANTEED,
+	# not optional. Counting one pass understated the player's income by the
+	# mandatory re-clear factor and called a reachable gate unreachable.
+	var clears: int = maxi(1, int(prog.get("boss_required_clears", 1)))
+	available *= clears
+	enemy_total *= clears
+
 	var needed := 0
 	for lvl in range(1, required_level):
 		needed += base * lvl
@@ -289,8 +297,8 @@ func _check_boss_gate_reachable() -> void:
 	if available >= needed:
 		var margin := available - needed
 		_ok("the boss gate is reachable on the critical path",
-			"%d enemies grant %d xp; level %d costs %d (margin %d)"
-			% [enemy_total, available, required_level, needed, margin])
+			"%d enemies over %d required clears grant %d xp; level %d costs %d (margin %d)"
+			% [enemy_total, clears, available, required_level, needed, margin])
 	else:
 		_no("boss unreachable", "the critical path grants %d xp but level %d costs "
 			% [available, required_level] + "%d — the boss door can never open "
