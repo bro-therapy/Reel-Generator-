@@ -44,74 +44,96 @@ const KEY_ART := "res://assets/ui/title_key_art.png"
 
 
 func _build() -> void:
+	# Key art behind everything. Generated for this project (anime key visual of
+	# the Tower Exile with all three summons in Sunfall Ward) and installed by
+	# tools/fetch_free_assets.sh, so a checkout without it still gets a readable
+	# menu rather than a broken one.
 	var bg := ColorRect.new()
 	bg.name = "Background"
-	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	# The palette's deep indigo. Violet is the player's colour and this is the
-	# player's screen.
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.color = Color(0.055, 0.043, 0.11)
 	add_child(bg)
 
-	# The Sunfall Ward vista behind the menu — generated key art (see
-	# docs/HIGGSFIELD_ASSET_GUIDE.md), so it goes through the same "assets may be
-	# absent" gate as every other piece of art. The indigo rect stays underneath:
-	# an assetless checkout gets the old screen, not a grey void.
-	if ResourceLoader.exists(KEY_ART):
+	var art_path := "res://assets/ui/title_key_art.png"
+	if ResourceLoader.exists(art_path):
 		var art := TextureRect.new()
 		art.name = "KeyArt"
-		art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		art.texture = load(KEY_ART)
+		art.texture = load(art_path) as Texture2D
+		art.set_anchors_preset(Control.PRESET_FULL_RECT)
+		# COVER, not STRETCH: the art is 16:9 and the window may not be, and a
+		# stretched hero is worse than a cropped background.
 		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		add_child(art)
-		# Scrim between the art and the text, or the title competes with the
-		# rooftops. Indigo rather than black — same screen, same owner.
-		var scrim := ColorRect.new()
+
+		# Scrim: the art is bright warm sandstone and the buttons are light text.
+		# A vertical gradient keeps the hero visible up top while giving the menu
+		# something dark to sit on.
+		var scrim := TextureRect.new()
 		scrim.name = "Scrim"
-		scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		scrim.color = Color(0.055, 0.043, 0.11, 0.45)
+		scrim.set_anchors_preset(Control.PRESET_FULL_RECT)
+		scrim.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		scrim.stretch_mode = TextureRect.STRETCH_SCALE
+		var grad := Gradient.new()
+		grad.set_color(0, Color(0.03, 0.02, 0.07, 0.15))
+		grad.set_color(1, Color(0.03, 0.02, 0.07, 0.92))
+		var grad_tex := GradientTexture2D.new()
+		grad_tex.gradient = grad
+		grad_tex.fill_from = Vector2(0.0, 0.0)
+		grad_tex.fill_to = Vector2(0.0, 1.0)
+		scrim.texture = grad_tex
 		add_child(scrim)
 
 	var column := VBoxContainer.new()
 	column.name = "Column"
-	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 14)
+	column.set_anchors_preset(Control.PRESET_FULL_RECT)
+	column.alignment = BoxContainer.ALIGNMENT_END
+	column.add_theme_constant_override("separation", 10)
 	add_child(column)
 
 	_title = Label.new()
 	_title.name = "Title"
 	_title.text = "PROJECT ZERO CLIMB"
 	_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_title.add_theme_font_size_override("font_size", 64)
-	_title.add_theme_color_override("font_color", Color(0.86, 0.82, 1.0))
+	_title.add_theme_font_size_override("font_size", 78)
+	_title.add_theme_color_override("font_color", Color(0.97, 0.93, 1.0))
+	# Heavy outline plus a drop shadow so the wordmark survives whatever pixels
+	# happen to sit behind it — the art is busy and light in places.
+	_title.add_theme_color_override("font_outline_color", Color(0.10, 0.04, 0.22))
+	_title.add_theme_constant_override("outline_size", 14)
+	_title.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.65))
+	_title.add_theme_constant_override("shadow_offset_y", 5)
+	_title.add_theme_constant_override("shadow_offset_x", 0)
 	column.add_child(_title)
 
 	_subtitle = Label.new()
 	_subtitle.name = "Subtitle"
-	_subtitle.text = "Sunfall Ward"
+	_subtitle.text = "S U N F A L L   W A R D"
 	_subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_subtitle.add_theme_font_size_override("font_size", 26)
-	_subtitle.add_theme_color_override("font_color", Color(0.55, 0.5, 0.72))
+	_subtitle.add_theme_font_size_override("font_size", 22)
+	_subtitle.add_theme_color_override("font_color", Color(0.92, 0.80, 0.45))
+	_subtitle.add_theme_color_override("font_outline_color", Color(0.10, 0.04, 0.18))
+	_subtitle.add_theme_constant_override("outline_size", 8)
 	column.add_child(_subtitle)
 
 	var spacer := Control.new()
-	spacer.custom_minimum_size = Vector2(0, 40)
+	spacer.custom_minimum_size = Vector2(0, 34)
 	column.add_child(spacer)
 
 	for entry in BUTTONS:
 		var b := Button.new()
 		b.name = "Button_%s" % entry["id"]
 		b.text = entry["text"]
-		b.custom_minimum_size = Vector2(320, 56)
+		b.custom_minimum_size = Vector2(340, 58)
 		b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-		b.add_theme_font_size_override("font_size", 22)
+		b.add_theme_font_size_override("font_size", 24)
+		_style_button(b)
 		b.pressed.connect(_on_pressed.bind(entry["id"]))
 		column.add_child(b)
 		_buttons.append(b)
 
 	var tail := Control.new()
-	tail.custom_minimum_size = Vector2(0, 30)
+	tail.custom_minimum_size = Vector2(0, 26)
 	column.add_child(tail)
 
 	_hint = Label.new()
@@ -119,8 +141,14 @@ func _build() -> void:
 	_hint.text = "WASD move   ·   Space dash   ·   hold fire   ·   Esc pause   ·   F3 debug"
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.add_theme_font_size_override("font_size", 15)
-	_hint.add_theme_color_override("font_color", Color(0.45, 0.42, 0.56))
+	_hint.add_theme_color_override("font_color", Color(0.72, 0.68, 0.84))
+	_hint.add_theme_color_override("font_outline_color", Color(0.05, 0.03, 0.10))
+	_hint.add_theme_constant_override("outline_size", 6)
 	column.add_child(_hint)
+
+	var bottom := Control.new()
+	bottom.custom_minimum_size = Vector2(0, 40)
+	column.add_child(bottom)
 
 	# An assetless checkout is a supported state; say so here rather than letting
 	# the player discover it as invisible actors.
@@ -131,8 +159,40 @@ func _build() -> void:
 		warn.text = "art not installed (%s) — see docs/ASSET_DELIVERY.md" % ", ".join(missing)
 		warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		warn.add_theme_font_size_override("font_size", 14)
-		warn.add_theme_color_override("font_color", Color(0.9, 0.62, 0.35))
+		warn.add_theme_color_override("font_color", Color(0.95, 0.66, 0.38))
 		column.add_child(warn)
+
+
+## Buttons as translucent violet plates rather than Godot's default grey, with a
+## brighter border on focus so a controller user can see where they are — the
+## default focus ring is nearly invisible over bright key art.
+func _style_button(b: Button) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.12, 0.08, 0.24, 0.86)
+	normal.set_corner_radius_all(4)
+	normal.set_border_width_all(2)
+	normal.border_color = Color(0.45, 0.36, 0.72, 0.9)
+	normal.content_margin_top = 10
+	normal.content_margin_bottom = 10
+
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(0.22, 0.15, 0.42, 0.94)
+	hover.border_color = Color(0.72, 0.60, 1.0)
+
+	var focus := normal.duplicate() as StyleBoxFlat
+	focus.border_color = Color(0.95, 0.82, 0.45)
+	focus.set_border_width_all(3)
+
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = Color(0.30, 0.20, 0.52, 0.96)
+
+	b.add_theme_stylebox_override("normal", normal)
+	b.add_theme_stylebox_override("hover", hover)
+	b.add_theme_stylebox_override("focus", focus)
+	b.add_theme_stylebox_override("pressed", pressed)
+	b.add_theme_color_override("font_color", Color(0.94, 0.92, 1.0))
+	b.add_theme_color_override("font_hover_color", Color(1, 1, 1))
+	b.add_theme_color_override("font_focus_color", Color(1.0, 0.94, 0.78))
 
 
 func _on_pressed(id: StringName) -> void:

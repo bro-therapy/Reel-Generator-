@@ -21,7 +21,12 @@ const SAFE_AREA_MARGIN := 0.04
 var _health: ProgressBar
 var _stability: ProgressBar
 var _convergence: ProgressBar
+var _experience: ProgressBar
 var _rally: Label
+## Numeric readout per bar. Requested: "those bars on the left side, they
+## definitely need some numbers" — a bar alone shows a ratio, and a player
+## deciding whether to risk another room needs the actual figure.
+var _readouts: Dictionary = {}
 var _bonds: HBoxContainer
 var _bond_labels: Array[Label] = []
 var _left: VBoxContainer
@@ -49,6 +54,8 @@ func _build() -> void:
 	_health = _bar(left, "Health", Color("ff5b67"))
 	_stability = _bar(left, "Stability", Color("44d7e8"))
 	_convergence = _bar(left, "Convergence", Color("9c6bff"))
+	# Gold, because experience is a reward (guide §4 colour ownership).
+	_experience = _bar(left, "Experience", Color("f0c04a"))
 
 	# Bottom-right: the team.
 	_bonds = HBoxContainer.new()
@@ -97,6 +104,18 @@ func relayout() -> void:
 	# Bars are placed from their *measured* height upward off the bottom safe
 	# edge. Asking a container to be shorter than its contents does nothing —
 	# it simply overflows, which is how this first left the safe area.
+	# Bar height scales with the viewport, like the inset above it. A fixed 22 px
+	# is fine at 1080p and proportionally enormous at 720p — with four bars it
+	# grew the panel into the reserved centre band, which is precisely the
+	# fixed-pixel trap this layout is documented to avoid. Clamped so the text
+	# inside stays legible at the small end and the bars do not become slabs at
+	# the large one.
+	var bar_h: float = clampf(vp.y * 0.020, 15.0, 24.0)
+	for child in _left.get_children():
+		if child is ProgressBar:
+			(child as ProgressBar).custom_minimum_size = Vector2(bar_width, bar_h)
+			(child as ProgressBar).size = Vector2(bar_width, bar_h)
+
 	var bars_h: float = _left.get_combined_minimum_size().y
 	_left.size = Vector2(bar_width, bars_h)
 	_left.position = Vector2(inset + cushion, vp.y - inset - cushion - bars_h)
@@ -122,27 +141,87 @@ func relayout() -> void:
 ## carries the meaning instead: red health, teal Stability, violet Convergence,
 ## which is the guide's own ownership scheme.
 func _bar(parent: Control, label: String, colour: Color) -> ProgressBar:
-	var row := VBoxContainer.new()
-	row.add_theme_constant_override("separation", 0)
-	row.tooltip_text = label
-	parent.add_child(row)
-
 	var bar := ProgressBar.new()
-	bar.custom_minimum_size = Vector2(300, 14)
+	bar.name = "Bar_%s" % label
+	bar.custom_minimum_size = Vector2(300, 22)
 	bar.min_value = 0
 	bar.max_value = 100
 	bar.value = 100
 	bar.show_percentage = false
+	bar.tooltip_text = label
+
 	var fill := StyleBoxFlat.new()
 	fill.bg_color = colour
-	fill.set_corner_radius_all(4)
+	fill.set_corner_radius_all(3)
+	# A lighter top edge reads as a lit surface; it is most of what "fancier"
+	# costs here, for one line and no extra height.
+	fill.border_width_top = 2
+	fill.border_color = colour.lightened(0.45)
 	bar.add_theme_stylebox_override("fill", fill)
+
 	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.08, 0.08, 0.11, 0.9)
-	bg.set_corner_radius_all(4)
+	bg.bg_color = Color(0.06, 0.05, 0.09, 0.9)
+	bg.set_corner_radius_all(3)
+	bg.set_border_width_all(1)
+	bg.border_color = Color(0.32, 0.30, 0.42, 0.95)
 	bar.add_theme_stylebox_override("background", bg)
-	row.add_child(bar)
+	parent.add_child(bar)
+
+	# Name and figure are drawn ON the bar rather than on a caption line above
+	# it. Captions were the first attempt and they cost ~16 px of height each:
+	# with a fourth bar added, the panel grew tall enough to reach the reserved
+	# centre band and Phase 13 failed at every aspect ratio. Overlaying costs
+	# nothing, and it is what most games do anyway.
+	var overlay := HBoxContainer.new()
+	overlay.name = "Overlay"
+	overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_theme_constant_override("separation", 6)
+	# Must not eat clicks meant for anything underneath.
+	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bar.add_child(overlay)
+
+	var pad_left := Control.new()
+	pad_left.custom_minimum_size = Vector2(7, 0)
+	overlay.add_child(pad_left)
+
+	var name_label := Label.new()
+	name_label.text = label.to_upper()
+	name_label.add_theme_font_size_override("font_size", 11)
+	name_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.82))
+	name_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.75))
+	name_label.add_theme_constant_override("shadow_offset_y", 1)
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(name_label)
+
+	var spacer := Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(spacer)
+
+	var value_label := Label.new()
+	value_label.name = "Value"
+	value_label.text = "0"
+	value_label.add_theme_font_size_override("font_size", 12)
+	value_label.add_theme_color_override("font_color", Color(1, 1, 1, 0.96))
+	value_label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	value_label.add_theme_constant_override("shadow_offset_y", 1)
+	value_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(value_label)
+	_readouts[label] = value_label
+
+	var pad_right := Control.new()
+	pad_right.custom_minimum_size = Vector2(7, 0)
+	overlay.add_child(pad_right)
+
 	return bar
+
+
+func _set_readout(label: String, text: String) -> void:
+	var node: Label = _readouts.get(label)
+	if node != null:
+		node.text = text
 
 
 # ---------------------------------------------------------------- binding
@@ -168,14 +247,28 @@ func bind(state: RunState, convergence: ConvergenceController = null, rally: Ral
 func set_health(current: int, maximum: int) -> void:
 	_health.max_value = maxi(1, maximum)
 	_health.value = clampi(current, 0, maximum)
+	_set_readout("Health", "%d / %d" % [clampi(current, 0, maximum), maxi(1, maximum)])
 
 
 func set_stability(value: int) -> void:
 	_stability.value = clampi(value, 0, int(_stability.max_value))
+	_set_readout("Stability", "%d / %d" % [int(_stability.value), int(_stability.max_value)])
 
 
 func set_convergence(meter: float) -> void:
 	_convergence.value = clampf(meter, 0.0, float(_convergence.max_value))
+	# A percentage, because Convergence is a charge the player is waiting to
+	# spend rather than a pool being drained.
+	_set_readout("Convergence", "%d%%" % int(round(_convergence.value)))
+
+
+## Level and progress toward the next one.
+func set_experience(level: int, current: int, needed: int) -> void:
+	if _experience == null:
+		return
+	_experience.max_value = maxi(1, needed)
+	_experience.value = clampi(current, 0, maxi(1, needed))
+	_set_readout("Experience", "LV %d   %d / %d" % [level, current, maxi(1, needed)])
 
 
 func refresh_bonds(state: RunState) -> void:

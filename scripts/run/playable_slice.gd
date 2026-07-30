@@ -322,6 +322,14 @@ func _build_hud() -> void:
 	hud.bind(run, convergence, rally)
 	hud.set_health(hero.hp, hero.data.max_hp if hero.data != null else hero.hp)
 	hero.health_changed.connect(hud.set_health)
+	# Experience is event-driven like everything else on the HUD — nothing polls.
+	hud.set_experience(run.level, run.experience, run.experience_to_next)
+	run.experience_gained.connect(
+		func(_amount: int, _total: int) -> void:
+			hud.set_experience(run.level, run.experience, run.experience_to_next))
+	run.levelled_up.connect(
+		func(_level: int) -> void:
+			hud.set_experience(run.level, run.experience, run.experience_to_next))
 	# Stability is not connected here: hud.bind() already subscribes to it, and
 	# connecting again makes Godot log a duplicate-connection error every boot.
 

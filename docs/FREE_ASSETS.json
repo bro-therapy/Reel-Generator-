@@ -265,5 +265,13 @@
     "zerie_tiny_rpg": "Contested: one integrator claims CC0, another's audit says raw redistribution is restricted. Treated as unusable until confirmed at source.",
     "pimen_spell_packs": "No license file travels with the files; vendored credits contradict each other ('Author License' vs 'CC 4.0'). Unverified.",
     "tbbk_sword_slash": "The ONLY redistribution-plausible pixel slash arc found (192x141, 3x3 of 64x47, 100% white, ideal for the Sword Wisp). CC0 1.0 is asserted only by a third-party README (BlueRaddish/primordial-countdown), not by a license file travelling with the art, and opengameart.org is unreachable from here. NOT installed pending confirmation from an unblocked machine: https://opengameart.org/content/pixel-art-sword-slash-effect"
+  },
+  "images": {
+    "title_key_art": {
+      "file": "assets/ui/title_key_art.png",
+      "url": "https://d8j0ntlcm91z4.cloudfront.net/user_3CqxjnFIineMHir3Lbt0KHCOqnm/hf_20260730_194100_851cc740-ba82-44ad-8013-2701ab8b0ab4.png",
+      "source": "Generated for this project via Higgsfield (nano_banana_pro), 1376x768",
+      "note": "Anime key visual: the Tower Exile with all three summons in Sunfall Ward, bell tower behind. Owner-commissioned for the title screen. CDN links expire \u2014 if the fetch 404s, regenerate rather than chasing the URL."
+    }
   }
 }

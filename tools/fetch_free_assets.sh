@@ -78,6 +78,18 @@ for key, pack in spec.get("packs", {}).items():
     except Exception as e:  # noqa: BLE001 — a dead mirror must not kill setup
         print("    ! pack failed (%s) — the blockout primitives still work" % e)
 
+for name, meta in spec.get("images", {}).items():
+    out = pathlib.Path(meta["file"])
+    if out.exists():
+        print("  image %s: already installed" % name)
+        continue
+    out.parent.mkdir(parents=True, exist_ok=True)
+    print("  image %s: %s" % (name, meta.get("source", "")))
+    try:
+        urllib.request.urlretrieve(meta["url"], out)
+    except Exception as e:  # noqa: BLE001
+        print("    ! fetch failed (%s) — the menu falls back to a plain background" % e)
+
 for slot, meta in spec.get("music", {}).items():
     out = pathlib.Path(meta["file"])
     if out.exists():
