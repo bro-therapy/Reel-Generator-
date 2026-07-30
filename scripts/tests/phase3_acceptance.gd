@@ -105,6 +105,8 @@ func _physics_process(delta: float) -> bool:
 		13: _stage_screen_sizes()
 		14: _stage_room_change_start()
 		15: _stage_room_change_watch()
+		16: _stage_jitter_start()
+		17: _stage_jitter_watch()
 		_:
 			_summary()
 			return true
@@ -383,6 +385,111 @@ func _stage_screen_sizes() -> void:
 	_stage = 14
 
 
+## Follow smoothness. The hero is walked at a constant velocity and the hound's
+## per-tick step length is recorded.
+##
+## This exists because 29 checks passed while the summons visibly shook. Every
+## one of them asked "is it in the right PLACE" — none asked "did it get there
+## smoothly". The old steering was bang-bang: the follow speed (9.5 u/s) is
+## above the hero's top speed (6.2), so a moving hero produced overshoot into a
+## 0.25 u deadzone, a dead stop, a fall behind, then a sprint — alternating
+## every tick. Position was always within tolerance, so position-based checks
+## saw nothing wrong.
+##
+## The measure is the spread of step lengths once moving. Bang-bang alternates
+## near-zero and near-max, so max/mean lands around 2. Smooth steering holds a
+## near-constant step and lands near 1.
+const JITTER_SETTLE_TICKS := 90
+const JITTER_TICKS := 90
+## Below the 9.5 u/s follow speed, so a steady state exists at all. If the hero
+## outran the summon there would be no oscillation to detect — it would simply
+## run flat out forever, which is what made the first version of this check
+## vacuous.
+const HERO_STEP_PER_TICK := 0.06
+
+var _jitter_steps: Array[float] = []
+var _jitter_last := Vector3.ZERO
+var _jitter_settle := 0
+
+
+func _stage_jitter_start() -> void:
+	var hound := _summon_named("rune_hound")
+	if hound == null:
+		_no("follow smoothness", "no rune hound to measure")
+		_stage = 99
+		return
+	_jitter_steps.clear()
+	_jitter_settle = 0
+	_jitter_last = hound.global_position
+	_stage = 17
+
+
+func _stage_jitter_watch() -> void:
+	var hound := _summon_named("rune_hound")
+	if hound == null:
+		_stage = 99
+		return
+	# Constant-velocity walk, driven directly rather than through Input so the
+	# hero's acceleration curve does not confound the measurement.
+	_player.global_position += Vector3(HERO_STEP_PER_TICK, 0.0, 0.0)
+	_player.velocity = Vector3(HERO_STEP_PER_TICK * 60.0, 0.0, 0.0)
+
+	var step := hound.global_position.distance_to(_jitter_last)
+	_jitter_last = hound.global_position
+
+	# Settle FIRST. The first version recorded from tick one and measured the
+	# catch-up, during which even the bang-bang steering ran at a constant max
+	# speed — so the mutant passed. The oscillation only exists once the summon
+	# has closed to its lane and is holding station.
+	if _jitter_settle < JITTER_SETTLE_TICKS:
+		_jitter_settle += 1
+		return
+	if _jitter_steps.size() < JITTER_TICKS:
+		_jitter_steps.append(step)
+		return
+
+	var total := 0.0
+	var peak := 0.0
+	var floor_step := INF
+	for v in _jitter_steps:
+		total += v
+		peak = maxf(peak, v)
+		floor_step = minf(floor_step, v)
+	var mean := total / float(_jitter_steps.size())
+	if mean <= 0.0001:
+		_no("follow smoothness", "the summon never moved while the hero walked")
+		_stage = 99
+		return
+	# The metric is the SMALLEST step, not the spread.
+	#
+	# peak/mean was tried first and was nearly vacuous: the bang-bang mutant
+	# measured 0.0000..0.1583 u — an unmistakable stall-then-sprint — yet came to
+	# only 1.45x the mean, under a 1.5 threshold, because averaging a square wave
+	# hides it. What the defect actually IS: a summon holding station behind a
+	# hero at constant velocity should travel the SAME distance every tick. A tick
+	# where it does not move at all is a stall, and stalls are what the eye reads
+	# as shaking. So the floor is the measurement, and it is unambiguous:
+	# smooth steering holds floor/mean at 1.00, bang-bang drops it to 0.00.
+	var floor_ratio := floor_step / mean
+	if floor_ratio >= 0.5:
+		_ok("summons follow smoothly",
+			"steady-state step %.4f..%.4f u, never stalls (floor %.2fx the mean)"
+			% [floor_step, peak, floor_ratio])
+	else:
+		_no("follow jitter", "steady-state step swings %.4f..%.4f u — the summon "
+			% [floor_step, peak]
+			+ "stalls on %.0f%% of ticks and sprints on the rest, which reads as shaking"
+			% ((1.0 - floor_ratio) * 100.0))
+	_stage = 99
+
+
+func _summon_named(id: String) -> Node3D:
+	for child in _field.get_children():
+		if child is SummonBase and String(child.name) == id:
+			return child
+	return null
+
+
 func _stage_room_change_start() -> void:
 	_reforms_at_mark = _hound.reform_count
 	# Simulate a room transition: reparent the hero into another node and move
@@ -420,7 +527,8 @@ func _stage_room_change_watch() -> void:
 	else:
 		_no("state graph integrity", "%d illegal transitions" % illegal)
 
-	_stage = 99
+	# Into the follow-smoothness measurement rather than straight to the summary.
+	_stage = 16
 
 
 # ---------------------------------------------------------------- static

@@ -46,11 +46,31 @@ func smoothed_forward() -> Vector3:
 
 
 ## Steers `current` toward `lane` and returns the new position. Never overshoots.
+##
+## Exponential approach, not move_toward-with-a-deadzone. The old version was
+## bang-bang: outside a 0.25 u tolerance it ran at the full 9.5 u/s, inside it
+## returned `current` unchanged — a dead stop. Since the hero's top speed
+## (6.2 u/s) is below the follow speed, a moving hero put the summon into a
+## per-frame cycle of overshoot-into-the-deadzone, stop, fall behind, sprint —
+## which is exactly the hard shaking that was reported.
+##
+## Here the step is proportional to the distance remaining, so it eases in and
+## has no discontinuity to oscillate across. `1 - exp(-rate * delta)` rather
+## than `rate * delta` keeps it identical at any framerate. The speed clamp
+## still applies, so a summon far out of position closes at a bounded rate
+## instead of teleporting.
+@export var approach_rate := 12.0
+
 func steer(current: Vector3, lane: Vector3, delta: float) -> Vector3:
 	var to_lane := lane - current
-	if to_lane.length() <= lane_tolerance_units:
+	var distance := to_lane.length()
+	if distance <= 0.0005:
 		return current
-	return current.move_toward(lane, speed_units_per_second * delta)
+	var step := to_lane * clampf(1.0 - exp(-approach_rate * delta), 0.0, 1.0)
+	var max_step := speed_units_per_second * delta
+	if step.length() > max_step:
+		step = to_lane / distance * max_step
+	return current + step
 
 
 func is_in_lane(current: Vector3, lane: Vector3) -> bool:

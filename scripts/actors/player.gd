@@ -300,6 +300,24 @@ static func direction_index_from_vector(v: Vector3) -> int:
 	return posmod(octant, 8)
 
 
+## A continuous heading for anything that follows the hero.
+##
+## `facing_vector()` is deliberately QUANTISED to the eight sprite directions —
+## correct for choosing which frame to draw, wrong for anything that steers.
+## Followers built on it saw the basis jump 45 degrees the instant the hero
+## crossed an octant boundary, which whipped their lane sideways mid-stride and
+## is half of the reported shaking.
+##
+## While moving, the true velocity direction is used instead; the quantised
+## facing is the fallback for standing still, where it is the only heading there
+## is and nothing is moving to be whipped.
+func heading_vector() -> Vector3:
+	var planar := Vector3(velocity.x, 0.0, velocity.z)
+	if planar.length_squared() > 0.04:
+		return planar.normalized()
+	return facing_vector()
+
+
 func facing_vector() -> Vector3:
 	var angle := float(facing_index) * (TAU / 8.0)
 	return Vector3(-sin(angle), 0.0, cos(angle))

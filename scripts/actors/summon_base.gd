@@ -507,6 +507,10 @@ func behavior_signature() -> String:
 func _hero_forward() -> Vector3:
 	if hero == null:
 		return Vector3.FORWARD
+	# heading_vector() is continuous; facing_vector() is quantised to 8 octants
+	# and makes the lane jump 45 degrees at a time. Fall back only if absent.
+	if hero.has_method("heading_vector"):
+		return hero.call("heading_vector") as Vector3
 	if hero.has_method("facing_vector"):
 		return hero.call("facing_vector") as Vector3
 	return -hero.global_transform.basis.z
