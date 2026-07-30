@@ -120,8 +120,16 @@ printf "  Pillow, numpy ✓ (%s)\n" "$PY"
 if [[ -d "$DIR/.git" ]]; then
   say "Updating $DIR"
   git -C "$DIR" fetch origin "$BRANCH"
-  git -C "$DIR" checkout "$BRANCH"
-  git -C "$DIR" pull --ff-only origin "$BRANCH"
+  # Not `pull`: Godot rewrites project.godot (and drops *.uid files on 4.4+) the
+  # moment the project is opened, and a pull then refuses with "your local
+  # changes would be overwritten by merge" — which is exactly what stopped the
+  # owner's first update. This is a play copy; the pushed build always wins.
+  # Local edits to tracked files are stashed (safety net), not merged.
+  if [[ -n "$(git -C "$DIR" status --porcelain=v1 | grep -v '^??' || true)" ]]; then
+    git -C "$DIR" stash push --quiet -m "bootstrap safety stash" || true
+  fi
+  git -C "$DIR" reset --hard "origin/$BRANCH"
+  git -C "$DIR" checkout -B "$BRANCH" "origin/$BRANCH" 2>/dev/null || true
 else
   say "Cloning into $DIR"
   git clone --branch "$BRANCH" "$REPO" "$DIR"
