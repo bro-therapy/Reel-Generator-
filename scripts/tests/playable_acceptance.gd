@@ -132,6 +132,19 @@ func _check_soak() -> void:
 	# The first version of this compared spawned_total (13) against combat_b's
 	# declared total (12) and passed with wave progression entirely removed —
 	# combat_a's opening wave plus combat_b's opening wave already exceeded it.
+	# The room seals for the fight and only for the fight. Counters, not just
+	# state: locked exactly once, unlocked exactly once more than at build time
+	# (set_locked(false) during construction counts one).
+	var gates: GateController = _slice.ward.combat_gates(&"combat_b")
+	if gates == null:
+		_no("gates", "combat_b has no GateController")
+	elif not gates.is_locked and gates.lock_count == 1:
+		_ok("the room unseals when its last wave dies",
+			"locked once for the fight, open again at the end")
+	else:
+		_no("gates", "after the fight: locked=%s lock_count=%d unlock_count=%d"
+			% [gates.is_locked, gates.lock_count, gates.unlock_count])
+
 	var waves_declared: int = _slice._wave_count(&"combat_b")
 	var deepest: int = _slice.deepest_wave_reached(&"combat_b")
 	if waves_declared <= 1:
@@ -353,18 +366,75 @@ func _check_combat_triggers() -> void:
 	var hero: Node3D = _slice.hero
 	var combat := WardLayout.space(&"combat_a")
 
-	if _slice.enemies_alive() != 0:
-		_no("combat trigger", "%d enemies before entering a room" % _slice.enemies_alive())
-		return
-	_ok("no enemies before entering a combat space")
+	# The hero spawns inside the Arrival Path, and the Arrival Path runs an
+	# encounter — guide §9 gives it three Rift Crawlers, and they sat unspawned in
+	# the balance file until the trigger stopped requiring kind == COMBAT. So the
+	# baseline at boot is arrival's declared count, not zero.
+	var arrival_declared: int = _slice.total_enemies_for(&"arrival")
+	if arrival_declared <= 0:
+		_no("arrival encounter", "balance file declares no arrival enemies")
+	elif _slice.enemies_alive() == arrival_declared \
+			and _slice.enemies_alive(&"arrival") == arrival_declared:
+		_ok("the arrival path spawns its declared intro fight",
+			"%d enemies, all tagged to arrival" % arrival_declared)
+	else:
+		_no("arrival encounter", "%d alive at boot (%d tagged arrival), balance says %d"
+			% [_slice.enemies_alive(), _slice.enemies_alive(&"arrival"), arrival_declared])
+
+	# The Rift and the boss must NOT be walk-in fights: one is an unchained timed
+	# event, the other an unchained boss arena. Asserted on the rule itself
+	# (_runs_encounter), not on enemy counts — the hero never goes near either
+	# room in this suite, so a count of zero would pass with the rule deleted.
+	var rift_runs: bool = _slice._runs_encounter(WardLayout.space(&"optional_rift"))
+	var boss_runs: bool = _slice._runs_encounter(WardLayout.space(&"boss"))
+	var arrival_runs: bool = _slice._runs_encounter(WardLayout.space(&"arrival"))
+	var well_runs: bool = _slice._runs_encounter(WardLayout.space(&"spirit_well"))
+	if not rift_runs and not boss_runs and arrival_runs and not well_runs:
+		_ok("walk-in encounters are exactly the declared, chained ones",
+			"arrival yes; rift, boss, spirit well no")
+	else:
+		_no("trigger scope", "runs_encounter: arrival=%s rift=%s boss=%s well=%s"
+			% [arrival_runs, rift_runs, boss_runs, well_runs])
 
 	hero.global_position = combat.centre
 	_slice._process(STEP)
 
-	var spawned: int = _slice.enemies_alive()
+	var spawned: int = _slice.enemies_alive(&"combat_a")
 	if spawned <= 0:
 		_no("combat trigger", "walking into %s spawned nothing" % combat.label)
 		return
+
+	# Entering a combat room seals it. Locked means solid on layer 9 — the
+	# player's mask — and visible; open means neither. GateController's counters
+	# make the round trip checkable at the end of the soak.
+	var gates: GateController = _slice.ward.combat_gates(&"combat_a")
+	if gates == null:
+		_no("gates", "combat_a has no GateController")
+	elif gates.is_locked and gates.gate_meshes.size() >= 2:
+		# "Locked" has to mean "solid", not just "flagged". A barrier is solid when
+		# it is a collision object on a layer the player's mask includes AND it
+		# carries a shape — a StaticBody with the right layer and no
+		# CollisionShape stops nothing, and that mutant passed the flag check.
+		var solid := 0
+		for path in gates.gate_meshes:
+			var body := gates.get_node_or_null(path) as CollisionObject3D
+			if body == null or body.collision_layer != (1 << 8):
+				continue
+			for child in body.get_children():
+				var cs := child as CollisionShape3D
+				if cs != null and cs.shape != null:
+					solid += 1
+					break
+		var player_masked: bool = (int(hero.collision_mask) & (1 << 8)) != 0
+		if solid == gates.gate_meshes.size() and player_masked:
+			_ok("the fight seals the room",
+				"%d barriers locked, all shaped on layer 9, player mask includes 9" % solid)
+		else:
+			_no("gates", "%d of %d locked barriers actually solid; player masks layer 9: %s"
+				% [solid, gates.gate_meshes.size(), player_masked])
+	else:
+		_no("gates", "locked=%s barriers=%d after triggering combat_a"
+			% [gates.is_locked, gates.gate_meshes.size()])
 
 	# Cross-check the count against the balance file, so a wave silently emptied
 	# there cannot pass as a working trigger.
@@ -413,10 +483,33 @@ func _check_combat_triggers() -> void:
 
 	# Re-entering must not spawn a second copy of the same wave.
 	_slice._process(STEP)
-	if _slice.enemies_alive() == spawned:
+	if _slice.enemies_alive(&"combat_a") == spawned:
 		_ok("a cleared trigger does not re-fire", "%d enemies, not %d" % [spawned, spawned * 2])
 	else:
-		_no("re-trigger", "%d enemies after a second frame in the room" % _slice.enemies_alive())
+		_no("re-trigger", "%d enemies after a second frame in the room"
+			% _slice.enemies_alive(&"combat_a"))
+
+	# Wave advancement counts only the active fight's survivors. Kill combat_a's
+	# wave while arrival's crawlers still stand: the next wave must arrive anyway.
+	# A global count here stalls forever on stragglers from another room — which
+	# with the arrival fight wired is no longer a hypothetical.
+	var stragglers: int = _slice.enemies_alive(&"arrival")
+	for e in _slice.enemies.duplicate():
+		if is_instance_valid(e) and e.is_alive() \
+				and e.get_meta(&"encounter_space", &"") == &"combat_a":
+			e.kill()
+	# One frame to notice the deaths, then the full wave gap, then the spawn.
+	var gap_frames := int(_slice.WAVE_GAP_SECONDS / STEP) + 3
+	for _i in gap_frames:
+		_slice._process(STEP)
+	if stragglers > 0 and _slice.enemies_alive(&"combat_a") > 0 \
+			and _slice.deepest_wave_reached(&"combat_a") >= 1:
+		_ok("stragglers from another room cannot stall the next wave",
+			"wave 2 arrived with %d arrival crawlers still alive" % stragglers)
+	else:
+		_no("per-space waves", "arrival stragglers=%d, combat_a alive=%d, deepest=%d"
+			% [stragglers, _slice.enemies_alive(&"combat_a"),
+				_slice.deepest_wave_reached(&"combat_a")])
 
 
 ## Phase 15 asserts no growing node count across repeated room clears. The slice is

@@ -43,6 +43,7 @@ signal encounter_cleared(space_id: StringName)
 signal encounter_started(space_id: StringName, waves: int)
 
 var hero: Node3D
+var ward: Node3D
 var camera: FollowCamera
 var hud: CombatHUD
 var presentation: CombatPresentation
@@ -117,7 +118,7 @@ func _build_world() -> void:
 	sun.shadow_enabled = true
 	add_child(sun)
 
-	var ward := Node3D.new()
+	ward = Node3D.new()
 	ward.name = "Ward"
 	ward.set_script(load("res://scripts/world/ward_builder.gd"))
 	add_child(ward)
@@ -230,7 +231,7 @@ const WAVE_GAP_SECONDS := 1.6
 func _advance_waves(delta: float) -> void:
 	if _active_space == &"":
 		return
-	if enemies_alive() > 0:
+	if enemies_alive(_active_space) > 0:
 		_wave_gap = 0.0
 		return
 
@@ -241,6 +242,7 @@ func _advance_waves(delta: float) -> void:
 		_cleared[done] = true
 		_active_space = &""
 		_wave_gap = 0.0
+		_set_gates_locked(done, false)
 		encounter_cleared.emit(done)
 		presentation.audio.play(&"gate")
 		print("[play] %s cleared" % String(done))
@@ -265,7 +267,7 @@ func _check_combat_triggers() -> void:
 	if hero == null or not hero.is_inside_tree():
 		return
 	for space in WardLayout.spaces():
-		if space.kind != WardLayout.Kind.COMBAT:
+		if not _runs_encounter(space):
 			continue
 		if _triggered.has(space.id):
 			continue
@@ -275,7 +277,25 @@ func _check_combat_triggers() -> void:
 		_active_space = space.id
 		_wave_index = 0
 		encounter_started.emit(space.id, _wave_count(space.id))
+		_set_gates_locked(space.id, true)
 		_spawn_wave(space, 0)
+
+
+## Whether walking into this space starts a fight.
+##
+## Driven by the data, not the kind: the guide gives the Arrival Path three Rift
+## Crawlers (§9, "movement, camera, Focus Weapon, and first summon") and they were
+## in the balance file all along — but the old kind == COMBAT test meant a TRAVEL
+## space could never spawn them. Two kinds stay excluded on purpose:
+##   BOSS — the First Bell is built and tested but not yet chained into this run,
+##          and spawning it as a plain wave would skip its arena, gate and phases.
+##   RIFT — guide §10 makes the Rift a timed protect-the-core event with an entry
+##          cost (RiftEvent), not a walk-in fight; wiring its waves here would
+##          ship a redesign of a locked decision.
+func _runs_encounter(space: WardLayout.Space) -> bool:
+	if space.kind == WardLayout.Kind.BOSS or space.kind == WardLayout.Kind.RIFT:
+		return false
+	return _wave_count(space.id) > 0
 
 
 ## Wave contents come from the balance file, never from here.
@@ -304,6 +324,10 @@ func _spawn_wave(space: WardLayout.Space, index: int) -> void:
 			enemy.global_position = space.centre + Vector3(
 				cos(angle) * radius, 0.0, sin(angle) * radius)
 			enemy.target = hero
+			# Which fight this enemy belongs to. Wave advancement counts only its
+			# own space's survivors, so an arrival straggler wandering in can
+			# never stall Combat A's next wave.
+			enemy.set_meta(&"encounter_space", space.id)
 			presentation.bind_enemy(enemy)
 			enemies.append(enemy)
 			slot += 1
@@ -488,6 +512,16 @@ func elapsed_seconds() -> float:
 	return _elapsed
 
 
+## Seals or opens a combat room's doorways. Rooms without gates (the arrival
+## path) are a no-op, which is the point of asking the ward instead of assuming.
+func _set_gates_locked(space_id: StringName, value: bool) -> void:
+	if ward == null:
+		return
+	var gates: GateController = ward.combat_gates(space_id)
+	if gates != null:
+		gates.set_locked(value)
+
+
 func _nearest_enemy() -> Node3D:
 	var best: Node3D = null
 	var best_distance := INF
@@ -521,11 +555,15 @@ func _report() -> void:
 	print("[play] walk east into Combat Zone A to start a fight\n")
 
 
-func enemies_alive() -> int:
+## Living enemies, optionally only those belonging to one encounter space.
+func enemies_alive(space_id: StringName = &"") -> int:
 	var n := 0
 	for e in enemies:
-		if is_instance_valid(e) and e.is_alive():
-			n += 1
+		if not is_instance_valid(e) or not e.is_alive():
+			continue
+		if space_id != &"" and e.get_meta(&"encounter_space", &"") != space_id:
+			continue
+		n += 1
 	return n
 
 

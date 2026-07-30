@@ -203,6 +203,26 @@ PY
   fi
 fi
 
+# Generated still images (title key art, and whatever joins it) are recorded in
+# VFX_SOURCES.json under generated_stills, same idea as the effect clips: the
+# repo carries the URL and the provenance, not the binary — LFS uploads are
+# blocked from the build environment. Non-fatal for the same reason.
+say "Fetching generated still art"
+"$PY" - <<'PY' || printf "  Could not download stills — CDN links may have expired. The game runs without them.\n"
+import json, pathlib, urllib.request
+spec = json.loads(pathlib.Path("docs/VFX_SOURCES.json").read_text())
+for path, meta in spec.get("generated_stills", {}).items():
+    dest = pathlib.Path(path)
+    if dest.exists():
+        continue
+    url = meta.get("source_url", "")
+    if not url:
+        continue
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    print("  %s" % path, flush=True)
+    urllib.request.urlretrieve(url, dest)
+PY
+
 # ---------------------------------------------------------------- build & test
 
 if [[ -z "$GODOT" ]]; then

@@ -37,6 +37,10 @@ var _roof_mat: StandardMaterial3D
 var _lantern_mat: StandardMaterial3D
 var _crystal_mat: StandardMaterial3D
 var _water_mat: StandardMaterial3D
+var _barrier_mat: StandardMaterial3D
+
+## GateController per COMBAT space, keyed by space id. Filled during build.
+var _combat_gates: Dictionary = {}
 
 
 func _ready() -> void:
@@ -114,6 +118,17 @@ func _make_materials() -> void:
 	_gate_mat.emission_enabled = true
 	_gate_mat.emission = Color("9c6bff")
 	_gate_mat.emission_energy_multiplier = 1.6
+
+	# Combat barriers are an obstruction the player must respect, so they read
+	# hostile — warm orange, never violet (colour ownership, guide §2). Alpha so
+	# the room beyond stays visible; a fight should never black out the exit.
+	_barrier_mat = StandardMaterial3D.new()
+	_barrier_mat.albedo_color = Color(1.0, 0.55, 0.25, 0.4)
+	_barrier_mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	_barrier_mat.emission_enabled = true
+	_barrier_mat.emission = Color(1.0, 0.45, 0.15)
+	_barrier_mat.emission_energy_multiplier = 1.1
+	_barrier_mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 
 
 # ---------------------------------------------------------------- primitives
@@ -310,6 +325,8 @@ func _build_space(s: WardLayout.Space, openings: Dictionary) -> void:
 
 	_build_decal(room, s)
 	_build_props(room, s, _doorway_points(s))
+	if s.kind == WardLayout.Kind.COMBAT:
+		_build_combat_barriers(room, s)
 
 
 func _build_box_walls(room: Node3D, s: WardLayout.Space, openings: Dictionary) -> void:
@@ -641,6 +658,67 @@ func _build_gate(parent: Node3D, at: Vector3, towards: Vector3) -> void:
 
 	var lintel_size := Vector3(0.6, 0.6, span) if horizontal else Vector3(span, 0.6, 0.6)
 	_box(parent, pos + Vector3(0, post.y, 0), lintel_size, _gate_mat, false)
+
+
+## Lockable barriers across every doorway of a combat room.
+##
+## Guide §6: an encounter seals its room while waves are live. GateController was
+## built and tested for exactly this in Phase 8 and then never given geometry —
+## the playable build let you walk out of a fight mid-wave. These are its meshes:
+## one energy panel per doorway, open (invisible, no collision) by default, made
+## solid on layer 9 while locked. The player's mask already includes layer 9;
+## enemies and summons never mask it, so a sealed door cannot strand an enemy
+## outside its own fight.
+func _build_combat_barriers(room: Node3D, s: WardLayout.Space) -> void:
+	var controller := GateController.new()
+	controller.name = "Gates"
+	room.add_child(controller)
+
+	var half := s.size * 0.5
+	var n := 0
+	for door in _doorway_points(s):
+		var at: Vector3 = door
+		# Which wall the doorway sits in decides the panel's orientation: a door
+		# in an east/west wall spans z, one in a north/south wall spans x.
+		var on_ew := absf(absf(at.x - s.centre.x) - half.x) < absf(absf(at.z - s.centre.z) - half.y)
+		var span := DOOR_WIDTH + 1.0
+		var size := Vector3(0.5, WardLayout.WALL_HEIGHT * 0.7, span) if on_ew \
+			else Vector3(span, WardLayout.WALL_HEIGHT * 0.7, 0.5)
+
+		var body := StaticBody3D.new()
+		body.name = "Barrier%d" % n
+		# Open by default; GateController flips this to layer 9 while locked.
+		body.collision_layer = 0
+		body.position = at + Vector3(0, size.y * 0.5, 0)
+		controller.add_child(body)
+
+		var shape := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = size
+		shape.shape = box
+		body.add_child(shape)
+
+		var mesh := MeshInstance3D.new()
+		var quad := BoxMesh.new()
+		quad.size = size
+		mesh.mesh = quad
+		mesh.material_override = _barrier_mat
+		body.add_child(mesh)
+
+		controller.gate_meshes.append(controller.get_path_to(body))
+		n += 1
+
+	# _ready has already run if the ward was built after entering the tree, but
+	# building happens from build() before that — apply the open state explicitly
+	# rather than relying on ready order (the project's recurring lesson).
+	controller.set_locked(false)
+	controller._apply()
+	_combat_gates[s.id] = controller
+
+
+## The gate controller for a combat space, or null for spaces that have none.
+func combat_gates(id: StringName) -> GateController:
+	return _combat_gates.get(id)
 
 
 # ---------------------------------------------------------------- navigation

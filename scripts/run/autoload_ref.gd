@@ -44,13 +44,26 @@ static func scene_flow() -> Node:
 	return node_named("SceneFlow")
 
 
-## SceneFlow's own State enum, readable without the autoload being bound. Taken
-## from the script resource rather than retyped here, so a new state added there
-## is a new state here and the two cannot drift.
-const SCENE_FLOW_SCRIPT := preload("res://scripts/run/scene_flow.gd")
-
+## SceneFlow's State enum, read off the LIVE autoload's script at runtime —
+## empty when no autoload is bound.
+##
+## The first version preloaded scene_flow.gd here to read the enum, "so the two
+## cannot drift". The full check said no: scene_flow.gd references GameSettings
+## as a bare identifier (legal for one autoload talking to another), and a
+## preload from this file dragged it into compilation inside `--script`
+## harnesses — where autoload identifiers do not resolve — taking four suites
+## down with `Identifier not found: GameSettings`. Reading the enum off the
+## bound node keeps the no-drift property in every context that has a SceneFlow
+## at all, and costs nothing in the contexts that never did.
 static func flow_states() -> Dictionary:
-	return SCENE_FLOW_SCRIPT.State
+	var flow := scene_flow()
+	if flow == null:
+		return {}
+	var script: Script = flow.get_script() as Script
+	if script == null:
+		return {}
+	var states: Variant = script.get("State")
+	return states if states is Dictionary else {}
 
 
 ## Moves SceneFlow to a named state. Returns false when there is no autoload to
@@ -61,12 +74,12 @@ static func flow_states() -> Dictionary:
 ## carries no class_name, so to the type checker `flow` is a plain Node with no
 ## such method.
 static func set_flow_state(state_name: String) -> bool:
-	var states: Dictionary = SCENE_FLOW_SCRIPT.State
-	if not states.has(state_name):
-		push_warning("AutoloadRef: no SceneFlow state named '%s'" % state_name)
-		return false
 	var flow := scene_flow()
 	if flow == null:
+		return false
+	var states := flow_states()
+	if not states.has(state_name):
+		push_warning("AutoloadRef: no SceneFlow state named '%s'" % state_name)
 		return false
 	flow.call("set_state", int(states[state_name]))
 	return true
@@ -80,8 +93,9 @@ static func flow_state_name() -> String:
 	if flow == null:
 		return ""
 	var value := int(flow.get("state"))
-	for key in SCENE_FLOW_SCRIPT.State:
-		if int(SCENE_FLOW_SCRIPT.State[key]) == value:
+	var states := flow_states()
+	for key in states:
+		if int(states[key]) == value:
 			return String(key)
 	return ""
 

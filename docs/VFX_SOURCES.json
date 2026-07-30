@@ -111,5 +111,16 @@
       },
       "source_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3CqxjnFIineMHir3Lbt0KHCOqnm/hf_20260729_181123_489f3c4d-b676-4d8c-ae07-097fd5ebf795.mp4"
     }
-  ]
+  ],
+  "generated_stills": {
+    "assets/ui/title_key_art.png": {
+      "tool": "higgsfield generate_image",
+      "model": "nano_banana_2",
+      "job_id": "273d6fba-20ce-45dc-94bc-0285687deb8d",
+      "source_url": "https://d8j0ntlcm91z4.cloudfront.net/user_3CqxjnFIineMHir3Lbt0KHCOqnm/hf_20260730_035540_273d6fba-20ce-45dc-94bc-0285687deb8d.png",
+      "generated": "2026-07-30",
+      "purpose": "Title screen key art \u2014 Sunfall Ward vista. TitleScreen falls back to plain indigo when absent.",
+      "prompt": "Painted key art of a sunlit fantasy market ward built from warm sandstone and terracotta, seen from a raised plaza looking across tiled rooftops toward a broken bell tower on the horizon. Late afternoon golden light, long soft shadows, cream plaster walls, hanging market awnings in muted terracotta stripes, small glowing paper lanterns with warm amber light. Above the bell tower, a subtle rift in the sky glows violet-indigo, casting faint cool violet light on the highest rooftops only. Painterly, soft brushwork, atmospheric depth, no characters, no text, no logos. Muted, slightly desaturated palette so the scene sits back as a menu background."
+    }
+  }
 }

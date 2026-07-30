@@ -31,7 +31,7 @@ var _hint: Label
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build()
 	# The first button takes focus immediately. Guide §17 requires the whole game
 	# be playable on a controller, and a menu that opens with nothing focused is a
@@ -40,18 +40,41 @@ func _ready() -> void:
 		_buttons[0].grab_focus()
 
 
+const KEY_ART := "res://assets/ui/title_key_art.png"
+
+
 func _build() -> void:
 	var bg := ColorRect.new()
 	bg.name = "Background"
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	# The palette's deep indigo. Violet is the player's colour and this is the
 	# player's screen.
 	bg.color = Color(0.055, 0.043, 0.11)
 	add_child(bg)
 
+	# The Sunfall Ward vista behind the menu — generated key art (see
+	# docs/HIGGSFIELD_ASSET_GUIDE.md), so it goes through the same "assets may be
+	# absent" gate as every other piece of art. The indigo rect stays underneath:
+	# an assetless checkout gets the old screen, not a grey void.
+	if ResourceLoader.exists(KEY_ART):
+		var art := TextureRect.new()
+		art.name = "KeyArt"
+		art.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		art.texture = load(KEY_ART)
+		art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		add_child(art)
+		# Scrim between the art and the text, or the title competes with the
+		# rooftops. Indigo rather than black — same screen, same owner.
+		var scrim := ColorRect.new()
+		scrim.name = "Scrim"
+		scrim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		scrim.color = Color(0.055, 0.043, 0.11, 0.45)
+		add_child(scrim)
+
 	var column := VBoxContainer.new()
 	column.name = "Column"
-	column.set_anchors_preset(Control.PRESET_FULL_RECT)
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 14)
 	add_child(column)

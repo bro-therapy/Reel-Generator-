@@ -121,17 +121,17 @@ func _build_results_ui(outcome: RunResults.Outcome, seconds: float,
 		cleared: int, required: int) -> Control:
 	var root_ui := Control.new()
 	root_ui.name = "ResultsScreen"
-	root_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root_ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 	var bg := ColorRect.new()
 	bg.name = "Background"
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.color = Color(0.055, 0.043, 0.11)
 	root_ui.add_child(bg)
 
 	var column := VBoxContainer.new()
 	column.name = "Column"
-	column.set_anchors_preset(Control.PRESET_FULL_RECT)
+	column.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
 	column.add_theme_constant_override("separation", 12)
 	root_ui.add_child(column)

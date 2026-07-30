@@ -97,9 +97,11 @@ func _check_autoloads() -> void:
 	else:
 		_no("AutoloadRef", "one of the three lookups returned null with autoloads bound")
 
+	# Read off the live autoload at runtime — deliberately NOT a preload of
+	# scene_flow.gd, which took four --script suites down (see AutoloadRef).
 	var states: Dictionary = AutoloadRef.flow_states()
 	if states.has("MENU") and states.has("RUN") and states.has("RESULTS"):
-		_ok("SceneFlow states readable without the autoload", str(states.keys()))
+		_ok("SceneFlow states readable through AutoloadRef", str(states.keys()))
 	else:
 		_no("flow states", "expected MENU/RUN/RESULTS, got %s" % str(states.keys()))
 
