@@ -672,16 +672,45 @@ func _check_combat_triggers() -> void:
 	# event, the other an unchained boss arena. Asserted on the rule itself
 	# (_runs_encounter), not on enemy counts — the hero never goes near either
 	# room in this suite, so a count of zero would pass with the rule deleted.
-	var rift_runs: bool = _slice._runs_encounter(WardLayout.space(&"optional_rift"))
-	var boss_runs: bool = _slice._runs_encounter(WardLayout.space(&"boss"))
-	var arrival_runs: bool = _slice._runs_encounter(WardLayout.space(&"arrival"))
-	var well_runs: bool = _slice._runs_encounter(WardLayout.space(&"spirit_well"))
-	if not rift_runs and not boss_runs and arrival_runs and not well_runs:
-		_ok("walk-in encounters are exactly the declared, chained ones",
-			"arrival yes; rift, boss, spirit well no")
+	# Every room with a declared encounter must fight when entered — the owner
+	# asked that "every room you go into should have mobs". The boss room is the
+	# single exception, and only because it has its OWN trigger: walking in must
+	# summon The First Bell rather than a mob wave.
+	#
+	# Asserted on the rule (_runs_encounter) rather than on enemy counts, because
+	# the hero never visits most of these rooms in this suite and a count of zero
+	# would pass with the rule deleted entirely.
+	var declared_rooms: Array[StringName] = []
+	for entry in Balance.data().get("encounters", []):
+		declared_rooms.append(StringName(String(entry.get("id", ""))))
+
+	var wrong: Array[String] = []
+	var fighting := 0
+	for space in WardLayout.spaces():
+		var runs: bool = _slice._runs_encounter(space)
+		var should: bool = declared_rooms.has(space.id) \
+			and space.kind != WardLayout.Kind.BOSS
+		if runs:
+			fighting += 1
+		if runs != should:
+			wrong.append("%s runs=%s expected=%s" % [space.id, runs, should])
+
+	# And every room must have SOMETHING in it — a declared encounter, or the boss.
+	var empty: Array[String] = []
+	for space in WardLayout.spaces():
+		if space.kind == WardLayout.Kind.BOSS:
+			continue
+		if not declared_rooms.has(space.id):
+			empty.append(String(space.id))
+
+	if wrong.is_empty() and empty.is_empty():
+		_ok("every room fights when you walk into it",
+			"%d rooms run an encounter; the boss room has its own trigger" % fighting)
+	elif not empty.is_empty():
+		_no("empty rooms", "no encounter declared for: %s" % ", ".join(empty))
 	else:
-		_no("trigger scope", "runs_encounter: arrival=%s rift=%s boss=%s well=%s"
-			% [arrival_runs, rift_runs, boss_runs, well_runs])
+		_no("trigger scope", "; ".join(wrong))
+
 
 	hero.global_position = combat.centre
 	_slice._process(STEP)

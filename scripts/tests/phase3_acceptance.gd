@@ -471,6 +471,20 @@ func _stage_jitter_watch() -> void:
 	# as shaking. So the floor is the measurement, and it is unambiguous:
 	# smooth steering holds floor/mean at 1.00, bang-bang drops it to 0.00.
 	var floor_ratio := floor_step / mean
+	# The hero has been walking +X for 180 ticks; a side-profile summon must be
+	# facing that way. Art faces -X natively, so travelling +X means flipped.
+	var hound_facing := _summon_named("rune_hound")
+	if hound_facing != null:
+		# Asserted on the SPRITE, not on the intent variable. The first version
+		# read facing_sign() and passed with the flip disabled entirely.
+		if hound_facing.sprite_is_flipped():
+			_ok("summons turn to face the way they travel",
+				"walking +X, sprite flipped from its native left-facing art")
+		else:
+			_no("summon facing", "the hero walked +X for %d ticks and the sprite is "
+				% JITTER_TICKS + "still drawn facing left (intent was %.0f)"
+				% hound_facing.facing_sign())
+
 	if floor_ratio >= 0.5:
 		_ok("summons follow smoothly",
 			"steady-state step %.4f..%.4f u, never stalls (floor %.2fx the mean)"

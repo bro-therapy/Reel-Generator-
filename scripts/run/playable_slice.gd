@@ -590,8 +590,19 @@ func _check_combat_triggers() -> void:
 ##   RIFT — guide §10 makes the Rift a timed protect-the-core event with an entry
 ##          cost (RiftEvent), not a walk-in fight; wiring its waves here would
 ##          ship a redesign of a locked decision.
+## Every room with a declared encounter fights when you walk into it.
+##
+## The owner asked that "every room that you go into should have mobs". Only the
+## boss room is excluded, and only because it has its own trigger — walking in
+## must summon The First Bell, not a mob wave.
+##
+## The Rift used to be excluded too, which made an OPTIONAL room an EMPTY one:
+## its encounter was declared in the balance file and never spawned. Optional
+## means you need not go, not that there is nothing there when you do. It is
+## still off the critical path, so it is still skippable and still not required
+## by the boss gate.
 func _runs_encounter(space: WardLayout.Space) -> bool:
-	if space.kind == WardLayout.Kind.BOSS or space.kind == WardLayout.Kind.RIFT:
+	if space.kind == WardLayout.Kind.BOSS:
 		return false
 	return _wave_count(space.id) > 0
 

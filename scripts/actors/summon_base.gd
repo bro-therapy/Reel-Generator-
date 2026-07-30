@@ -164,6 +164,7 @@ func _physics_process(delta: float) -> void:
 			_process_follow(delta, lane)
 
 	_update_animation()
+	_update_facing(delta)
 	_hover(delta)
 
 
@@ -396,6 +397,45 @@ func _hover(delta: float) -> void:
 	_visual_pivot.position.y = lerpf(_visual_pivot.position.y, target_y, minf(1.0, delta * 6.0))
 
 
+## Which way the summon is facing, and the flip that shows it.
+##
+## The shipped art is already SIDE PROFILE — the Rune Hound and Gun Construct
+## are both drawn facing LEFT — and nothing ever flipped it, so they read as
+## permanently facing the camera no matter which way they travelled. That is the
+## "they should walk alongside me" the playtest asked for, and it needs no new
+## art at all.
+##
+## Driven by travel direction while moving, and by the target while attacking:
+## a summon mid-swing should face what it is hitting, not where it last walked.
+## The Sword Wisp is vertically symmetric, so a flip is invisible on it and
+## harmless.
+##
+## The deadzone matters. Without it a summon holding station with a hair of
+## lateral drift flips every few frames, which is far worse than never flipping.
+const FACING_DEADZONE := 0.12
+
+## Art faces -X. Flip when travelling +X.
+var _facing_sign := -1.0
+var _last_position := Vector3.ZERO
+
+func _update_facing(delta: float) -> void:
+	if _sprite == null:
+		return
+	var dx := 0.0
+	var target: Node3D = _targeting.current_target if _targeting != null else null
+	var attacking := _fsm.state in [SummonStateMachine.State.WINDUP,
+		SummonStateMachine.State.ATTACK, SummonStateMachine.State.RECOVER]
+	if attacking and target != null and is_instance_valid(target):
+		dx = target.global_position.x - global_position.x
+	elif delta > 0.0:
+		dx = (global_position.x - _last_position.x) / delta
+	_last_position = global_position
+
+	if absf(dx) > FACING_DEADZONE:
+		_facing_sign = signf(dx)
+	_sprite.flip_h = _facing_sign > 0.0
+
+
 func _is_moving() -> bool:
 	if hero == null:
 		return false
@@ -413,6 +453,17 @@ func _play(anim: String) -> void:
 	if anim != _last_anim:
 		_last_anim = anim
 		_apply_sprite_offset(int(_pivot_offsets.get("%s/0" % anim, 0)))
+
+
+## Whether the SPRITE is actually drawn flipped. Reads the sprite, not the
+## internal intent — a check written against the variable passed while the flip
+## was disabled entirely.
+func sprite_is_flipped() -> bool:
+	return _sprite != null and _sprite.flip_h
+
+
+func facing_sign() -> float:
+	return _facing_sign
 
 
 ## The pivot correction this summon has actually loaded for an animation, in

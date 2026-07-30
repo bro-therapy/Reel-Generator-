@@ -204,6 +204,18 @@
       "reward": "rare_echo"
     },
     {
+      "id": "spirit_well",
+      "waves": [
+        [
+          "rift_crawler",
+          4,
+          "blade_mite",
+          2
+        ]
+      ],
+      "reward": "none"
+    },
+    {
       "id": "combat_b",
       "waves": [
         [
