@@ -46,6 +46,8 @@ signal summon_unlocked(spirit_id: StringName, level: int)
 signal level_up_opened(level: int, offer: Array)
 signal room_entered(space_id: StringName)
 signal boss_door_refused(reason: String)
+signal boss_engaged(max_hp: int)
+signal rooms_cleared(count: int, seconds: float)
 
 var hero: Node3D
 var ward: Node3D
@@ -87,6 +89,8 @@ var _orbs: Array[ExperienceOrb] = []
 var _pending_levels := 0
 var _unlocked: Array[StringName] = []
 var _boss_warned := false
+var boss: FirstBellBoss
+var _rooms_announced := false
 
 
 func _ready() -> void:
@@ -330,11 +334,42 @@ func _build_pause() -> void:
 func _process(delta: float) -> void:
 	_elapsed += delta
 	_check_combat_triggers()
+	_check_boss_trigger()
 	_prune_enemies()
 	_advance_waves(delta)
 	_handle_input()
 	if camera != null:
 		camera.tick(delta)
+
+
+## Puts The First Bell in its room. Built and acceptance-tested since Phase 11
+## and never actually placed in the world — walking to the far room found an
+## empty arena, which is exactly what the playtest reported.
+func _spawn_boss(space: WardLayout.Space) -> void:
+	if boss != null and is_instance_valid(boss):
+		return
+	boss = FirstBellBoss.new()
+	boss.name = "FirstBell"
+	add_child(boss)
+	boss.global_position = space.centre
+	# Escalation reaches the boss too, but through its own health rather than
+	# the per-instance path the mob spawner uses.
+	boss.max_hp = maxi(1, int(round(float(boss.max_hp) * difficulty_scale())))
+	boss.hp = boss.max_hp
+
+	presentation.bind_boss(boss)
+	boss.defeated.connect(_on_boss_defeated)
+	presentation.audio.play_music(&"music_first_bell")
+	boss_engaged.emit(boss.max_hp)
+	print("[play] The First Bell awakens — %d hp" % boss.max_hp)
+
+
+func _on_boss_defeated() -> void:
+	print("[play] The First Bell falls")
+	presentation.audio.play_music(&"music_sunfall_explore")
+	_cleared[&"boss"] = true
+	_level_done = true
+	level_cleared.emit(_elapsed)
 
 
 ## How much tougher enemies are right now, from elapsed run time.
@@ -455,6 +490,29 @@ func _advance_waves(delta: float) -> void:
 ## EncounterController's gate-and-wave flow, which is built and tested but not yet
 ## chained room to room — the difference is that this does not lock you in or hand
 ## out a reward when the room clears.
+## The boss room's own trigger, deliberately separate from the wave trigger.
+##
+## `_runs_encounter()` excludes BOSS on purpose — walking in must never start a
+## mob wave, and a check pins that. So the boss arrives through its own path
+## rather than by loosening a rule that is doing its job.
+func _check_boss_trigger() -> void:
+	if hero == null or not hero.is_inside_tree():
+		return
+	if boss != null and is_instance_valid(boss):
+		return
+	var arena := WardLayout.space(&"boss")
+	if arena == null or _triggered.has(arena.id):
+		return
+	if hero.global_position.distance_to(arena.centre) > TRIGGER_RADIUS:
+		return
+	if not boss_is_unlocked():
+		_warn_boss_locked()
+		return
+	_triggered[arena.id] = true
+	_flash_room(arena)
+	_spawn_boss(arena)
+
+
 func _check_combat_triggers() -> void:
 	if hero == null or not hero.is_inside_tree():
 		return
@@ -697,11 +755,14 @@ func _check_level_cleared() -> void:
 	for id in required:
 		if not _cleared.has(id):
 			return
-	_level_done = true
-	presentation.audio.play_music(&"music_sunfall_explore")
-	presentation.audio.play(&"evolve")
-	print("[play] STAGE CLEAR — %d encounters in %.1fs" % [required.size(), _elapsed])
-	level_cleared.emit(_elapsed)
+	# Clearing every combat room opens the boss door; it does not end the run.
+	# The run ends when The First Bell falls.
+	if not _rooms_announced:
+		_rooms_announced = true
+		presentation.audio.play(&"evolve")
+		print("[play] every combat room cleared — the boss door is open at level %d"
+			% boss_required_level())
+		rooms_cleared.emit(required.size(), _elapsed)
 
 
 ## Combat spaces on the critical path, in route order. Read from WardLayout rather

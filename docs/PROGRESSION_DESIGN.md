@@ -128,3 +128,33 @@ Scaling is applied per spawned instance (`EnemyBase.health_scale`), never
 written back into the shared `EnemyData` resource, for the same reason upgrade
 effects are run-scoped: a shared `.tres` mutated in place compounds across
 spawns and leaks into the next run.
+
+## The boss that could not be fought
+
+The First Bell was built in Phase 11, passed nineteen acceptance checks, and was
+**impossible to hit**. Every one of those checks called `take_damage()`
+directly, while the boss itself was a bare `Node3D` with no hurtbox and no group
+membership — and a `FocusProjectile` looks for a body or area on the
+EnemyHurtbox layer owned by something in the `enemies` group. It found neither.
+Walking to the far room found an empty arena, exactly as the playtest reported.
+
+Two things were missing and both are now checked:
+
+1. **A hurtbox.** A capsule Area3D on layer 5, sized from the boss's own
+   `world_height` so the two cannot drift apart, plus `add_to_group("enemies")`.
+2. **A trigger.** `_runs_encounter()` deliberately excludes the boss room so
+   walking in never starts a mob wave, and a check pins that behaviour. Rather
+   than loosen a rule that is doing its job, the boss got its own trigger.
+
+The check that proves it asks the **physics server** the same question a
+projectile asks — a shape query at body height with the friendly-attack mask —
+because "the hurtbox exists" and "a shot can reach it" are different claims and
+only the second one matters. Mutation-tested by deleting the hurtbox again.
+
+One subtlety worth keeping: an `Area3D` added this frame is not in the physics
+world until the next tick, so a query run immediately after spawning reports
+"unhittable" about a perfectly good boss. The suite spawns it a second before it
+measures.
+
+Killing the boss ends the run. Clearing every combat room no longer does — it
+opens the boss door and says so.

@@ -75,6 +75,46 @@ func _ready() -> void:
 	telegraph.name = "Telegraph"
 	add_child(telegraph)
 
+	_build_hurtbox()
+
+
+## Without this the boss is unkillable, and nothing noticed for eleven phases.
+##
+## Every acceptance check drives `take_damage()` directly, so the fight was
+## fully tested and fully correct while being impossible to actually hit: a
+## FocusProjectile looks for a body or area on the EnemyHurtbox layer whose
+## owner is in the "enemies" group, and this was a bare Node3D with neither.
+## Walking into the boss room found nothing to fight.
+##
+## Layer 5 EnemyHurtbox, per the fixed 1-10 layers in guide §15.
+const ENEMY_HURTBOX_LAYER := 1 << 4
+
+func _build_hurtbox() -> void:
+	if not is_in_group("enemies"):
+		add_to_group("enemies")
+	if get_node_or_null("Hurtbox") != null:
+		return
+
+	var hurtbox := Area3D.new()
+	hurtbox.name = "Hurtbox"
+	hurtbox.collision_layer = ENEMY_HURTBOX_LAYER
+	# Monitorable, not monitoring: attacks come looking for it, it does not go
+	# looking for them.
+	hurtbox.collision_mask = 0
+	hurtbox.monitoring = false
+	hurtbox.monitorable = true
+
+	var shape := CollisionShape3D.new()
+	var capsule := CapsuleShape3D.new()
+	# Sized to the boss's own world height rather than a literal, so the two
+	# cannot drift apart. Guide §11 puts it at 2.5x the hero.
+	capsule.height = world_height
+	capsule.radius = world_height * 0.28
+	shape.shape = capsule
+	shape.position = Vector3(0.0, world_height * 0.5, 0.0)
+	hurtbox.add_child(shape)
+	add_child(hurtbox)
+
 
 # ---------------------------------------------------------------- combat loop
 

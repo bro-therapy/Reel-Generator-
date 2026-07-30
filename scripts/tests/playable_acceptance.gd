@@ -110,6 +110,13 @@ func _process(_delta: float) -> bool:
 			if is_instance_valid(e) and e.is_alive():
 				e.kill()
 
+	# Summon the boss a second before the soak ends. An Area3D added this frame
+	# is not in the physics world yet — the server registers it on the next
+	# tick — so a shape query run immediately after spawning finds nothing and
+	# says "unhittable" about a boss that is fine.
+	if into_soak == SOAK_FRAMES - 60:
+		_open_boss_door_and_enter()
+
 	if into_soak < SOAK_FRAMES:
 		return false
 
@@ -118,6 +125,7 @@ func _process(_delta: float) -> bool:
 	_check_progression()
 	_check_damage_numbers()
 	_check_boss_gate()
+	_check_boss_is_fightable()
 	_summary()
 	return true
 
@@ -181,6 +189,81 @@ func _check_boss_gate() -> void:
 			"only opens at level %d with all %d cleared" % [needed, required.size()])
 	else:
 		_no("boss gate", "; ".join(wrong))
+
+
+## The boss must SPAWN and be HITTABLE. Both halves matter and only the second
+## one is subtle.
+##
+## The First Bell passed nineteen acceptance checks and was impossible to fight:
+## every one of them called `take_damage()` directly, while the thing itself was
+## a bare Node3D with no hurtbox and no group — a FocusProjectile looks for a
+## body or area on the EnemyHurtbox layer owned by something in the "enemies"
+## group, and found neither. So this queries the physics world with the
+## projectile's own collision mask, which is the only way to show a shot would
+## actually connect.
+const FRIENDLY_ATTACK_MASK := 1 << 4     # what a friendly projectile scans for
+
+func _open_boss_door_and_enter() -> void:
+	for id in _slice.required_encounters():
+		_slice._cleared[id] = true
+	_slice.run.level = _slice.boss_required_level()
+	var arena := WardLayout.space(&"boss")
+	if arena != null:
+		_slice.hero.global_position = arena.centre
+		_slice._check_boss_trigger()
+
+
+func _check_boss_is_fightable() -> void:
+	var arena := WardLayout.space(&"boss")
+	if arena == null:
+		_no("boss room", "the ward has no boss space")
+		return
+
+	var boss: FirstBellBoss = _slice.boss
+	if boss == null:
+		_no("boss spawn", "entering the boss room with the door open spawned nothing")
+		return
+	_ok("entering the boss room summons The First Bell", "%d hp" % boss.max_hp)
+
+	# Would a shot connect? Ask the physics server the same question a
+	# projectile asks.
+	var space_state := _slice.get_world_3d().direct_space_state
+	var probe := PhysicsShapeQueryParameters3D.new()
+	var sphere := SphereShape3D.new()
+	sphere.radius = 0.4
+	probe.shape = sphere
+	probe.transform = Transform3D(Basis.IDENTITY,
+		boss.global_position + Vector3(0.0, boss.world_height * 0.5, 0.0))
+	probe.collision_mask = FRIENDLY_ATTACK_MASK
+	probe.collide_with_areas = true
+	probe.collide_with_bodies = true
+	var hits := space_state.intersect_shape(probe, 8)
+
+	var found := false
+	for hit in hits:
+		var collider: Object = hit.get("collider")
+		if collider is Node and (collider as Node).get_parent() == boss:
+			found = true
+	if found:
+		_ok("the boss has a hurtbox a shot can reach",
+			"found on the EnemyHurtbox layer at body height")
+	else:
+		_no("boss hurtbox", "%d colliders at the boss's position, none belonging to "
+			% hits.size() + "it — projectiles pass straight through")
+
+	if boss.is_in_group("enemies"):
+		_ok("the boss is in the enemies group", "targeting and damage will find it")
+	else:
+		_no("boss group", "not in \"enemies\" — summons will never target it")
+
+	# And killing it must end the run.
+	var cleared_seen := [false]
+	_slice.level_cleared.connect(func(_s: float) -> void: cleared_seen[0] = true)
+	boss.take_damage(boss.max_hp * 4)
+	if cleared_seen[0]:
+		_ok("defeating the boss clears the stage")
+	else:
+		_no("boss defeat", "the boss died without ending the run")
 
 
 func _check_damage_numbers() -> void:
