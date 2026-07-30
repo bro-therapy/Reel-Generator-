@@ -29,7 +29,27 @@ var _rally: Label
 var _readouts: Dictionary = {}
 var _bonds: HBoxContainer
 var _bond_labels: Array[Label] = []
-var _left: VBoxContainer
+var _left: Control
+## Ornate frames drawn behind the two corner clusters. These go INTO `_elements`
+## with everything else: a frame is inflated outward from the cluster it wraps,
+## so it — not the cluster — is the thing that can reach the safe margin or the
+## reserved centre band, and exempting it would be exempting the only part that
+## can break the rule.
+var _left_frame: Panel
+var _bond_frame: Panel
+## How far the frame is inflated past the content it wraps, so the ornament sits
+## outside the bars instead of on top of them.
+##
+## Two values because the two axes are not alike. The corner ornament is ~24 px
+## across, and at a 10 px pad it sat on top of the first bond label and the ends
+## of the bars; horizontally there is room to simply move out of its way. The
+## vertical budget has no such slack — at 720p the whole cluster gets 77 px —
+## so FRAME_PAD is a MAXIMUM there and the pad shrinks to whatever is left.
+const FRAME_PAD_X := 18.0
+const FRAME_PAD := 10.0
+## Gap between stacked bars. A constant rather than a theme lookup now that the
+## stack is hand-placed.
+const BAR_SEPARATION := 4.0
 var _elements: Array[Control] = []
 
 
@@ -46,8 +66,26 @@ func _build() -> void:
 	# fixed pixel offsets cannot stay outside a band defined as a percentage of
 	# the viewport, which is how the first version of this intruded at 720p and
 	# left the safe area at 32:9.
-	var left := VBoxContainer.new()
-	left.add_theme_constant_override("separation", 4)
+	# The bars sit inside an ornate frame rather than floating on the world.
+	# Requested: the HUD "just feel[s] like it's too generic... I want it to look
+	# more game like". The frame is a sibling behind the stack, not a parent, so
+	# the layout maths in relayout() still positions the VBox directly and is
+	# unaffected by container padding.
+	_left_frame = UiFrames.panel(&"plain")
+	_left_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_left_frame)
+
+	# A plain Control, NOT a VBoxContainer.
+	#
+	# Control.set_size() clamps to get_combined_minimum_size(), and a container's
+	# combined minimum is whatever it last SORTED at — which is a frame behind
+	# its children. So asking the stack to shrink for a smaller viewport quietly
+	# did nothing, and the cluster was placed using the previous viewport's
+	# height. Four bars in a column is not worth a layout engine; the rest of
+	# this HUD is hand-placed for the same reason.
+	var left := Control.new()
+	left.name = "Bars"
+	left.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(left)
 	_left = left
 
@@ -58,6 +96,10 @@ func _build() -> void:
 	_experience = _bar(left, "Experience", Color("f0c04a"))
 
 	# Bottom-right: the team.
+	_bond_frame = UiFrames.panel(&"plain")
+	_bond_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_bond_frame)
+
 	_bonds = HBoxContainer.new()
 	_bonds.add_theme_constant_override("separation", 12)
 	add_child(_bonds)
@@ -80,6 +122,8 @@ func _build() -> void:
 	_elements.append(_rally)
 
 	_elements.append(left)
+	_elements.append(_left_frame)
+	_elements.append(_bond_frame)
 
 
 ## Places every element as a fraction of the viewport.
@@ -95,7 +139,12 @@ func relayout() -> void:
 	# Title-safe inset, taken from the height on both axes. A percentage of the
 	# *width* would push elements 154 px inward on a 32:9 display for no reason.
 	var inset := vp.y * SAFE_AREA_MARGIN
-	var bar_width: float = minf(vp.x * 0.22, 360.0)
+	# The FRAME is what has to fit the budget, and the bars live inside it. So
+	# the cluster's outer width is the budget and the bars get what is left after
+	# the ornament takes its margin. Inflating the frame outward from a
+	# full-width bar stack instead pushed 20 px into the reserved centre band.
+	var cluster_width: float = minf(vp.x * 0.22, 360.0)
+	var bar_width: float = cluster_width - FRAME_PAD_X * 2.0
 
 	# Cushion so an element that lands exactly on the safe edge is not judged by
 	# a float equality.
@@ -111,22 +160,47 @@ func relayout() -> void:
 	# inside stays legible at the small end and the bars do not become slabs at
 	# the large one.
 	var bar_h: float = clampf(vp.y * 0.020, 15.0, 24.0)
+
+	# The vertical budget is fixed by the guide: the cluster lives between the
+	# reserved band's bottom edge and the safe margin, and at 720p that gap is
+	# only 77 px for four bars. So the ornament gets whatever is left over rather
+	# than a constant — a flat 10 px pad fits at 1080p and overflows at 720p.
+	var budget: float = (vp.y - inset - cushion) - clear_rect(vp).end.y - cushion
+	var bars: Array[ProgressBar] = []
 	for child in _left.get_children():
 		if child is ProgressBar:
-			(child as ProgressBar).custom_minimum_size = Vector2(bar_width, bar_h)
-			(child as ProgressBar).size = Vector2(bar_width, bar_h)
+			bars.append(child as ProgressBar)
+	var bars_h: float = bars.size() * bar_h + maxf(bars.size() - 1, 0) * BAR_SEPARATION
+	var pad_y: float = clampf((budget - bars_h) * 0.5, 0.0, FRAME_PAD)
 
-	var bars_h: float = _left.get_combined_minimum_size().y
+	# Placed by hand. See _build: a container clamps to a stale minimum, so the
+	# only way the stack is guaranteed to match the numbers computed here is to
+	# set every rect directly.
+	var y := 0.0
+	for bar in bars:
+		bar.custom_minimum_size = Vector2(bar_width, bar_h)
+		bar.position = Vector2(0.0, y)
+		bar.size = Vector2(bar_width, bar_h)
+		y += bar_h + BAR_SEPARATION
+
+	var cluster_h := bars_h + pad_y * 2.0
+	_left_frame.position = Vector2(inset + cushion, vp.y - inset - cushion - cluster_h)
+	_left_frame.size = Vector2(cluster_width, cluster_h)
 	_left.size = Vector2(bar_width, bars_h)
-	_left.position = Vector2(inset + cushion, vp.y - inset - cushion - bars_h)
+	_left.position = _left_frame.position + Vector2(FRAME_PAD_X, pad_y)
 
 	# Width from the measurement too, not just height. A container asked to be
 	# narrower than its contents overflows silently, which put the bond panel
 	# 2.4 px past the safe edge at 720p.
 	var bonds_min: Vector2 = _bonds.get_combined_minimum_size()
 	var bond_size := Vector2(maxf(bonds_min.x, minf(vp.x * 0.32, 420.0)), bonds_min.y)
+	var bond_frame_size := bond_size + Vector2(FRAME_PAD_X, FRAME_PAD) * 2.0
+	_bond_frame.size = bond_frame_size
+	_bond_frame.position = Vector2(
+		vp.x - inset - cushion - bond_frame_size.x,
+		vp.y - inset - cushion - bond_frame_size.y)
 	_bonds.size = bond_size
-	_bonds.position = Vector2(vp.x - inset - cushion - bond_size.x, vp.y - inset - cushion - bond_size.y)
+	_bonds.position = _bond_frame.position + Vector2(FRAME_PAD_X, FRAME_PAD)
 
 	var rally_size := Vector2(minf(vp.x * 0.16, 220.0), 34.0)
 	_rally.position = Vector2((vp.x - rally_size.x) * 0.5, inset + cushion)
@@ -150,21 +224,10 @@ func _bar(parent: Control, label: String, colour: Color) -> ProgressBar:
 	bar.show_percentage = false
 	bar.tooltip_text = label
 
-	var fill := StyleBoxFlat.new()
-	fill.bg_color = colour
-	fill.set_corner_radius_all(3)
-	# A lighter top edge reads as a lit surface; it is most of what "fancier"
-	# costs here, for one line and no extra height.
-	fill.border_width_top = 2
-	fill.border_color = colour.lightened(0.45)
-	bar.add_theme_stylebox_override("fill", fill)
-
-	var bg := StyleBoxFlat.new()
-	bg.bg_color = Color(0.06, 0.05, 0.09, 0.9)
-	bg.set_corner_radius_all(3)
-	bg.set_border_width_all(1)
-	bg.border_color = Color(0.32, 0.30, 0.42, 0.95)
-	bar.add_theme_stylebox_override("background", bg)
+	# Shared with every other meter in the game, so the level-up screen and the
+	# HUD cannot drift apart.
+	bar.add_theme_stylebox_override("fill", UiFrames.bar_fill(colour))
+	bar.add_theme_stylebox_override("background", UiFrames.bar_track())
 	parent.add_child(bar)
 
 	# Name and figure are drawn ON the bar rather than on a caption line above

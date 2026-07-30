@@ -29,7 +29,7 @@ command -v python3 >/dev/null || { echo "✗ python3 is required" >&2; exit 1; }
 echo "==> Free asset packs (all CC0 — see docs/FREE_ASSETS.json for provenance)"
 
 python3 - <<'PY'
-import json, pathlib, shutil, subprocess, sys, tempfile, urllib.request
+import json, pathlib, shutil, subprocess, sys, tempfile, urllib.parse, urllib.request
 
 spec = json.loads(pathlib.Path("docs/FREE_ASSETS.json").read_text())
 MODEL_ROOT = pathlib.Path("assets/environment/models")
@@ -77,6 +77,49 @@ for key, pack in spec.get("packs", {}).items():
                     print("    ! %s not found in mirror" % f)
     except Exception as e:  # noqa: BLE001 — a dead mirror must not kill setup
         print("    ! pack failed (%s) — the blockout primitives still work" % e)
+
+# Packs fetched file-by-file from a URL instead of cloned. Needed because the
+# best mirrors keep their binaries in Git LFS, and a plain clone of one of those
+# dies with "smudge filter lfs failed" before a single byte lands. GitHub's media
+# host serves the real content for exactly those paths.
+for key, pack in spec.get("direct", {}).items():
+    dest = pathlib.Path(pack["install_dir"])
+    base = pack["base_url"].rstrip("/")
+    missing = {out: src for out, src in pack["files"].items()
+               if not (dest / out).exists()}
+    if not missing:
+        print("  %s: already installed" % key)
+        continue
+    print("  %s: fetching %d file(s) from %s" % (key, len(missing), base))
+    dest.mkdir(parents=True, exist_ok=True)
+    # The media host only serves paths that are actually in LFS. Small text
+    # files — the license among them — are stored plainly and 404 there, so
+    # raw.githubusercontent.com is tried second. Reversing the order does not
+    # work: raw returns the LFS *pointer* for a tracked file, with a 200.
+    hosts = [base]
+    if "media.githubusercontent.com/media/" in base:
+        hosts.append(base.replace("media.githubusercontent.com/media/",
+                                  "raw.githubusercontent.com/"))
+    for out, src in missing.items():
+        errors = []
+        for host in hosts:
+            try:
+                urllib.request.urlretrieve(host + "/" + urllib.parse.quote(src),
+                                           dest / out)
+                break
+            except Exception as e:  # noqa: BLE001 — a dead file must not kill setup
+                errors.append(str(e))
+        else:
+            print("    ! %s failed (%s)" % (out, "; ".join(errors)))
+            continue
+        # A 404 page or an unsmudged LFS pointer both arrive as a "successful"
+        # download. Both are text; a real asset is not.
+        if out.endswith(".png"):
+            head = (dest / out).read_bytes()[:8]
+            if head[:4] != b"\x89PNG":
+                print("    ! %s is not a PNG (LFS pointer or error page) — removed"
+                      % out)
+                (dest / out).unlink()
 
 for name, meta in spec.get("images", {}).items():
     out = pathlib.Path(meta["file"])

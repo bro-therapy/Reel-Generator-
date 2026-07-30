@@ -274,5 +274,24 @@
       "note": "Anime key visual: the Tower Exile with all three summons in Sunfall Ward, bell tower behind. Owner-commissioned for the title screen. CDN links expire \u2014 if the fetch 404s, regenerate rather than chasing the URL. `bytes` is checked on fetch: an existing file of a different size is a STALE copy from an older link and is replaced. Skipping on mere existence meant an earlier hand-downloaded image silently blocked this one forever.",
       "bytes": 2621577
     }
+  },
+  "direct": {
+    "kenney_fantasy_ui_borders": {
+      "install_dir": "assets/ui/frames",
+      "license": "CC0 1.0",
+      "license_evidence": "License.txt shipped in the pack: \"License: (Creative Commons Zero, CC0) http://creativecommons.org/publicdomain/zero/1.0/ ... You can use this content for personal, educational, and commercial purposes.\" Created and distributed by Kenney (www.kenney.nl), Fantasy UI Borders 1.0, 03-12-2023.",
+      "source": "Kenney \u2014 Fantasy UI Borders 1.0, via the series-ai/jam-ready-assets mirror",
+      "note": "Fetched file-by-file over media.githubusercontent.com rather than cloned. The mirror stores these under Git LFS, and a plain clone dies with \"smudge filter lfs failed\"; the media host serves the real bytes. Every tile is pure white with the shape carried in alpha, which is why these fit a project whose palette is locked: they are tinted at runtime to violet/indigo and never bring a colour of their own. Border and Panel are complementary halves of one frame \u2014 Panel is the solid field with the ornament knocked OUT of it, Border is the ornament alone. Layer Panel dark underneath and Border bright on top.",
+      "base_url": "https://media.githubusercontent.com/media/series-ai/jam-ready-assets/main/ui/kenney-fantasy-ui-borders",
+      "nine_patch_margin": 24,
+      "files": {
+        "ornate_border.png": "PNG/Double/Border/panel-border-013.png",
+        "ornate_panel.png": "PNG/Double/Panel/panel-013.png",
+        "plain_border.png": "PNG/Double/Border/panel-border-011.png",
+        "plain_panel.png": "PNG/Double/Panel/panel-011.png",
+        "divider.png": "PNG/Double/Divider Fade/divider-fade-002.png",
+        "LICENSE.txt": "License.txt"
+      }
+    }
   }
 }
