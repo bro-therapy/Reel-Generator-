@@ -351,6 +351,12 @@ func _configure_sprite() -> void:
 	_sprite.transparent = true
 	_sprite.alpha_cut = SpriteBase3D.ALPHA_CUT_DISCARD
 	_sprite.centered = true
+	# Visual layer 2: actors only. The floor sigils are Decals, and a Decal
+	# projects through its whole box volume onto anything inside it — which is
+	# how the Spirit Well marker ended up painted across the hero like a
+	# projector. Putting actors on their own layer lets the decal's cull_mask
+	# exclude them outright, independently of how thin the box is.
+	_sprite.layers = 2
 
 	_base_sprite_offset_px = float(form.source_cell_height_px) * 0.5
 	_apply_sprite_offset(0)

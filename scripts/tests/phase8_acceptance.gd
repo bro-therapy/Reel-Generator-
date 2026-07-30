@@ -143,6 +143,7 @@ func _process(delta: float) -> bool:
 				_stage = 1
 		1:
 			_check_enclosure()
+			_check_decals_are_flat()
 			_stage = 2
 		2:
 			_check_combat_centres_clear()
@@ -298,6 +299,63 @@ func _ok(label: String, detail: String = "") -> void:
 func _no(label: String, detail: String) -> void:
 	_fail += 1
 	print("  FAIL  %s  -> %s" % [label, detail])
+
+
+## Floor sigils must be FLOOR elements.
+##
+## A Decal paints everything inside its box. The Spirit Well marker shipped as a
+## 4 m tall box centred 1 m above the floor, so it swept the volume the player
+## stands in and projected the sigil onto the hero — "like a projector shooting
+## over the top of it". Geometry, so it is checkable: the box must not reach the
+## height an actor occupies, and must not be allowed to draw on the actor layer.
+## A decal box must STRADDLE the floor plane — a box entirely below y=0 paints
+## nothing at all — so "top must be at or under 0" is not a usable rule. What
+## matters is that the box cannot reach a body: 0.25 m is ankle height on a
+## 2 m actor, and the original offender reached 3.0 m.
+const MAX_SIGIL_TOP := 0.25
+
+
+## The ward scene wraps its rooms in a builder node; find whatever holds them.
+func _rooms_root() -> Node:
+	for child in _world.get_children():
+		if child.get_child_count() > 0:
+			return child
+	return _world
+
+
+func _check_decals_are_flat() -> void:
+	print("Floor sigils")
+	var offenders: Array[String] = []
+	var found := 0
+	var highest := -INF
+	for room in _rooms_root().get_children():
+		for node in room.get_children():
+			if not (node is Decal):
+				continue
+			found += 1
+			var d := node as Decal
+			var top: float = d.position.y + d.size.y * 0.5
+			var bottom: float = d.position.y - d.size.y * 0.5
+			highest = maxf(highest, top)
+			if top > MAX_SIGIL_TOP:
+				offenders.append("%s reaches %.2f m — high enough to paint an actor"
+					% [room.name, top])
+			if bottom > 0.0 or top < 0.0:
+				offenders.append("%s spans %.2f..%.2f m and misses the floor plane"
+					% [room.name, bottom, top])
+			if (d.cull_mask & 2) != 0:
+				offenders.append("%s can draw on the actor visual layer" % room.name)
+			if d.normal_fade < 0.5:
+				offenders.append("%s has normal_fade %.2f — it will paint vertical "
+					% [room.name, d.normal_fade] + "surfaces like a billboarded sprite")
+	if found == 0:
+		print("        - no decals installed (art not present)")
+		return
+	if offenders.is_empty():
+		_ok("floor sigils stay on the floor",
+			"%d decal(s), highest reaches %.2f m, none on the actor layer" % [found, highest])
+	else:
+		_no("sigil projection", "; ".join(offenders))
 
 
 func _summary() -> void:

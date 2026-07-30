@@ -16,6 +16,7 @@ script = ExtResource("1_enemy")
 [node name="VisualPivot" type="Node3D" parent="."]
 
 [node name="AnimatedSprite3D" type="AnimatedSprite3D" parent="VisualPivot"]
+layers = 2
 billboard = 2
 texture_filter = 0
 shaded = false

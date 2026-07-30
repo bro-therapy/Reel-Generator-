@@ -418,8 +418,23 @@ func _build_decal(room: Node3D, s: WardLayout.Space) -> void:
 	var decal := Decal.new()
 	decal.texture_albedo = load(path) as Texture2D
 	var extent: float = minf(s.size.x, s.size.y) * 0.42
-	decal.size = Vector3(extent, 4.0, extent)
-	decal.position = s.centre + Vector3(0, 1.0, 0)
+	# A Decal paints every surface inside its box, projecting down its local -Y.
+	# This box used to be 4 m tall and centred 1 m ABOVE the floor, so it swept
+	# the whole volume the player walks through and painted the sigil across the
+	# hero's sprite — reported as "a projector shooting over the top of it".
+	#
+	# Three independent guards now, because one is easy to undo by accident:
+	#   1. the box is 0.6 m tall and sits just under the floor plane, so there is
+	#      no head-room for it to catch anything standing on the floor;
+	#   2. normal_fade only paints surfaces whose normal points up, which a
+	#      billboarded actor quad never does;
+	#   3. cull_mask excludes visual layer 2, which is where actors live.
+	decal.size = Vector3(extent, 0.6, extent)
+	decal.position = s.centre + Vector3(0.0, -0.18, 0.0)
+	decal.normal_fade = 0.85
+	decal.cull_mask = 1
+	decal.upper_fade = 0.1
+	decal.lower_fade = 0.1
 	room.add_child(decal)
 
 
