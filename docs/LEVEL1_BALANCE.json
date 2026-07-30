@@ -139,13 +139,14 @@
     "phase_2_hp_fraction": 0.5,
     "stagger_damage_window_multiplier": 1.75,
     "stagger_duration_seconds": 4.0,
-    "slam_damage": 24,
-    "slam_telegraph_seconds": 1.25,
-    "chain_sweep_damage": 18,
-    "chain_sweep_telegraph_seconds": 0.95,
-    "crawler_summon_count": 3,
-    "crawler_summon_cooldown_seconds": 12.0,
-    "enrage_time_seconds": 180
+    "slam_damage": 32,
+    "slam_telegraph_seconds": 1.05,
+    "chain_sweep_damage": 24,
+    "chain_sweep_telegraph_seconds": 0.8,
+    "crawler_summon_count": 4,
+    "crawler_summon_cooldown_seconds": 9.5,
+    "enrage_time_seconds": 180,
+    "_difficulty_note": "Raised after \"the final room, the boss, didn't really feel like a boss. I definitely need it to be a little bit more difficult.\" The hits hurt more and the tells are shorter, which is where a boss's difficulty should live \u2014 a longer fight against the same soft attacks is tedious, not hard. The telegraphs are shortened but NOT removed: guide \u00a711 requires every boss attack to be telegraphed, and Phase 11 fails the suite on any untelegraphed hit. Crawler adds come faster and in greater number so the arena keeps applying pressure between slams."
   },
   "encounters": [
     {
@@ -287,7 +288,7 @@
     "escalation_per_minute": 0.11,
     "escalation_cap": 1.9,
     "boss_required_clears": 2,
-    "boss_health_multiplier": 1.6,
+    "boss_health_multiplier": 1.85,
     "_pacing_note": "Retuned after the playtest note: \"It's the power scaling. I need it just a little bit slower so I don't get so strong so quick. I need to struggle a bit before I get to the boss.\" Levels cost more (xp_base_per_level 18->26), every upgrade lands at three quarters of its old size (upgrade_scale 0.75), and the boss wants level 7 rather than 6. xp_per_threat is deliberately UNCHANGED: slowing the curve by making each kill worth less would have made killing things feel worse, which is not what was asked for. Escalation is untouched too \u2014 a longer run is already a harder one, so a slower curve raises the pressure by itself. Phase 0 re-derives boss reachability from these numbers; the margin is deliberately thin, because a comfortable margin is what \"I get so strong so quick\" describes.",
     "upgrade_scale": 0.75,
     "upgrade_amounts": {}

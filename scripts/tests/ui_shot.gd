@@ -19,6 +19,7 @@ const OUT_DIR := "/tmp/ui_shots"
 ## screen name -> builder method on this node.
 const SCREENS := {
 	"hud": "_build_hud",
+	"boss": "_build_boss",
 	"levelup": "_build_level_up",
 	"title": "_build_title",
 	"summonpick": "_build_summon_pick",
@@ -79,6 +80,13 @@ func _build_hud(vp: Vector2) -> void:
 	hud.set_stability(63)
 	hud.set_convergence(41.0)
 	hud.set_experience(5, 37, 90)
+
+
+func _build_boss(vp: Vector2) -> void:
+	_build_hud(vp)
+	var hud := get_child(get_child_count() - 1) as CombatHUD
+	hud.show_boss("The First Bell", 4000)
+	hud.set_boss_health(2600)
 
 
 func _build_level_up(vp: Vector2) -> void:

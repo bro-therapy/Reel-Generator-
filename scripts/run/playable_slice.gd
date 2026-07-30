@@ -37,6 +37,9 @@ const STARTING_SPIRITS := [
 ## door comes into view.
 const TRIGGER_RADIUS := 13.0
 
+## What the boss bar and the arrival card call it.
+const BOSS_DISPLAY_NAME := "The First Bell"
+
 ## Emitted when the last combat encounter on the critical path is cleared.
 signal level_cleared(seconds: float)
 signal encounter_cleared(space_id: StringName)
@@ -457,6 +460,12 @@ func _spawn_boss(space: WardLayout.Space) -> void:
 
 	presentation.bind_boss(boss)
 	boss.defeated.connect(_on_boss_defeated)
+	# The bar and the arrival card. Without them the last room was just a room
+	# with a bigger sprite in it — "I couldn't even tell I was at the last room."
+	if hud != null:
+		hud.show_boss(BOSS_DISPLAY_NAME, boss.max_hp)
+		boss.health_changed.connect(
+			func(current: int, _max: int) -> void: hud.set_boss_health(current))
 	presentation.audio.play_music(&"music_first_bell")
 	boss_engaged.emit(boss.max_hp)
 	print("[play] The First Bell awakens — %d hp" % boss.max_hp)
@@ -464,6 +473,8 @@ func _spawn_boss(space: WardLayout.Space) -> void:
 
 func _on_boss_defeated() -> void:
 	print("[play] The First Bell falls")
+	if hud != null:
+		hud.hide_boss()
 	presentation.audio.play_music(&"music_sunfall_explore")
 	_cleared[&"boss"] = true
 	_level_done = true

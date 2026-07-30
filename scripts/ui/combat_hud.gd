@@ -50,6 +50,18 @@ const FRAME_PAD := 10.0
 ## Gap between stacked bars. A constant rather than a theme lookup now that the
 ## stack is hand-placed.
 const BAR_SEPARATION := 4.0
+## Boss furniture: bar, its frame, its name, and the arrival card. The first
+## three go into `_elements` — they are persistent HUD once a boss is up. The
+## banner does not; see _build.
+var _boss_bar: ProgressBar
+var _boss_frame: Panel
+var _boss_name: Label
+var _banner: Label
+var _banner_age := 0.0
+## How long the arrival card is on screen, and how much of that is the hold
+## before it starts leaving.
+const BANNER_SECONDS := 2.6
+const BANNER_HOLD := 0.55
 var _elements: Array[Control] = []
 
 
@@ -112,6 +124,65 @@ func _build() -> void:
 		_bond_labels.append(slot)
 	_elements.append(_bonds)
 
+	# The boss's own bar and frame, hidden until something bosslike turns up.
+	#
+	# The report this answers: "the final room, the boss, didn't really feel
+	# like a boss ... I couldn't even tell I was at the last room." There was no
+	# boss bar and no announcement — the arena just had a bigger sprite in it,
+	# and a bigger sprite alone does not tell a player the game changed.
+	#
+	# Red, because the boss is hostile and guide §4 gives red to the enemies
+	# without exception. A violet boss bar would be the single largest violet
+	# hostile element on the screen, which is the exact thing that rule forbids.
+	# The frame is tinted warm too, not left the house violet. Everything about
+	# this cluster belongs to the enemy, and a violet surround on a red bar is
+	# the two sides of the palette arguing inside one widget.
+	_boss_frame = UiFrames.panel(&"plain", UiFrames.BODY,
+		Color(0.86, 0.42, 0.30, 1.0))
+	_boss_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_frame.visible = false
+	add_child(_boss_frame)
+
+	_boss_bar = ProgressBar.new()
+	_boss_bar.name = "BossHealth"
+	_boss_bar.min_value = 0
+	_boss_bar.max_value = 100
+	_boss_bar.value = 100
+	_boss_bar.show_percentage = false
+	_boss_bar.visible = false
+	_boss_bar.add_theme_stylebox_override("fill", UiFrames.bar_fill(Color("e8442f")))
+	_boss_bar.add_theme_stylebox_override("background", UiFrames.bar_track())
+	add_child(_boss_bar)
+
+	_boss_name = Label.new()
+	_boss_name.name = "BossName"
+	_boss_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_boss_name.add_theme_font_size_override("font_size", 15)
+	_boss_name.add_theme_color_override("font_color", Color(1.0, 0.88, 0.82))
+	_boss_name.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.85))
+	_boss_name.add_theme_constant_override("shadow_offset_y", 1)
+	_boss_name.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_bar.add_child(_boss_name)
+
+	# The arrival card. Deliberately NOT in `_elements`: it is not a HUD
+	# element, it is a title card that removes itself, and the reserved-centre
+	# rule exists so the persistent HUD cannot obstruct a fight. A card that is
+	# gone before the boss's first attack obstructs nothing. `banner_is_live()`
+	# and the Phase 13 check that drives it to zero are what stop this argument
+	# from quietly becoming a permanent exemption.
+	_banner = Label.new()
+	_banner.name = "Banner"
+	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_banner.add_theme_font_size_override("font_size", 72)
+	_banner.add_theme_color_override("font_color", Color(1.0, 0.72, 0.55))
+	_banner.add_theme_color_override("font_shadow_color", Color(0.1, 0.0, 0.0, 0.9))
+	_banner.add_theme_constant_override("shadow_offset_y", 4)
+	_banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_banner.visible = false
+	add_child(_banner)
+
 	# Top-centre is allowed: it is outside the reserved band, and the Rally
 	# readout has to be glanceable without leaving the fight.
 	_rally = Label.new()
@@ -124,6 +195,8 @@ func _build() -> void:
 	_elements.append(left)
 	_elements.append(_left_frame)
 	_elements.append(_bond_frame)
+	_elements.append(_boss_frame)
+	_elements.append(_boss_bar)
 
 
 ## Places every element as a fraction of the viewport.
@@ -207,6 +280,23 @@ func relayout() -> void:
 	_rally.size = rally_size
 	_rally.custom_minimum_size = rally_size
 
+	# Under the Rally readout, still above the reserved band. The gap between
+	# the top safe edge and the band is 117 px at 1080p and 77 px at 720p, and
+	# Rally has already taken 34 of it — so the bar takes what is left, framed,
+	# rather than a fixed height that fits one resolution.
+	var boss_top := inset + cushion + rally_size.y + 6.0
+	var boss_budget: float = clear_rect(vp).position.y - boss_top - cushion
+	var boss_h: float = clampf(boss_budget - FRAME_PAD * 2.0, 12.0, 26.0)
+	var boss_width: float = minf(vp.x * 0.46, 820.0)
+	_boss_frame.size = Vector2(boss_width, boss_h + FRAME_PAD * 2.0)
+	_boss_frame.position = Vector2((vp.x - boss_width) * 0.5, boss_top)
+	_boss_bar.size = Vector2(boss_width - FRAME_PAD_X * 2.0, boss_h)
+	_boss_bar.position = _boss_frame.position + Vector2(FRAME_PAD_X, FRAME_PAD)
+	_boss_name.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+	_banner.size = Vector2(vp.x, vp.y * 0.16)
+	_banner.position = Vector2(0.0, vp.y * 0.30)
+
 
 ## A bare bar, no caption.
 ##
@@ -279,6 +369,71 @@ func _bar(parent: Control, label: String, colour: Color) -> ProgressBar:
 	overlay.add_child(pad_right)
 
 	return bar
+
+
+# ------------------------------------------------------------------- the boss
+
+## Puts the boss bar up and plays the arrival card.
+func show_boss(display_name: String, maximum: int) -> void:
+	_boss_bar.max_value = maxi(1, maximum)
+	_boss_bar.value = _boss_bar.max_value
+	_boss_name.text = display_name.to_upper()
+	_boss_bar.visible = true
+	_boss_frame.visible = true
+	_banner.text = display_name.to_upper()
+	_banner.visible = true
+	_banner_age = 0.0
+	relayout()
+
+
+func set_boss_health(current: int) -> void:
+	if _boss_bar == null:
+		return
+	_boss_bar.value = clampi(current, 0, int(_boss_bar.max_value))
+
+
+func hide_boss() -> void:
+	if _boss_bar == null:
+		return
+	_boss_bar.visible = false
+	_boss_frame.visible = false
+
+
+## Drives the arrival card only. Everything else in this HUD is signal-driven;
+## a fade is the one thing that genuinely needs a clock.
+func _process(delta: float) -> void:
+	if _banner == null or not _banner.visible:
+		return
+	_banner_age += delta
+	if _banner_age >= BANNER_SECONDS:
+		_banner.visible = false
+		return
+	var t := _banner_age / BANNER_SECONDS
+	# Snaps in, holds, then leaves. A symmetric fade reads as a mistake at this
+	# size — the name has to land like the boss did.
+	var alpha := 1.0
+	if t < 0.08:
+		alpha = t / 0.08
+	elif t > BANNER_HOLD:
+		alpha = clampf((1.0 - t) / (1.0 - BANNER_HOLD), 0.0, 1.0)
+	_banner.modulate.a = alpha
+	# Drifts up as it goes, so it reads as an announcement rather than a
+	# still frame someone left on.
+	_banner.position.y = size.y * 0.30 - size.y * 0.03 * t
+
+
+func banner_is_live() -> bool:
+	return _banner != null and _banner.visible
+
+
+func boss_bar_is_up() -> bool:
+	return _boss_bar != null and _boss_bar.visible
+
+
+func boss_health_fraction() -> float:
+	if _boss_bar == null or _boss_bar.max_value <= 0.0:
+		return 0.0
+	return float(_boss_bar.value) / float(_boss_bar.max_value)
 
 
 func _set_readout(label: String, text: String) -> void:

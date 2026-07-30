@@ -183,3 +183,67 @@ would otherwise flicker a room open and shut every frame.
 Time escalation still applies, so a late re-clear pays the same experience
 against tougher enemies — the grind gets slower the longer a run goes, which
 bounds it without a hard cap.
+
+## Choosing a spirit instead of being handed one
+
+Requested: "There should be a page where you can pick which upgrade you want.
+If you want the wolf or the robot or the sword. So you have to level up to earn
+that."
+
+`progression.summon_unlock_levels` in the balance file still lists a level per
+species, but it is now read as **the Nth slot opens at the Nth level** rather
+than **this species arrives at this level**. Sorting the levels gives the slot
+schedule; who fills each slot is the player's call. Pacing is byte-for-byte
+unchanged — the only thing that moved is the decision, out of the data and into
+the player's hands.
+
+Bonding is offered **before** upgrading when a level owes both. A level that
+grants a spirit almost always owes an upgrade choice too, and asking for the
+upgrade first means choosing from a list that does not yet contain the spirit
+the same level just handed over.
+
+Pages queue rather than stack: a second level gained while a page is open waits
+for an answer instead of opening a second screen.
+
+## Owner overrides of locked guide values
+
+CLAUDE.md locks the guide's decisions and says to raise concerns rather than
+silently change them. These were raised and then explicitly directed by the
+owner, so they are recorded here rather than argued in a comment.
+
+| Guide | Original | Now | Why |
+|---|---|---|---|
+| §5 starting team | all three spirits bonded | Focus Weapon only | "right off the gate, I shouldn't have all three of the summons" |
+| §11 boss height | 2.5x hero | 4.4x hero | "I need the boss to be scaled up much larger towards the end" |
+| §11 slam damage | 24 | 32 | "the boss didn't really feel like a boss ... a little bit more difficult" |
+| §11 sweep damage | 18 | 24 | as above |
+| §11 slam tell | 1.25 s | 1.05 s | as above |
+| §11 sweep tell | 0.95 s | 0.80 s | as above |
+| (none) | no leveling | XP, levels, upgrades | "enemies need to drop experience, just like vampire survivors" |
+
+Two things did **not** move with them.
+
+**The stagger window, the enrage clock and the phase-two threshold** are
+structure, not difficulty. Making a fight harder by shortening its openings
+changes what the fight *is*; making it harder by hitting harder does not.
+
+**Telegraphs have a floor.** Phase 11 fails any tell under 0.75 s. Human
+reaction to a visual cue is around a quarter of a second and the rest is the
+time to stop, turn, and leave the shape — under that, a telegraph is decoration
+and guide §11's "every hit has a visible red telegraph" is satisfied on paper
+only. The owner-requested shortening is exactly what put this at risk, which is
+why the floor is asserted instead of assumed.
+
+## The boss has to announce itself
+
+"The final room, the boss, didn't really feel like a boss ... I couldn't even
+tell I was at the last room."
+
+The boss had no health bar and no arrival announcement. It was scaled up in the
+same pass, but a bigger sprite alone does not tell a player the game changed —
+there was nothing on screen that was not also there for a rift crawler.
+
+The bar and its frame are warm, like everything else that belongs to the enemy.
+The arrival card is exempt from the reserved-centre rule because it is
+transient, and Phase 13 drives the clock past its lifetime and fails if it is
+still up — so "it is transient" is proven rather than claimed.

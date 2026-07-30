@@ -22,6 +22,9 @@ signal attack_suppressed_without_telegraph()
 signal crawlers_called(count: int)
 signal hexer_called()
 signal defeated()
+## Emitted on every change to `hp`, so the boss bar is driven by the fight
+## rather than polled every frame by whoever is holding the HUD.
+signal health_changed(hp: int, max_hp: int)
 
 enum Phase { ONE, TWO }
 enum Move { IDLE, SLAM, CHAIN_SWEEP, TOLL, CALL }
@@ -353,6 +356,7 @@ func take_damage(amount: int, _from: Variant = null) -> bool:
 		return false
 	var applied := int(round(float(amount) * vulnerability_multiplier))
 	hp = maxi(0, hp - applied)
+	health_changed.emit(hp, max_hp)
 
 	_check_phase()
 	if hp == 0:

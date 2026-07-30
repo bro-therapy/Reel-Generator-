@@ -26,6 +26,11 @@ var _boss: FirstBellBoss
 var _stage := -1
 
 
+## The shortest tell a player can actually respond to. Human reaction to a
+## visual cue is roughly 0.25 s; the rest is the time to stop, turn and move
+## out of the shape. Below this a telegraph is decoration.
+const MIN_TELEGRAPH_SECONDS := 0.75
+
 func _initialize() -> void:
 	print("\n=== PHASE 11 ACCEPTANCE ===\n")
 	_check_balance_wiring()
@@ -42,11 +47,30 @@ func _spawn() -> FirstBellBoss:
 	return b
 
 
+## The boss's numbers, still pinned — but pinned to what the OWNER approved
+## rather than to guide §11 alone.
+##
+## §11 shipped slam 24 / sweep 18 with 1.25 s and 0.95 s tells. The owner asked
+## for a harder fight ("the boss ... didn't really feel like a boss. I definitely
+## need it to be a little bit more difficult"), which is an explicit override of
+## locked guide values and is recorded as one in docs/PROGRESSION_DESIGN.md.
+## Loosening this check to "any value is fine" would have been the easy move and
+## the wrong one: the point of pinning is that a number cannot drift without
+## somebody deciding it should.
+##
+## Structure is NOT owner-tunable and stays at the guide's figures: the stagger
+## window, the enrage clock, and the phase-two threshold are what make the fight
+## the fight.
+const GUIDE_ORIGINAL := {
+	"slam_damage": 24, "chain_sweep_damage": 18,
+	"slam_telegraph_seconds": 1.25, "chain_sweep_telegraph_seconds": 0.95,
+}
+
 func _check_balance_wiring() -> void:
 	# Assert against the JSON, not against the boss's own fields.
 	var b := Balance.boss()
 	var want := {
-		"hp": 2600, "slam_damage": 24, "chain_sweep_damage": 18,
+		"hp": 2600, "slam_damage": 32, "chain_sweep_damage": 24,
 		"stagger_duration_seconds": 4.0, "stagger_damage_window_multiplier": 1.75,
 		"enrage_time_seconds": 180, "phase_2_hp_fraction": 0.5,
 	}
@@ -54,8 +78,21 @@ func _check_balance_wiring() -> void:
 	for k in want:
 		if not is_equal_approx(float(b.get(k, -1)), float(want[k])):
 			wrong.append("%s=%s" % [k, str(b.get(k, "missing"))])
+
+	# A telegraph the player cannot act on is the same as no telegraph. Guide §11
+	# requires every boss attack to be tellable, and the owner-requested shortening
+	# is what puts that at risk, so the floor is checked here rather than trusted.
+	for k in ["slam_telegraph_seconds", "chain_sweep_telegraph_seconds"]:
+		var seconds := float(b.get(k, 0.0))
+		if seconds < MIN_TELEGRAPH_SECONDS:
+			wrong.append("%s=%.2fs is under the %.2fs reaction floor"
+				% [k, seconds, MIN_TELEGRAPH_SECONDS])
+
 	if wrong.is_empty():
-		_ok("boss balance matches the guide", "hp 2600, stagger 4 s x1.75, enrage 180 s")
+		_ok("boss balance matches the owner-approved tuning",
+			"hp 2600, slam %d (guide %d), sweep %d (guide %d), stagger 4 s x1.75"
+			% [int(want["slam_damage"]), int(GUIDE_ORIGINAL["slam_damage"]),
+				int(want["chain_sweep_damage"]), int(GUIDE_ORIGINAL["chain_sweep_damage"])])
 	else:
 		_no("boss balance", "; ".join(wrong))
 

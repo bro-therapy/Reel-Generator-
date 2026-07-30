@@ -151,7 +151,18 @@ func _process(delta: float) -> bool:
 				_stage = 2
 		2:
 			_check_menu_input()
-			_stage = 99
+			_hud.show_boss("The First Bell", 4000)
+			_check_boss_ui()
+			_mark = 0.0
+			_stage = 3
+		3:
+			# Real elapsed time, not a frame count: the arrival card fades on a
+			# clock, and a card that outlives its own animation is a card sitting
+			# over the middle of a boss fight.
+			_mark += delta
+			if _mark >= CombatHUD.BANNER_SECONDS + 0.3:
+				_check_banner_cleared()
+				_stage = 99
 		99:
 			_summary()
 			return true
@@ -211,6 +222,61 @@ func _check_layout() -> void:
 		_ok("the reserved band is centred", "700x700 at (150,150) in a 1000x1000 view")
 	else:
 		_no("clear rect", str(probe))
+
+
+## The boss has to announce itself.
+##
+## "The final room, the boss, didn't really feel like a boss ... I couldn't even
+## tell I was at the last room." A bigger sprite is not an announcement; a named
+## bar and an arrival card are.
+func _check_boss_ui() -> void:
+	var problems: Array[String] = []
+	if not _hud.boss_bar_is_up():
+		problems.append("no boss bar")
+	if not _hud.banner_is_live():
+		problems.append("no arrival card")
+	if not is_equal_approx(_hud.boss_health_fraction(), 1.0):
+		problems.append("bar opens at %.2f rather than full"
+			% _hud.boss_health_fraction())
+
+	_hud.set_boss_health(1000)
+	if not is_equal_approx(_hud.boss_health_fraction(), 0.25):
+		problems.append("1000 of 4000 read as %.2f" % _hud.boss_health_fraction())
+
+	# The boss bar and its frame live in the reserved band's shadow at the top of
+	# the screen, and they are persistent once up — so they are held to exactly
+	# the same rules as the rest of the HUD, at every aspect.
+	for vp in VIEWPORTS:
+		_hud.size = vp
+		_hud.relayout()
+		if not _hud.centre_is_clear(vp):
+			problems.append("boss bar intrudes at %dx%d" % [int(vp.x), int(vp.y)])
+		if not _hud.inside_safe_area(vp):
+			problems.append("boss bar leaves the safe area at %dx%d"
+				% [int(vp.x), int(vp.y)])
+
+	_hud.hide_boss()
+	if _hud.boss_bar_is_up():
+		problems.append("the bar survives the boss")
+
+	if problems.is_empty():
+		_ok("the boss announces itself and its bar obeys the layout rules",
+			"named bar + arrival card, clear at 16:9, 21:9, 32:9 and 720p")
+	else:
+		_no("boss UI", "; ".join(problems))
+
+
+## The arrival card must be gone on its own. It is exempted from the
+## reserved-centre audit BECAUSE it is transient, so "it is transient" is the
+## thing that has to be proven rather than asserted in a comment.
+func _check_banner_cleared() -> void:
+	if _hud.banner_is_live():
+		_no("arrival card", "still on screen %.1fs after the boss appeared — it is "
+			% (CombatHUD.BANNER_SECONDS + 0.3)
+			+ "exempt from the centre rule only for as long as it is temporary")
+	else:
+		_ok("the arrival card clears itself",
+			"gone within %.1fs" % CombatHUD.BANNER_SECONDS)
 
 
 func _check_menu_input() -> void:
