@@ -341,6 +341,7 @@ func _update_animation() -> void:
 	if state == State.DASH and _sprite != null and _sprite.sprite_frames != null \
 			and _sprite.sprite_frames.has_animation("dash"):
 		_sprite.flip_h = _dash_direction.x < -0.01
+		_sprite.speed_scale = 1.0
 		_play_animation("dash")
 		_sync_pivot_offset()
 		return
@@ -351,7 +352,33 @@ func _update_animation() -> void:
 	if moving or state == State.DASH:
 		prefix = "run" if running else "walk"
 	_play_animation("%s_%s" % [prefix, DIRECTION_NAMES[facing_index]])
+	_sprite.speed_scale = _gait_speed_scale(prefix, planar_speed, top_speed)
 	_sync_pivot_offset()
+
+
+## Cadence proportional to ground speed, so the feet stop sliding.
+##
+## The single loudest thing that makes a walk read as fake is a stride that runs
+## at a fixed rate while the body moves at a variable one — the feet skate. Both
+## gaits played at a constant fps (7 and 12) no matter whether the hero was
+## easing off a wall at 0.8 u/s or at full tilt, and that is what "the walking
+## animation could be better" looks like from the outside.
+##
+## Each gait has a reference speed at which its authored fps is correct; the
+## scale is the ratio. Clamped because a 2-frame walk played at 4x reads as a
+## vibration, and because a frozen stride at near-zero speed reads as a bug.
+const WALK_REFERENCE_SPEED := 3.4
+const RUN_REFERENCE_SPEED := 6.2
+
+func _gait_speed_scale(prefix: String, planar_speed: float, top_speed: float) -> float:
+	if prefix == "idle":
+		return 1.0
+	# The references are authored against the shipped 6.2 u/s top speed. Scaling
+	# them with the live value keeps the ratio honest if balance retunes speed.
+	var scale_basis := top_speed / 6.2 if top_speed > 0.0 else 1.0
+	if prefix == "walk":
+		return clampf(planar_speed / (WALK_REFERENCE_SPEED * scale_basis), 0.55, 1.5)
+	return clampf(planar_speed / (RUN_REFERENCE_SPEED * scale_basis), 0.7, 1.35)
 
 
 ## The gait the hero would play right now. Exposed so a check can assert the
@@ -416,6 +443,11 @@ func sprite_frames_or_null() -> SpriteFrames:
 ## The animation the sprite is showing right now, for the acceptance tests.
 func current_animation() -> String:
 	return String(_sprite.animation) if _sprite != null else ""
+
+
+## The playing animation's rate multiplier, for the acceptance tests.
+func current_speed_scale() -> float:
+	return _sprite.speed_scale if _sprite != null else 1.0
 
 
 ## Current pivot correction in pixels, for the acceptance tests.

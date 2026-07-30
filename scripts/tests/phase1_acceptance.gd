@@ -29,6 +29,10 @@ var _mark_vec := Vector3.ZERO
 var _dash_start := Vector3.ZERO
 var _dash_ticks := 0
 var _dash_anim_checked := false
+var _slow_scale := -1.0
+var _fast_scale := -1.0
+var _slow_speed := 0.0
+var _fast_speed := 0.0
 var _accel_ticks := 0
 var _reach_ticks := 0
 var _decel_ticks := 0
@@ -102,6 +106,15 @@ func _stage_accel_watch() -> void:
 	if _reach_ticks == 0 and speed >= target - 0.02:
 		_reach_ticks = _accel_ticks
 
+	# Sample the animation rate early (still accelerating, walking) and again at
+	# full speed. Cadence has to track ground speed or the feet skate.
+	if _slow_scale < 0.0 and speed > 0.4 and speed < target * 0.45:
+		_slow_scale = _player.current_speed_scale()
+		_slow_speed = speed
+	if speed >= target - 0.02:
+		_fast_scale = _player.current_speed_scale()
+		_fast_speed = speed
+
 	# Hold well past saturation so the settled speed can be measured. Stopping
 	# the moment speed crosses the target would accept any higher top speed.
 	if _accel_ticks * TICK < 0.6:
@@ -121,6 +134,23 @@ func _stage_accel_watch() -> void:
 		_ok("top speed settles at the balance value", "%.3f u/s vs %.2f in JSON" % [speed, target])
 	else:
 		_no("top speed", "settled at %.3f u/s, JSON says %.2f" % [speed, target])
+
+	# The fix for foot sliding: the same stride played at a rate proportional to
+	# how fast the body is actually moving. Asserting "faster than" rather than an
+	# exact ratio, because the two samples fall in different gaits (walk then run)
+	# with different reference speeds — what must hold is the monotonic relation.
+	if _slow_scale > 0.0 and _fast_scale > 0.0:
+		if _fast_scale > _slow_scale + 0.05:
+			_ok("stride cadence tracks ground speed",
+				"%.2fx at %.1f u/s -> %.2fx at %.1f u/s"
+				% [_slow_scale, _slow_speed, _fast_scale, _fast_speed])
+		else:
+			_no("foot sliding", "cadence %.2fx at %.1f u/s and %.2fx at %.1f u/s — "
+				% [_slow_scale, _slow_speed, _fast_scale, _fast_speed]
+				+ "the stride rate ignores how fast the hero moves")
+	else:
+		_no("cadence sampling", "never sampled both speeds (slow %.2f, fast %.2f)"
+			% [_slow_scale, _fast_scale])
 
 	Input.action_release("move_right")
 	_decel_ticks = 0
