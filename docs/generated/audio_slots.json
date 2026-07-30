@@ -49,7 +49,7 @@
       "priority": 2,
       "seconds": 0.7,
       "bytes": 61782,
-      "note": "Heavy impact with sub weight."
+      "note": "Heavy impact with sub weight. Peak is the transient."
     },
     {
       "slot": "boss_stagger",
@@ -110,8 +110,8 @@
       "path": "res://assets/audio/sfx/enemy_bellguard_hit.wav",
       "bus": "sfx",
       "priority": 5,
-      "seconds": 0.12,
-      "bytes": 10628,
+      "seconds": 0.13,
+      "bytes": 11510,
       "note": "Took damage."
     },
     {
@@ -146,8 +146,8 @@
       "path": "res://assets/audio/sfx/enemy_blade_mite_hit.wav",
       "bus": "sfx",
       "priority": 5,
-      "seconds": 0.12,
-      "bytes": 10628,
+      "seconds": 0.13,
+      "bytes": 11510,
       "note": "Took damage."
     },
     {
@@ -182,8 +182,8 @@
       "path": "res://assets/audio/sfx/enemy_gilded_bellguard_hit.wav",
       "bus": "sfx",
       "priority": 5,
-      "seconds": 0.12,
-      "bytes": 10628,
+      "seconds": 0.13,
+      "bytes": 11510,
       "note": "Took damage."
     },
     {
@@ -218,8 +218,8 @@
       "path": "res://assets/audio/sfx/enemy_lantern_hexer_hit.wav",
       "bus": "sfx",
       "priority": 5,
-      "seconds": 0.12,
-      "bytes": 10628,
+      "seconds": 0.13,
+      "bytes": 11510,
       "note": "Took damage."
     },
     {
@@ -254,8 +254,8 @@
       "path": "res://assets/audio/sfx/enemy_nest_idol_hit.wav",
       "bus": "sfx",
       "priority": 5,
-      "seconds": 0.12,
-      "bytes": 10628,
+      "seconds": 0.13,
+      "bytes": 11510,
       "note": "Took damage."
     },
     {
@@ -290,8 +290,8 @@
       "path": "res://assets/audio/sfx/enemy_rift_crawler_hit.wav",
       "bus": "sfx",
       "priority": 5,
-      "seconds": 0.12,
-      "bytes": 10628,
+      "seconds": 0.13,
+      "bytes": 11510,
       "note": "Took damage."
     },
     {
@@ -326,8 +326,8 @@
       "path": "res://assets/audio/sfx/enemy_siphon_eye_hit.wav",
       "bus": "sfx",
       "priority": 5,
-      "seconds": 0.12,
-      "bytes": 10628,
+      "seconds": 0.13,
+      "bytes": 11510,
       "note": "Took damage."
     },
     {
@@ -425,9 +425,9 @@
       "path": "res://assets/audio/sfx/hero_step.wav",
       "bus": "sfx",
       "priority": 6,
-      "seconds": 0.12,
-      "bytes": 10628,
-      "note": "Footfall. Band-limited noise, short."
+      "seconds": 0.14,
+      "bytes": 12392,
+      "note": "Footfall. Scuff transient over a low resonant body \u2014 the first version was a 26 ms noise click with no body at all."
     },
     {
       "slot": "pickup",
@@ -488,9 +488,9 @@
       "path": "res://assets/audio/sfx/rune_hound_bite.wav",
       "bus": "sfx",
       "priority": 4,
-      "seconds": 0.1,
-      "bytes": 8864,
-      "note": "Sharp snap."
+      "seconds": 0.11,
+      "bytes": 9746,
+      "note": "Sharp snap. Bite is nearly all transient."
     },
     {
       "slot": "rune_hound_crescent",
@@ -524,9 +524,9 @@
       "path": "res://assets/audio/sfx/staff_impact.wav",
       "bus": "sfx",
       "priority": 5,
-      "seconds": 0.16,
-      "bytes": 14156,
-      "note": "Hit confirm."
+      "seconds": 0.18,
+      "bytes": 15920,
+      "note": "Hit confirm. The sound the player needs to trust, so it gets a hard transient and real low weight."
     },
     {
       "slot": "staff_shot",
@@ -535,7 +535,7 @@
       "priority": 5,
       "seconds": 0.2,
       "bytes": 17684,
-      "note": "Focus Weapon. Descending chirp with a transient click."
+      "note": "Focus Weapon. Noise-forward discharge with a tonal core."
     },
     {
       "slot": "sword_wisp_hover",

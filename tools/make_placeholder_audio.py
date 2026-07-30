@@ -132,6 +132,48 @@ def pluck(seconds: float, freq: float, damping: float = 0.996) -> np.ndarray:
     return out
 
 
+def bandnoise(seconds: float, centre: float, q: float = 2.0) -> np.ndarray:
+    """Noise with a resonant peak at `centre`.
+
+    Built as lowpass minus lowpass — a crude bandpass, but the shape that matters
+    is "noise with a pitch centre", which is what a physical impact is. Higher `q`
+    narrows the band.
+    """
+    n = noise(seconds)
+    lo = centre / (1.0 + q * 0.4)
+    hi = centre * (1.0 + q * 0.4)
+    return lowpass(n, hi, 3) - lowpass(n, lo, 3)
+
+
+def impact(seconds: float, centre: float, thump: float = 0.0,
+           crack: float = 0.35) -> np.ndarray:
+    """A physical hit: noise transient, resonant body, optional low thump.
+
+    Measured on the first pass of this sound set, staff_shot had a spectral
+    flatness of 0.095 and a crawler hit 0.020 — near-pure tones, which the ear
+    reads as a synthesiser beep rather than as something striking something. Real
+    impacts are noise-dominated for the first ~20 ms and only then show pitch.
+    So the layering here is deliberate and in this order of loudness:
+
+        1. a very short bright crack (the transient — what makes it feel like
+           contact rather than a note starting)
+        2. a resonant noise band (the body — what the thing is made of)
+        3. an optional sub thump (the mass behind it)
+    """
+    n = int(RATE * seconds)
+    body = bandnoise(seconds, centre, 1.6) * env(n, 0.004, 0.996, 2.4)
+    out = body
+    if crack > 0.0:
+        tn = max(1, int(RATE * min(0.012, seconds)))
+        out = mix(out, pad_to(
+            highpass(noise(tn / RATE), 3500, 2) * env(tn, 0.0008, 0.999, 4.0) * crack,
+            seconds))
+    if thump > 0.0:
+        out = mix(out, sweep(seconds, centre * 0.22, centre * 0.1)
+                  * env(n, 0.003, 0.997, 2.0) * thump)
+    return out
+
+
 def normalise(x: np.ndarray, peak: float = 0.86) -> np.ndarray:
     m = float(np.max(np.abs(x)))
     return x * (peak / m) if m > 1e-9 else x
@@ -218,8 +260,12 @@ def sfx_bank() -> dict:
         b[name] = {"samples": samples, "bus": bus, "priority": priority, "note": note}
 
     # --- Hero -----------------------------------------------------------------
-    add("hero_step", pad_to(highpass(noise(0.09), 900) * env(int(RATE * 0.09), 0.02, 0.98, 3.0), 0.12),
-        "sfx", 6, "Footfall. Band-limited noise, short.")
+    add("hero_step", pad_to(mix(
+            bandnoise(0.11, 420, 1.1) * env(int(RATE * 0.11), 0.012, 0.988, 2.6),
+            highpass(noise(0.03), 2600, 2) * env(int(RATE * 0.03), 0.002, 0.998, 3.5) * 0.35,
+        ), 0.14),
+        "sfx", 6, "Footfall. Scuff transient over a low resonant body — the first "
+        "version was a 26 ms noise click with no body at all.")
     add("hero_dash", pad_to(mix(
             lowpass(noise(0.28), 2600) * env(int(RATE * 0.28), 0.06, 0.94, 1.6),
             sweep(0.28, 180, 620) * env(int(RATE * 0.28), 0.05, 0.95) * 0.35), 0.32),
@@ -233,13 +279,15 @@ def sfx_bank() -> dict:
             sweep(1.1, 88, 84) * env(int(RATE * 1.1), 0.1, 0.9) * 0.4), 1.2),
         "sfx", 1, "Damage warning loop. Also priority 1.")
     add("staff_shot", pad_to(mix(
-            sweep(0.16, 1500, 520) * env(int(RATE * 0.16), 0.01, 0.99, 2.2),
-            highpass(noise(0.05), 3200) * env(int(RATE * 0.05), 0.004, 0.996, 3.0) * 0.4), 0.2),
-        "sfx", 5, "Focus Weapon. Descending chirp with a transient click.")
-    add("staff_impact", pad_to(mix(
-            lowpass(noise(0.12), 1400) * env(int(RATE * 0.12), 0.004, 0.996, 2.6),
-            sweep(0.12, 700, 240) * env(int(RATE * 0.12), 0.004, 0.996) * 0.5), 0.16),
-        "sfx", 5, "Hit confirm.")
+            # Tonal core kept — a magic weapon should have pitch — but no longer
+            # alone: it was a pure descending sine, which is the textbook "pew".
+            sweep(0.16, 1500, 520) * env(int(RATE * 0.16), 0.01, 0.99, 2.2) * 0.55,
+            impact(0.13, 1800, thump=0.0, crack=0.5) * 0.8,
+            bandnoise(0.18, 700, 0.9) * env(int(RATE * 0.18), 0.02, 0.98, 1.8) * 0.3), 0.2),
+        "sfx", 5, "Focus Weapon. Noise-forward discharge with a tonal core.")
+    add("staff_impact", pad_to(impact(0.14, 900, thump=0.45, crack=0.5), 0.18),
+        "sfx", 5, "Hit confirm. The sound the player needs to trust, so it gets a "
+        "hard transient and real low weight.")
     add("rally_mark", pad_to(mix(bell(0.7, 587.33, 0.8), bell(0.7, 880.0, 0.4)), 0.8),
         "sfx", 3, "Rally target marked. Bright, friendly interval.")
     add("convergence_start", pad_to(mix(
@@ -259,10 +307,8 @@ def sfx_bank() -> dict:
     add("rune_hound_lunge", pad_to(sweep(0.22, 260, 700, "saw")
             * env(int(RATE * 0.22), 0.04, 0.96, 1.5), 0.26),
         "sfx", 4, "Rising saw.")
-    add("rune_hound_bite", pad_to(mix(
-            highpass(noise(0.07), 2400) * env(int(RATE * 0.07), 0.003, 0.997, 3.5),
-            sweep(0.07, 500, 160) * env(int(RATE * 0.07), 0.003, 0.997) * 0.6), 0.1),
-        "sfx", 4, "Sharp snap.")
+    add("rune_hound_bite", pad_to(impact(0.08, 1400, thump=0.5, crack=0.7), 0.11),
+        "sfx", 4, "Sharp snap. Bite is nearly all transient.")
     add("rune_hound_crescent", pad_to(mix(
             sweep(0.3, 900, 380) * env(int(RATE * 0.3), 0.02, 0.98, 1.8),
             highpass(noise(0.3), 2000) * env(int(RATE * 0.3), 0.02, 0.98, 2.0) * 0.35), 0.34),
@@ -313,12 +359,15 @@ def sfx_bank() -> dict:
                 lowpass(noise(0.5), pitch * 4) * env(int(RATE * 0.5), 0.55, 0.45) * 0.25), 0.55),
             "sfx", 2, "Telegraph. Priority 2 — the player has to hear a windup starting.")
         add("enemy_%s_attack" % species, pad_to(mix(
-                sweep(0.14, pitch * 1.6, pitch * 0.5, "saw") * env(int(RATE * 0.14), 0.006, 0.994, 2.2),
-                highpass(noise(0.1), pitch * 6) * env(int(RATE * 0.1), 0.004, 0.996, 2.8) * 0.4), 0.18),
+                impact(0.15, pitch * 2.2, thump=0.3, crack=0.45),
+                sweep(0.14, pitch * 1.6, pitch * 0.5, "saw")
+                    * env(int(RATE * 0.14), 0.006, 0.994, 2.2) * 0.35), 0.18),
             "sfx", 5, "Attack lands.")
-        add("enemy_%s_hit" % species, pad_to(mix(
-                lowpass(noise(0.09), pitch * 5) * env(int(RATE * 0.09), 0.003, 0.997, 3.0),
-                sweep(0.09, pitch, pitch * 0.55) * env(int(RATE * 0.09), 0.003, 0.997) * 0.5), 0.12),
+        # The single most-repeated sound in the game — every shot on every enemy.
+        # Noise-forward so it reads as a strike, and the runtime pitch variation in
+        # AudioDirector keeps forty of them from sounding like one file forty times.
+        add("enemy_%s_hit" % species, pad_to(
+                impact(0.10, pitch * 3.0, thump=0.25, crack=0.55), 0.13),
             "sfx", 5, "Took damage.")
         add("enemy_%s_death" % species, pad_to(mix(
                 sweep(0.45, pitch * 1.2, pitch * 0.28, "saw") * env(int(RATE * 0.45), 0.02, 0.98, 1.3),
@@ -326,11 +375,17 @@ def sfx_bank() -> dict:
             "sfx", 5, "Pitch collapse — the cheapest read for 'that thing is gone'.")
 
     # --- The First Bell. It is a bell, so it gets the bell. --------------------
+    # The transient has to define the peak, not the sub. The first version summed a
+    # full-amplitude 90->40 Hz sweep with the impact, so normalisation scaled the
+    # whole thing to that slow low peak: measured attack 19.8 ms, which the ear
+    # reads as a soft whump rather than a slam. The sub is now support at 0.5, and
+    # the crack is pushed to 0.9 so the peak lands in the first few milliseconds.
     add("boss_slam", pad_to(mix(
-            lowpass(noise(0.6), 260) * env(int(RATE * 0.6), 0.004, 0.996, 2.0),
-            sweep(0.6, 90, 40) * env(int(RATE * 0.6), 0.004, 0.996) * 0.9,
-            bell(0.6, 110.0, 0.35)), 0.7),
-        "sfx", 2, "Heavy impact with sub weight.")
+            impact(0.45, 320, thump=0.35, crack=0.9) * 1.0,
+            bandnoise(0.35, 900, 1.2) * env(int(RATE * 0.35), 0.002, 0.998, 2.6) * 0.5,
+            sweep(0.6, 95, 42) * env(int(RATE * 0.6), 0.002, 0.998, 1.6) * 0.5,
+            bell(0.6, 110.0, 0.22)), 0.7),
+        "sfx", 2, "Heavy impact with sub weight. Peak is the transient.")
     add("boss_chain_sweep", pad_to(mix(
             highpass(noise(0.5), 1600) * env(int(RATE * 0.5), 0.2, 0.8, 1.4),
             sweep(0.5, 700, 300, "saw") * env(int(RATE * 0.5), 0.2, 0.8) * 0.4), 0.55),

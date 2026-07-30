@@ -32,6 +32,11 @@ var _wall_mat: StandardMaterial3D
 var _rift_mat: StandardMaterial3D
 var _gate_mat: StandardMaterial3D
 var _prop_mat: StandardMaterial3D
+var _foliage_mat: StandardMaterial3D
+var _roof_mat: StandardMaterial3D
+var _lantern_mat: StandardMaterial3D
+var _crystal_mat: StandardMaterial3D
+var _water_mat: StandardMaterial3D
 
 
 func _ready() -> void:
@@ -80,6 +85,26 @@ func _make_materials() -> void:
 	_floor_mat = _surface("cobblestone_01.png", Color(1, 1, 1), 0.14)
 	_wall_mat = _surface("sandstone_wall.png", Color(0.94, 0.92, 0.88), 0.12)
 	_prop_mat = _surface("weathered_wood.png", Color(1, 1, 1), 0.5)
+	_foliage_mat = _surface("planter_foliage.png", Color(1, 1, 1), 0.7)
+	_roof_mat = _surface("terracotta_roof.png", Color(1, 1, 1), 0.4)
+	# Lantern glass and crystal are emissive: they are light sources in the fiction
+	# and have to read as lit even where their OmniLight does not reach.
+	_lantern_mat = _surface("cream_plaster.png", Color(1.0, 0.9, 0.65), 0.3)
+	_lantern_mat.emission_enabled = true
+	_lantern_mat.emission = Color(1.0, 0.82, 0.5)
+	_lantern_mat.emission_energy_multiplier = 0.9
+	# Emission belongs on small shapes. At 1.4 on a shard it reads as a glowing
+	# crystal; the same material on the fountain's 5 m basin saturated the whole
+	# disc to white and took the surrounding floor with it. 0.55 keeps the shards
+	# violet instead of blowing them out, and the basin gets its own material.
+	_crystal_mat = _surface("cream_plaster.png", Color(0.42, 0.32, 0.82), 0.15)
+	_crystal_mat.emission_enabled = true
+	_crystal_mat.emission = Color(0.45, 0.34, 0.92)
+	_crystal_mat.emission_energy_multiplier = 0.55
+	# Standing water: violet by reflection, not by emission.
+	_water_mat = _surface("cobblestone_03.png", Color(0.34, 0.30, 0.52), 0.25)
+	_water_mat.roughness = 0.15
+	_water_mat.metallic = 0.35
 
 	# Rift floors read violet — friendly-side corruption, never hostile red.
 	_rift_mat = _surface("cobblestone_02.png", Color(0.68, 0.56, 0.92), 0.14)
@@ -397,11 +422,19 @@ func _build_props(room: Node3D, s: WardLayout.Space, doors: Array) -> void:
 	# screenshot diff means a real change.
 	rng.seed = hash(String(s.id))
 
-	var count := 10
+	# 22, not 10 — ten identical grey boxes around a 32 m room reads as an empty
+	# room with debris in it. Guide §9 still wants "broad clean combat floors", so
+	# the density goes up at the perimeter and the CLEAR_RADIUS centre stays empty.
+	var count := 22
 	var inner: float = (s.radius() if s.is_round() else minf(s.size.x, s.size.y) * 0.5) - 3.0
+	# What each room kind is dressed with. Informed by the modular kit sheet, built
+	# as blockout primitives: CLAUDE.md keeps that sheet as reference, not a texture
+	# source, so nothing here is cut out of it.
+	var kinds := _prop_palette(s.kind)
+
 	for i in count:
-		var a := TAU * float(i) / float(count) + rng.randf_range(-0.15, 0.15)
-		var dist := inner - rng.randf_range(0.0, 2.0)
+		var a := TAU * float(i) / float(count) + rng.randf_range(-0.12, 0.12)
+		var dist := inner - rng.randf_range(0.0, 3.0)
 		var pos: Vector3 = s.centre + Vector3(cos(a) * dist, 0.0, sin(a) * dist)
 
 		if s.kind == WardLayout.Kind.COMBAT and pos.distance_to(s.centre) < WardLayout.CLEAR_RADIUS:
@@ -417,9 +450,133 @@ func _build_props(room: Node3D, s: WardLayout.Space, doors: Array) -> void:
 		if in_a_doorway:
 			continue
 
-		var height := rng.randf_range(1.2, 2.6)
-		var crate := _box(room, pos + Vector3(0, height * 0.5, 0), Vector3(1.4, height, 1.4), _prop_mat)
-		crate.rotation.y = rng.randf_range(0.0, TAU)
+		_build_prop(room, kinds[rng.randi() % kinds.size()], pos, rng)
+
+	# One centrepiece per non-combat room. A combat floor stays clear.
+	# Offset from the centre, not on it. The critical route runs straight through
+	# every room's centre point, and a solid stone basin sitting there made the
+	# Spirit Well impassable — Phase 8's clutter probe caught it immediately. A
+	# centrepiece the player walks around also just reads better than one they
+	# collide with head-on coming through the door.
+	if s.kind == WardLayout.Kind.SERVICE:
+		_build_fountain(room, s.centre + Vector3(0.0, 0.0, -6.5))
+	elif s.kind == WardLayout.Kind.RIFT:
+		_build_crystal_cluster(room, s.centre + Vector3(0.0, 0.0, -6.0), rng, 2.2)
+
+
+## Prop vocabulary per room kind. Lanterns are in every list on purpose: they
+## carry an OmniLight3D, and a few warm pools of light around a perimeter is the
+## cheapest thing that makes a blockout stop reading as a test level.
+func _prop_palette(kind: WardLayout.Kind) -> Array:
+	match kind:
+		WardLayout.Kind.SERVICE:
+			return ["planter", "planter", "bench", "barrel", "lantern", "stall", "crate"]
+		WardLayout.Kind.RIFT:
+			return ["crystal", "crystal", "barrel", "crate", "lantern", "rubble"]
+		WardLayout.Kind.BOSS:
+			return ["rubble", "rubble", "barrel", "lantern", "crate"]
+		_:
+			return ["crate", "barrel", "crate", "planter", "lantern", "bench", "rubble"]
+
+
+func _build_prop(room: Node3D, kind: String, pos: Vector3, rng: RandomNumberGenerator) -> void:
+	match kind:
+		"barrel":
+			var h := rng.randf_range(1.0, 1.4)
+			var b := _cylinder(room, pos + Vector3(0, h * 0.5, 0), 0.55, h, _prop_mat)
+			b.rotation.y = rng.randf_range(0.0, TAU)
+		"planter":
+			# Box of soil with a foliage slab on top, so it reads as planted rather
+			# than as another crate.
+			var box := _box(room, pos + Vector3(0, 0.35, 0), Vector3(2.0, 0.7, 1.1), _prop_mat)
+			box.rotation.y = rng.randf_range(0.0, TAU)
+			var leaves := _box(room, pos + Vector3(0, 0.95, 0), Vector3(1.8, 0.6, 0.95),
+				_foliage_mat, false)
+			leaves.rotation.y = box.rotation.y
+		"bench":
+			var seat := _box(room, pos + Vector3(0, 0.55, 0), Vector3(2.4, 0.18, 0.7), _prop_mat)
+			seat.rotation.y = rng.randf_range(0.0, TAU)
+			for side in [-0.9, 0.9]:
+				var leg := _box(room, pos + Vector3(0, 0.25, 0), Vector3(0.18, 0.5, 0.6),
+					_prop_mat, false)
+				leg.position = pos + (seat.basis * Vector3(side, 0.25, 0.0))
+		"stall":
+			# Four posts and a pitched awning. The silhouette is what sells a market.
+			var rot := rng.randf_range(0.0, TAU)
+			for cx in [-1.3, 1.3]:
+				for cz in [-1.0, 1.0]:
+					var post := _box(room, pos, Vector3(0.16, 2.2, 0.16), _prop_mat, false)
+					post.position = pos + Vector3(cos(rot) * cx - sin(rot) * cz, 1.1,
+						sin(rot) * cx + cos(rot) * cz)
+			var awning := _box(room, pos + Vector3(0, 2.35, 0), Vector3(3.2, 0.16, 2.4),
+				_roof_mat, false)
+			awning.rotation.y = rot
+			awning.rotation.x = 0.12
+		"lantern":
+			var postm := _box(room, pos + Vector3(0, 1.1, 0), Vector3(0.14, 2.2, 0.14), _prop_mat)
+			postm.rotation.y = rng.randf_range(0.0, TAU)
+			var head := _box(room, pos + Vector3(0, 2.3, 0), Vector3(0.38, 0.42, 0.38),
+				_lantern_mat, false)
+			head.rotation.y = postm.rotation.y
+			var light := OmniLight3D.new()
+			light.position = pos + Vector3(0, 2.3, 0)
+			light.light_color = Color(1.0, 0.82, 0.55)
+			light.light_energy = 2.6
+			light.omni_range = 9.0
+			# Lanterns are set dressing, not gameplay light. Casting shadows from
+			# twenty of them is the single most expensive thing this scene could do
+			# for the least readable gain.
+			light.shadow_enabled = false
+			room.add_child(light)
+		"crystal":
+			_build_crystal_cluster(room, pos, rng, 1.0)
+		_:
+			# Rubble: a couple of low slabs, the cheapest way to break a clean floor
+			# line without adding anything the player can hide behind.
+			for _n in 2:
+				var r := _box(room, pos, Vector3(rng.randf_range(0.7, 1.5), 0.35,
+					rng.randf_range(0.7, 1.4)), _prop_mat, false)
+				r.position = pos + Vector3(rng.randf_range(-0.8, 0.8), 0.17,
+					rng.randf_range(-0.8, 0.8))
+				r.rotation.y = rng.randf_range(0.0, TAU)
+
+
+## Violet crystal. Rift rooms and the Spirit Well share the palette's friendly
+## side, so these glow rather than reflect.
+func _build_crystal_cluster(room: Node3D, at: Vector3, rng: RandomNumberGenerator,
+		scale_v: float) -> void:
+	var shards := 5
+	for i in shards:
+		var h := rng.randf_range(0.9, 2.1) * scale_v
+		var shard := _box(room, at, Vector3(0.32 * scale_v, h, 0.32 * scale_v),
+			_crystal_mat, false)
+		var a := TAU * float(i) / float(shards) + rng.randf_range(-0.3, 0.3)
+		var off := rng.randf_range(0.15, 0.8) * scale_v
+		shard.position = at + Vector3(cos(a) * off, h * 0.45, sin(a) * off)
+		shard.rotation = Vector3(rng.randf_range(-0.25, 0.25), a, rng.randf_range(-0.25, 0.25))
+	var glow := OmniLight3D.new()
+	glow.position = at + Vector3(0, 1.0 * scale_v, 0)
+	glow.light_color = Color(0.62, 0.45, 1.0)
+	glow.light_energy = 2.2 * scale_v
+	glow.omni_range = 8.0 * scale_v
+	glow.shadow_enabled = false
+	room.add_child(glow)
+
+
+## The Spirit Well's centrepiece. Guide §9 gives the well its own read, and a
+## service room with nothing in the middle looks unfinished next to a combat floor
+## that is empty on purpose.
+func _build_fountain(room: Node3D, at: Vector3) -> void:
+	_cylinder(room, at + Vector3(0, 0.3, 0), 3.2, 0.6, _prop_mat)
+	# Water, not light. The emissive version of this washed the room out.
+	_cylinder(room, at + Vector3(0, 0.66, 0), 2.7, 0.12, _water_mat)
+	_cylinder(room, at + Vector3(0, 1.4, 0), 0.45, 2.0, _prop_mat)
+	# One small shard cluster at the top carries the glow, and a single light
+	# does the rest — the well should be the brightest thing in its room without
+	# being the only thing you can see.
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("spirit_well_fountain")
+	_build_crystal_cluster(room, at + Vector3(0, 2.5, 0), rng, 0.45)
 
 
 # ---------------------------------------------------------------- corridors

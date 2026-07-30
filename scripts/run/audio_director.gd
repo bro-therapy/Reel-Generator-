@@ -55,6 +55,17 @@ const WORST_PRIORITY := 99
 @export var max_same_slot := 4
 @export var flood_window_seconds := 0.12
 
+## Per-playback pitch variation, in semitones either side of centre.
+##
+## The single cheapest thing that stops a placeholder set sounding like a
+## placeholder set. Forty crawler hits in one fight were forty byte-identical
+## playbacks of the same file, which the ear reads as a machine gun rather than as
+## forty separate impacts — no amount of better synthesis fixes that, because the
+## problem is repetition, not timbre.
+##
+## Music is exempt: a bed that changes key every time it loops is a bug.
+@export var pitch_variation_semitones := 1.6
+
 var settings_source: Object
 
 var _slots: Dictionary = {}
@@ -257,12 +268,18 @@ func _play(slot: StringName, positional: bool, at: Vector3, volume_db: float) ->
 		sound_dropped.emit(slot, &"missing_stream")
 		return false
 
+	# Semitones to a ratio: 2^(n/12). Applied per playback, so the same file is a
+	# slightly different sound every time it fires.
+	var cents := randf_range(-pitch_variation_semitones, pitch_variation_semitones)
+	var pitch := pow(2.0, cents / 12.0)
+
 	var player: Node
 	if positional:
 		var p3 := _voices_3d[index]
 		p3.stream = stream
 		p3.bus = bus_of(slot)
 		p3.volume_db = volume_db
+		p3.pitch_scale = pitch
 		p3.global_position = at if p3.is_inside_tree() else p3.global_position
 		p3.play()
 		player = p3
@@ -271,6 +288,7 @@ func _play(slot: StringName, positional: bool, at: Vector3, volume_db: float) ->
 		p.stream = stream
 		p.bus = bus_of(slot)
 		p.volume_db = volume_db
+		p.pitch_scale = pitch
 		p.play()
 		player = p
 
@@ -286,7 +304,9 @@ func _play(slot: StringName, positional: bool, at: Vector3, volume_db: float) ->
 		# finished, so the pool filled to exactly max_voices and then silently
 		# dropped everything for the rest of the run. A duration the director owns
 		# means voice accounting behaves the same on every driver.
-		"ends_at": _clock + maxf(stream.get_length(), 0.01),
+		# Divided by pitch: playing at 0.9x takes 11% longer, and reclaiming the
+		# voice on the unpitched duration would cut the tail off.
+		"ends_at": _clock + maxf(stream.get_length() / maxf(pitch, 0.01), 0.01),
 		"positional": positional,
 		"player": player,
 	}
@@ -429,6 +449,7 @@ func play_music(slot: StringName) -> bool:
 	if stream is AudioStreamWAV:
 		(stream as AudioStreamWAV).loop_mode = AudioStreamWAV.LOOP_FORWARD
 	_music.stream = stream
+	_music.pitch_scale = 1.0
 	_music.play()
 	_music_slot = slot
 	music_changed.emit(slot)

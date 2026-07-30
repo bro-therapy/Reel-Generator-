@@ -124,6 +124,11 @@ func _build_hero() -> void:
 	# Slightly back from the centre of Arrival, facing the ward, so the first thing
 	# on screen is the corridor rather than a wall.
 	hero.position = start.centre + Vector3(-6.0, 0.0, 0.0)
+	var dbg := OS.get_environment("PZC_START_ROOM")
+	if dbg != "":
+		var sp := WardLayout.space(StringName(dbg))
+		if sp != null:
+			hero.position = sp.centre
 
 
 func _build_camera() -> void:
@@ -367,6 +372,45 @@ func _prune_enemies() -> void:
 		if not more:
 			presentation.audio.play_music(&"music_sunfall_explore")
 			print("[play] room clear")
+
+
+## Camera distance is adjustable at runtime, and prints what it lands on.
+##
+## The framing has now been guessed at three times — 26.5 m, 20.5 m, 16.0 m — each
+## time from a description ("zoomed out", "he's a little small") rather than a
+## number, because a number is not a thing anyone can be expected to supply by
+## eye. So the dial is in the build: mouse wheel, or - and =. It prints the value,
+## which makes the next conversation about a number instead of an adjective.
+const CAMERA_MIN := 10.0
+const CAMERA_MAX := 32.0
+const CAMERA_STEP := 1.0
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if camera == null:
+		return
+	var delta := 0.0
+	var wheel := event as InputEventMouseButton
+	if wheel != null and wheel.pressed:
+		if wheel.button_index == MOUSE_BUTTON_WHEEL_UP:
+			delta = -CAMERA_STEP
+		elif wheel.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			delta = CAMERA_STEP
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo:
+		if key.keycode == KEY_MINUS:
+			delta = CAMERA_STEP
+		elif key.keycode == KEY_EQUAL:
+			delta = -CAMERA_STEP
+
+	if is_zero_approx(delta):
+		return
+	var want := clampf(camera.framing() + delta, CAMERA_MIN, CAMERA_MAX)
+	camera.set_framing(want)
+	# The px figure is the one that matters — the guide's floor is 88 px.
+	var visible_height := 2.0 * want * tan(deg_to_rad(camera.fov * 0.5))
+	print("[camera] distance %.1f m   hero reads at %.0f px   (tell Claude this number)"
+		% [want, 1.8 / visible_height * 1080.0])
 
 
 func _handle_input() -> void:
