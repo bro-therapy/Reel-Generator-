@@ -42,12 +42,23 @@ var _barrier_mat: StandardMaterial3D
 ## GateController per COMBAT space, keyed by space id. Filled during build.
 var _combat_gates: Dictionary = {}
 
+## Model-backed props, kind -> Array of {scene, scale, collider}. Loaded from the
+## manifest at build time; a kind with no installed model falls back to its
+## primitive construction, so an assetless checkout builds exactly the old ward.
+## docs/FREE_ASSETS.json is the source of truth for what belongs here and where
+## it came from — assets stay untracked (LFS uploads are blocked from the build
+## environment), the manifest carries URLs and licenses instead.
+const FREE_ASSETS_MANIFEST := "res://docs/FREE_ASSETS.json"
+const MODEL_DIR := "res://assets/environment/models"
+var _prop_models: Dictionary = {}
+
 
 func _ready() -> void:
 	build()
 
 
 func build() -> void:
+	_load_prop_models()
 	for child in get_children():
 		child.free()
 
@@ -481,6 +492,84 @@ func _build_props(room: Node3D, s: WardLayout.Space, doors: Array) -> void:
 		_build_crystal_cluster(room, s.centre + Vector3(0.0, 0.0, -6.0), rng, 2.2)
 
 
+func _load_prop_models() -> void:
+	_prop_models = {}
+	if not FileAccess.file_exists(FREE_ASSETS_MANIFEST):
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(FREE_ASSETS_MANIFEST))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		push_warning("ward: %s is not valid JSON" % FREE_ASSETS_MANIFEST)
+		return
+	var map: Dictionary = (parsed as Dictionary).get("prop_models", {})
+	for kind in map:
+		var entries: Array = []
+		for e in map[kind]:
+			var entry: Dictionary = e
+			var path := "%s/%s" % [MODEL_DIR, String(entry.get("file", ""))]
+			if not ResourceLoader.exists(path):
+				continue
+			var packed := load(path) as PackedScene
+			if packed == null:
+				push_warning("ward: %s exists but is not a scene" % path)
+				continue
+			var collider: Variant = null
+			if entry.has("collider"):
+				var c: Array = entry["collider"]
+				collider = Vector3(float(c[0]), float(c[1]), float(c[2]))
+			entries.append({
+				"scene": packed,
+				"scale": float(entry.get("scale", 1.0)),
+				"collider": collider,
+			})
+		if not entries.is_empty():
+			_prop_models[kind] = entries
+
+
+## True when an installed model stood in for this prop. Chooses deterministically
+## from the room's own rng, so prop variety is stable per room across runs.
+func _try_model_prop(room: Node3D, kind: String, pos: Vector3, rng: RandomNumberGenerator) -> bool:
+	if not _prop_models.has(kind):
+		return false
+	var options: Array = _prop_models[kind]
+	var pick: Dictionary = options[rng.randi() % options.size()]
+	var inst := (pick["scene"] as PackedScene).instantiate() as Node3D
+	if inst == null:
+		return false
+	room.add_child(inst)
+	inst.position = pos
+	inst.rotation.y = rng.randf_range(0.0, TAU)
+	var sc: float = pick["scale"]
+	inst.scale = Vector3(sc, sc, sc)
+
+	# Imported glTF carries no physics. Where the primitive version was solid the
+	# model version must be too, or swapping art would silently change gameplay.
+	var collider: Variant = pick["collider"]
+	if collider != null:
+		var size: Vector3 = collider
+		var body := StaticBody3D.new()
+		body.collision_layer = WORLD_LAYER
+		body.position = pos + Vector3(0, size.y * 0.5, 0)
+		var shape := CollisionShape3D.new()
+		var box := BoxShape3D.new()
+		box.size = size
+		shape.shape = box
+		body.add_child(shape)
+		room.add_child(body)
+	return true
+
+
+## How many props in this room are model-backed. For the acceptance suite.
+func model_prop_count(room_name: String) -> int:
+	var room := get_node_or_null(NodePath(room_name))
+	if room == null:
+		return 0
+	var n := 0
+	for child in room.get_children():
+		if child is Node3D and (child as Node3D).scene_file_path != "":
+			n += 1
+	return n
+
+
 ## Prop vocabulary per room kind. Lanterns are in every list on purpose: they
 ## carry an OmniLight3D, and a few warm pools of light around a perimeter is the
 ## cheapest thing that makes a blockout stop reading as a test level.
@@ -497,6 +586,12 @@ func _prop_palette(kind: WardLayout.Kind) -> Array:
 
 
 func _build_prop(room: Node3D, kind: String, pos: Vector3, rng: RandomNumberGenerator) -> void:
+	# A lantern is a light source first and a shape second — the pool of warm
+	# light arrives whether the visual is a model or a primitive.
+	if kind == "lantern":
+		_lantern_light(room, pos)
+	if _try_model_prop(room, kind, pos, rng):
+		return
 	match kind:
 		"barrel":
 			var h := rng.randf_range(1.0, 1.4)
@@ -535,16 +630,6 @@ func _build_prop(room: Node3D, kind: String, pos: Vector3, rng: RandomNumberGene
 			var head := _box(room, pos + Vector3(0, 2.3, 0), Vector3(0.38, 0.42, 0.38),
 				_lantern_mat, false)
 			head.rotation.y = postm.rotation.y
-			var light := OmniLight3D.new()
-			light.position = pos + Vector3(0, 2.3, 0)
-			light.light_color = Color(1.0, 0.82, 0.55)
-			light.light_energy = 2.6
-			light.omni_range = 9.0
-			# Lanterns are set dressing, not gameplay light. Casting shadows from
-			# twenty of them is the single most expensive thing this scene could do
-			# for the least readable gain.
-			light.shadow_enabled = false
-			room.add_child(light)
 		"crystal":
 			_build_crystal_cluster(room, pos, rng, 1.0)
 		_:
@@ -556,6 +641,19 @@ func _build_prop(room: Node3D, kind: String, pos: Vector3, rng: RandomNumberGene
 				r.position = pos + Vector3(rng.randf_range(-0.8, 0.8), 0.17,
 					rng.randf_range(-0.8, 0.8))
 				r.rotation.y = rng.randf_range(0.0, TAU)
+
+
+func _lantern_light(room: Node3D, pos: Vector3) -> void:
+	var light := OmniLight3D.new()
+	light.position = pos + Vector3(0, 2.3, 0)
+	light.light_color = Color(1.0, 0.82, 0.55)
+	light.light_energy = 2.6
+	light.omni_range = 9.0
+	# Lanterns are set dressing, not gameplay light. Casting shadows from twenty
+	# of them is the single most expensive thing this scene could do for the
+	# least readable gain.
+	light.shadow_enabled = false
+	room.add_child(light)
 
 
 ## Violet crystal. Rift rooms and the Spirit Well share the palette's friendly
