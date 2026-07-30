@@ -114,10 +114,10 @@ for key, pack in spec.get("direct", {}).items():
             continue
         # A 404 page or an unsmudged LFS pointer both arrive as a "successful"
         # download. Both are text; a real asset is not.
-        if out.endswith(".png"):
+        if out.endswith((".png", ".glb")):
             head = (dest / out).read_bytes()[:8]
-            if head[:4] != b"\x89PNG":
-                print("    ! %s is not a PNG (LFS pointer or error page) — removed"
+            if head[:4] not in (b"\x89PNG", b"glTF"):
+                print("    ! %s is not a real asset (LFS pointer or error page) — removed"
                       % out)
                 (dest / out).unlink()
 

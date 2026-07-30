@@ -292,6 +292,275 @@
         "divider.png": "PNG/Double/Divider Fade/divider-fade-002.png",
         "LICENSE.txt": "License.txt"
       }
+    },
+    "kenney_nature_kit": {
+      "install_dir": "assets/environment/models/kenney_nature_kit",
+      "license": "CC0 1.0",
+      "license_evidence": "License.txt shipped in the pack: \"License: (Creative Commons Zero, CC0) http://creativecommons.org/publicdomain/zero/1.0/ ... This content is free to use in personal, educational and commercial projects.\" Kenney, Nature Kit 2.1, 29-04-2020.",
+      "source": "Kenney \u2014 Nature Kit 2.1, via the series-ai/jam-ready-assets mirror",
+      "note": "Ground scatter only \u2014 grass tufts, low plants, flowers, small mushrooms and pebbles. Deliberately NOT the trees, cliffs, fences or buildings from the same pack: Sunfall Ward is a blockout the guide wants built from primitives, and this is dressing for it, not a replacement for it. Purple flowers because the friendly half of the palette is violet; the red and yellow ones are left behind so a hostile colour never grows out of the floor. GLB rather than FBX so Godot imports without FBX2glTF.",
+      "base_url": "https://media.githubusercontent.com/media/series-ai/jam-ready-assets/main/3D/nature/kenney-nature-kit",
+      "files": {
+        "grass.glb": "Models/GLTF format/grass.glb",
+        "grass_large.glb": "Models/GLTF format/grass_large.glb",
+        "grass_leafs.glb": "Models/GLTF format/grass_leafs.glb",
+        "grass_leafsLarge.glb": "Models/GLTF format/grass_leafsLarge.glb",
+        "plant_bush.glb": "Models/GLTF format/plant_bush.glb",
+        "plant_bushSmall.glb": "Models/GLTF format/plant_bushSmall.glb",
+        "plant_flatShort.glb": "Models/GLTF format/plant_flatShort.glb",
+        "plant_flatTall.glb": "Models/GLTF format/plant_flatTall.glb",
+        "flower_purpleA.glb": "Models/GLTF format/flower_purpleA.glb",
+        "flower_purpleB.glb": "Models/GLTF format/flower_purpleB.glb",
+        "flower_purpleC.glb": "Models/GLTF format/flower_purpleC.glb",
+        "mushroom_tan.glb": "Models/GLTF format/mushroom_tan.glb",
+        "mushroom_tanGroup.glb": "Models/GLTF format/mushroom_tanGroup.glb",
+        "rock_smallA.glb": "Models/GLTF format/rock_smallA.glb",
+        "rock_smallB.glb": "Models/GLTF format/rock_smallB.glb",
+        "stone_smallA.glb": "Models/GLTF format/stone_smallA.glb",
+        "LICENSE.txt": "License.txt"
+      }
     }
+  },
+  "scatter_models": {
+    "_note": "Ground cover, drawn with MultiMeshInstance3D rather than as scene instances. The playtest note: \"The assets that are sitting around seem very bland and are just kind of sitting there ... definitely need some growth of like grass and different things around or like moss on the walls.\" A few hundred tufts as separate nodes would cost a few hundred draw calls; as instances of one mesh they cost one each. `weight` is the relative chance of a slot drawing this model. `wall` entries grow along the wall bases (the moss line); the rest scatter over the open floor. None of it collides \u2014 grass a player bumps into is worse than no grass.",
+    "floor": [
+      {
+        "file": "kenney_nature_kit/grass.glb",
+        "weight": 26,
+        "scale": [
+          0.7,
+          1.25
+        ],
+        "tint": [
+          0.52,
+          0.55,
+          0.3
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/grass_large.glb",
+        "weight": 14,
+        "scale": [
+          0.6,
+          1.0
+        ],
+        "tint": [
+          0.48,
+          0.52,
+          0.28
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/grass_leafs.glb",
+        "weight": 12,
+        "scale": [
+          0.7,
+          1.2
+        ],
+        "tint": [
+          0.55,
+          0.57,
+          0.32
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/plant_flatShort.glb",
+        "weight": 10,
+        "scale": [
+          0.7,
+          1.1
+        ],
+        "tint": [
+          0.46,
+          0.5,
+          0.29
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/plant_bushSmall.glb",
+        "weight": 8,
+        "scale": [
+          0.5,
+          0.9
+        ],
+        "tint": [
+          0.43,
+          0.48,
+          0.27
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/flower_purpleA.glb",
+        "weight": 5,
+        "scale": [
+          0.7,
+          1.1
+        ],
+        "tint": [
+          0.62,
+          0.48,
+          0.86
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/flower_purpleB.glb",
+        "weight": 4,
+        "scale": [
+          0.7,
+          1.1
+        ],
+        "tint": [
+          0.6,
+          0.46,
+          0.84
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/flower_purpleC.glb",
+        "weight": 4,
+        "scale": [
+          0.7,
+          1.1
+        ],
+        "tint": [
+          0.64,
+          0.5,
+          0.88
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/rock_smallA.glb",
+        "weight": 7,
+        "scale": [
+          0.5,
+          0.9
+        ],
+        "tint": [
+          0.62,
+          0.58,
+          0.52
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/rock_smallB.glb",
+        "weight": 6,
+        "scale": [
+          0.5,
+          0.9
+        ],
+        "tint": [
+          0.6,
+          0.56,
+          0.5
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/stone_smallA.glb",
+        "weight": 5,
+        "scale": [
+          0.5,
+          0.9
+        ],
+        "tint": [
+          0.64,
+          0.6,
+          0.54
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/mushroom_tan.glb",
+        "weight": 3,
+        "scale": [
+          0.6,
+          1.0
+        ],
+        "tint": [
+          0.72,
+          0.62,
+          0.48
+        ]
+      }
+    ],
+    "wall": [
+      {
+        "file": "kenney_nature_kit/grass_leafsLarge.glb",
+        "weight": 22,
+        "scale": [
+          0.8,
+          1.4
+        ],
+        "tint": [
+          0.5,
+          0.54,
+          0.3
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/grass_leafs.glb",
+        "weight": 20,
+        "scale": [
+          0.9,
+          1.5
+        ],
+        "tint": [
+          0.55,
+          0.57,
+          0.32
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/plant_flatTall.glb",
+        "weight": 16,
+        "scale": [
+          0.7,
+          1.2
+        ],
+        "tint": [
+          0.44,
+          0.49,
+          0.28
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/plant_bush.glb",
+        "weight": 10,
+        "scale": [
+          0.5,
+          0.85
+        ],
+        "tint": [
+          0.4,
+          0.46,
+          0.26
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/mushroom_tanGroup.glb",
+        "weight": 8,
+        "scale": [
+          0.6,
+          1.0
+        ],
+        "tint": [
+          0.7,
+          0.6,
+          0.46
+        ]
+      },
+      {
+        "file": "kenney_nature_kit/flower_purpleB.glb",
+        "weight": 6,
+        "scale": [
+          0.7,
+          1.1
+        ],
+        "tint": [
+          0.6,
+          0.46,
+          0.84
+        ]
+      }
+    ],
+    "_tint_note": "Every entry carries a tint, and it is not decoration. Kenney's nature kit greens read TEAL against Sunfall Ward's warm sandstone \u2014 and teal is the REWARD colour in this game (guide \u00a74: gold/teal/soft-green = rewards). Grass the player might read as a pickup is worse than no grass. These are warm sages and olives instead, dulled so the ground cover sits behind the actors rather than competing with them. The violet on the flowers is the friendly side of the palette and is the one saturated note allowed."
   }
 }

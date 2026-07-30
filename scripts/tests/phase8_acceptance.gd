@@ -145,6 +145,7 @@ func _process(delta: float) -> bool:
 			_check_enclosure()
 			_check_decals_are_flat()
 			_check_corridor_corners()
+			_check_ground_cover()
 			_stage = 2
 		2:
 			_check_combat_centres_clear()
@@ -156,6 +157,104 @@ func _process(delta: float) -> bool:
 			_summary()
 			return true
 	return false
+
+
+## Ground cover and wall moss.
+##
+## Requested: "The assets that are sitting around seem very bland and are just
+## kind of sitting there... definitely need some growth of like grass and
+## different things around or like moss on the walls."
+##
+## Three properties, and the last two are the ones that could break the game
+## rather than just look wrong:
+##
+##   it EXISTS — a manifest that silently resolves to nothing looks identical
+##     to a working one from the outside, which is the failure mode every asset
+##     pack in this project has had at least once;
+##   it does not COLLIDE — hundreds of colliders for decoration would put the
+##     physics budget somewhere unrecoverable, and grass the player bumps into
+##     is worse than no grass;
+##   it stays off the FIGHTING FLOOR — guide §9 wants broad clean combat floors,
+##     and the clear radius is measured here rather than trusted to the builder
+##     that also drew it.
+##
+## Skipped entirely, not failed, when the nature pack is not installed: assets/
+## is fetched rather than committed and a bare checkout is a legitimate state.
+func _check_ground_cover() -> void:
+	var batches: Array[MultiMeshInstance3D] = []
+	var moss: Array[MeshInstance3D] = []
+	_collect_cover(_world, batches, moss)
+
+	if batches.is_empty():
+		print("  SKIP  no ground cover — run tools/fetch_free_assets.sh")
+		return
+
+	var instances := 0
+	var problems: Array[String] = []
+	for b in batches:
+		instances += b.multimesh.instance_count
+		# A MultiMeshInstance3D cannot carry a collider itself, so the thing to
+		# rule out is somebody later "fixing" this by adding one underneath.
+		for child in b.get_children():
+			if child is CollisionObject3D:
+				problems.append("%s grew a collider" % b.name)
+
+	# Nothing may be inside a combat room's clear radius.
+	#
+	# Every instance is tested against every combat centre, rather than looking
+	# up each room node and testing only its own children. The lookup version
+	# resolved nothing — the rooms are children of the WardBuilder, not of the
+	# scene root it searched — so it silently measured zero tufts and passed
+	# even with the clear-radius rule deleted from the builder.
+	var combat_centres: Array[Vector3] = []
+	for space in WardLayout.spaces():
+		if space.kind == WardLayout.Kind.COMBAT:
+			combat_centres.append(space.centre)
+	if combat_centres.is_empty():
+		problems.append("no combat spaces to measure against")
+
+	# Read from the builder's recorded origins, NOT from the MultiMesh.
+	# get_instance_transform() goes to the RenderingServer, and --headless runs
+	# the dummy one, which returns identity for every instance — so the version
+	# that read the MultiMesh measured all 1777 tufts as sitting on the world
+	# origin and passed happily with the clear-radius rule deleted.
+	var intruders := 0
+	var measured := 0
+	for b in batches:
+		if not b.has_meta("scatter_origins"):
+			problems.append("%s records no origins to check" % b.name)
+			continue
+		for at in (b.get_meta("scatter_origins") as PackedVector3Array):
+			measured += 1
+			for centre in combat_centres:
+				if Vector2(at.x - centre.x, at.z - centre.z).length() < WardLayout.CLEAR_RADIUS:
+					intruders += 1
+					break
+	if measured != instances:
+		problems.append("recorded %d origins for %d instances" % [measured, instances])
+	if intruders > 0:
+		problems.append("%d tufts inside a combat clear radius" % intruders)
+
+	if moss.is_empty():
+		problems.append("no moss on any wall")
+
+	if problems.is_empty():
+		_ok("the ward has ground cover and damp walls",
+			"%d instances across %d batches, %d moss strips, none colliding, "
+			% [instances, batches.size(), moss.size()]
+			+ "none on a combat floor")
+	else:
+		_no("ground cover", "; ".join(problems))
+
+
+static func _collect_cover(node: Node, batches: Array[MultiMeshInstance3D],
+		moss: Array[MeshInstance3D]) -> void:
+	if node is MultiMeshInstance3D and (node as MultiMeshInstance3D).multimesh != null:
+		batches.append(node as MultiMeshInstance3D)
+	elif node is MeshInstance3D and String(node.name).contains("Moss"):
+		moss.append(node as MeshInstance3D)
+	for child in node.get_children():
+		_collect_cover(child, batches, moss)
 
 
 ## "Camera cannot see missing world geometry."

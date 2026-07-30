@@ -51,6 +51,13 @@ var _combat_gates: Dictionary = {}
 const FREE_ASSETS_MANIFEST := "res://docs/FREE_ASSETS.json"
 const MODEL_DIR := "res://assets/environment/models"
 var _prop_models: Dictionary = {}
+## Ground cover: band -> weighted model list, and path -> the Mesh pulled out of
+## it once. Empty on a checkout without the nature pack, which simply means no
+## scatter — the ward is still a complete blockout without it.
+var _scatter_models: Dictionary = {}
+var _scatter_meshes: Dictionary = {}
+var _scatter_tints: Dictionary = {}
+var _moss_index := 0
 
 
 func _ready() -> void:
@@ -58,7 +65,9 @@ func _ready() -> void:
 
 
 func build() -> void:
+	_moss_index = 0
 	_load_prop_models()
+	_load_scatter_models()
 	for child in get_children():
 		child.free()
 
@@ -336,8 +345,98 @@ func _build_space(s: WardLayout.Space, openings: Dictionary) -> void:
 
 	_build_decal(room, s)
 	_build_props(room, s, _doorway_points(s))
+	_build_scatter(room, s, _doorway_points(s))
 	if s.kind == WardLayout.Kind.COMBAT:
 		_build_combat_barriers(room, s)
+
+
+## Damp growing up the wall feet. Requested alongside the grass: "or like moss
+## on the walls".
+##
+## The texture is generated, not downloaded. It is two things multiplied — a
+## vertical fade so the moss thins as it climbs, and value noise so it grows in
+## patches rather than as a painted skirting board — and a StandardMaterial3D
+## cannot multiply two textures without a shader. Writing the RGBA directly is
+## fewer moving parts than a shader and needs no art file, which matters for a
+## repo whose assets are fetched rather than committed.
+const MOSS_HEIGHT := 1.9
+const MOSS_TEX_SIZE := 64
+
+var _moss_mat: StandardMaterial3D
+
+
+func _moss_material() -> StandardMaterial3D:
+	if _moss_mat != null:
+		return _moss_mat
+	var noise := FastNoiseLite.new()
+	noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise.frequency = 0.055
+	noise.seed = 20250730
+
+	var img := Image.create(MOSS_TEX_SIZE, MOSS_TEX_SIZE, false, Image.FORMAT_RGBA8)
+	for y in MOSS_TEX_SIZE:
+		# v = 0 at the top of the quad, 1 at the floor.
+		var v := 1.0 - float(y) / float(MOSS_TEX_SIZE - 1)
+		# Squared, so the fade is thick at the foot and gone well before the top
+		# rather than a linear ramp that reads as a gradient someone applied.
+		var climb := pow(1.0 - v, 2.2)
+		for x in MOSS_TEX_SIZE:
+			var n := (noise.get_noise_2d(float(x), float(y)) + 1.0) * 0.5
+			var a: float = clampf((n - 0.46) * 3.2, 0.0, 1.0) * climb
+			# Two greens mixed by the same noise, so the patch has depth instead
+			# of being one flat colour cut into a shape.
+			var shade := 0.75 + n * 0.5
+			img.set_pixel(x, y, Color(0.26 * shade, 0.34 * shade, 0.18 * shade, a))
+
+	var mat := StandardMaterial3D.new()
+	mat.albedo_texture = ImageTexture.create_from_image(img)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.roughness = 1.0
+	# Nothing may light this: it is grime on a wall, and an emissive or
+	# specular-lit moss patch reads as a glowing panel.
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	_moss_mat = mat
+	return _moss_mat
+
+
+## One moss quad hugging a wall segment, pulled a hair off the face so it does
+## not z-fight with it.
+func _moss_strip(room: Node3D, at: Vector3, width: float, facing: Vector3) -> void:
+	if width < 1.0:
+		return
+	var quad := QuadMesh.new()
+	quad.size = Vector2(width, MOSS_HEIGHT)
+	var mi := MeshInstance3D.new()
+	# Numbered explicitly. add_child() defaults to force_readable_name = false,
+	# so a duplicate "Moss" becomes "@Moss@2" — which does not begin with "Moss",
+	# and the acceptance check counting strips by name saw one per room and
+	# passed while the rest were invisible to it.
+	_moss_index += 1
+	mi.name = "Moss_%d" % _moss_index
+	mi.mesh = quad
+	# Tiled along the wall, not stretched across it. One 64 px texture spread
+	# over a 26 m wall turns patchy noise into a smooth band, which reads as a
+	# painted skirting board rather than as growth. Roughly one tile every three
+	# metres puts the patches back at a size the eye reads as moss.
+	var mat := _moss_material().duplicate() as StandardMaterial3D
+	mat.uv1_scale = Vector3(maxf(width / 3.0, 1.0), 1.0, 1.0)
+	mi.material_override = mat
+	mi.layers = WORLD_LAYER
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	# Basis.looking_at, NOT Node3D.look_at. look_at reads global_transform, which
+	# needs the node in the tree — and rooms are built before they are added, so
+	# every strip but the last silently failed to orient and every one of them
+	# printed "Node not inside tree" into a log nobody was reading. The basis
+	# form needs no tree at all.
+	#
+	# Negated because looking_at aims local -Z, and a QuadMesh's face is +Z: the
+	# unnegated version pointed the lit side into the wall and only survived on
+	# CULL_DISABLED flipping the normal back.
+	mi.transform = Transform3D(
+		Basis.looking_at(-facing, Vector3.UP),
+		at + facing * 0.06 + Vector3(0.0, MOSS_HEIGHT * 0.5, 0.0))
+	room.add_child(mi)
 
 
 func _build_box_walls(room: Node3D, s: WardLayout.Space, openings: Dictionary) -> void:
@@ -349,12 +448,17 @@ func _build_box_walls(room: Node3D, s: WardLayout.Space, openings: Dictionary) -
 	# East and west run along Z; north and south run along X.
 	for side in ["east", "west"]:
 		var x: float = s.centre.x + (half.x if side == "east" else -half.x)
+		var inward_x := -1.0 if side == "east" else 1.0
 		for seg in _segments(s.centre.z - half.y, s.centre.z + half.y, openings.get(side, [])):
 			var v: Vector2 = seg
 			var length := v.y - v.x
 			if length <= 0.01:
 				continue
 			_box(room, Vector3(x, y, (v.x + v.y) * 0.5), Vector3(t, h, length), _wall_mat)
+			# Segments already exclude the doorways, so moss never grows across
+			# an opening — the same cut that shapes the wall shapes the moss.
+			_moss_strip(room, Vector3(x + inward_x * t * 0.5, 0.0, (v.x + v.y) * 0.5),
+				length, Vector3(inward_x, 0.0, 0.0))
 
 	for side in ["north", "south"]:
 		var z: float = s.centre.z + (-half.y if side == "north" else half.y)
@@ -367,6 +471,13 @@ func _build_box_walls(room: Node3D, s: WardLayout.Space, openings: Dictionary) -
 			# South is +Z, which is the side the fixed camera looks from.
 			if hide_camera_side_walls and side == "south":
 				wall.visible = false
+			else:
+				# No moss on a wall nobody can see. The south wall is hidden for
+				# the camera, and its moss would hang in mid-air in front of the
+				# room without it.
+				var inward_z := 1.0 if side == "north" else -1.0
+				_moss_strip(room, Vector3((v.x + v.y) * 0.5, 0.0, z + inward_z * t * 0.5),
+					length, Vector3(0.0, 0.0, inward_z))
 
 
 ## The boss plaza is circular, so its wall is a ring of short segments with a gap
@@ -510,6 +621,236 @@ func _build_props(room: Node3D, s: WardLayout.Space, doors: Array) -> void:
 		_build_fountain(room, s.centre + Vector3(0.0, 0.0, -6.5))
 	elif s.kind == WardLayout.Kind.RIFT:
 		_build_crystal_cluster(room, s.centre + Vector3(0.0, 0.0, -6.0), rng, 2.2)
+
+
+# --------------------------------------------------------------- ground cover
+
+## How many scatter slots a room gets, before the clear radius and the doorways
+## take their share back. Scaled by floor area so a 32 m combat room and a 20 m
+## service room end up equally dressed rather than equally populated.
+const SCATTER_PER_SQUARE_METRE := 0.45
+## Band along the wall where the taller growth goes — the "moss on the walls"
+## line. Measured inward from the wall face.
+const WALL_BAND := 2.6
+## Kept off the fighting floor for the same reason the props are: guide §9 wants
+## broad clean combat floors, and a tuft the player's eye has to filter out
+## during a wave is clutter however pretty it is.
+const SCATTER_CLEAR_MARGIN := 1.0
+
+
+## Grass, low plants and pebbles, drawn as MultiMesh instances.
+##
+## Answers "the assets that are sitting around seem very bland and are just kind
+## of sitting there... definitely need some growth of like grass and different
+## things around or like moss on the walls."
+##
+## One MultiMeshInstance3D per model, not one node per tuft: a few hundred tufts
+## as scene instances is a few hundred draw calls on a scene that has a frame
+## budget to keep (Phase 15). As instances they cost one each.
+##
+## Nothing here collides. Grass a player bumps into is worse than no grass, and
+## a collider per tuft would also put hundreds of bodies in the physics world
+## for decoration.
+func _build_scatter(room: Node3D, s: WardLayout.Space, doors: Array) -> void:
+	# Travel spaces DO get ground cover, unlike props. The rule that keeps crates
+	# out of them is about obstruction, and grass obstructs nothing — while the
+	# arrival path is the first room anyone sees, so it is the last place that
+	# should be bare.
+	if _scatter_models.is_empty():
+		return
+
+	var rng := RandomNumberGenerator.new()
+	# A different seed from _build_props, or the scatter would land in exactly
+	# the same sequence of angles as the crates and grow out of them.
+	rng.seed = hash(String(s.id) + "|scatter")
+
+	var half_x: float = s.radius() if s.is_round() else s.size.x * 0.5
+	var half_z: float = s.radius() if s.is_round() else s.size.y * 0.5
+	var area := 4.0 * half_x * half_z
+	var slots := int(round(area * SCATTER_PER_SQUARE_METRE))
+
+	# model path -> the transforms chosen for it. Collected first, then built,
+	# because a MultiMesh's instance_count has to be known before any transform
+	# can be written to it.
+	var placements: Dictionary = {}
+
+	for i in slots:
+		var pos: Vector3
+		if s.is_round():
+			# sqrt so the points spread evenly over the disc instead of piling
+			# up in the middle, which is where they are least wanted.
+			var a := rng.randf_range(0.0, TAU)
+			var r: float = half_x * sqrt(rng.randf())
+			pos = s.centre + Vector3(cos(a) * r, 0.0, sin(a) * r)
+		else:
+			pos = s.centre + Vector3(
+				rng.randf_range(-half_x, half_x), 0.0,
+				rng.randf_range(-half_z, half_z))
+
+		var edge_gap: float = minf(half_x - absf(pos.x - s.centre.x),
+			half_z - absf(pos.z - s.centre.z))
+		if s.is_round():
+			edge_gap = half_x - pos.distance_to(s.centre)
+		# Right against the wall face the model would clip through it.
+		if edge_gap < 0.35:
+			continue
+
+		if s.kind == WardLayout.Kind.COMBAT \
+				and pos.distance_to(s.centre) < WardLayout.CLEAR_RADIUS + SCATTER_CLEAR_MARGIN:
+			continue
+
+		var blocked := false
+		for door in doors:
+			if pos.distance_to(door) < DOOR_WIDTH * 0.85:
+				blocked = true
+		if blocked:
+			continue
+
+		var band: String = "wall" if edge_gap <= WALL_BAND else "floor"
+		var pick: Dictionary = _pick_scatter(band, rng)
+		if pick.is_empty():
+			continue
+
+		var scale_range: Array = pick["scale"]
+		var sc := rng.randf_range(float(scale_range[0]), float(scale_range[1]))
+		var basis := Basis(Vector3.UP, rng.randf_range(0.0, TAU)).scaled(
+			Vector3(sc, sc, sc))
+		var path: String = pick["file"]
+		if not placements.has(path):
+			placements[path] = []
+			_scatter_tints[path] = pick["tint"]
+		(placements[path] as Array).append(Transform3D(basis, pos))
+
+	for path in placements:
+		_build_scatter_batch(room, path, placements[path], rng)
+
+
+func _build_scatter_batch(room: Node3D, path: String, transforms: Array,
+		rng: RandomNumberGenerator) -> void:
+	var mesh: Mesh = _scatter_meshes.get(path)
+	if mesh == null or transforms.is_empty():
+		return
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	# Per-instance colour, so a hundred copies of one mesh are not a hundred
+	# identical silhouettes in the same green. This is what the request for
+	# shaders was actually after — the flatness is repetition, not lighting.
+	mm.use_colors = true
+	mm.mesh = mesh
+	mm.instance_count = transforms.size()
+	var tint: Color = _scatter_tints.get(path, Color.WHITE)
+	# The same origins, kept where a test can read them.
+	#
+	# MultiMesh instance data lives in the RenderingServer, and under --headless
+	# that is the DUMMY server: get_instance_transform() hands back identity for
+	# every instance. So an acceptance check asserting "no tufts on the combat
+	# floor" measured every tuft as sitting at the world origin and passed with
+	# the rule deleted from this function. Written from the same array in the
+	# same loop as the transforms, so the two cannot disagree.
+	var origins := PackedVector3Array()
+	origins.resize(transforms.size())
+	for i in transforms.size():
+		mm.set_instance_transform(i, transforms[i])
+		origins[i] = (transforms[i] as Transform3D).origin
+		var shade := rng.randf_range(0.80, 1.14)
+		mm.set_instance_color(i, Color(
+			tint.r * shade,
+			tint.g * shade * rng.randf_range(0.95, 1.05),
+			tint.b * shade * rng.randf_range(0.92, 1.04)))
+
+	var node := MultiMeshInstance3D.new()
+	node.name = "Scatter_%s" % path.get_file().get_basename()
+	node.set_meta("scatter_origins", origins)
+	node.multimesh = mm
+	# The instance colour only reaches the pixel if SOMETHING reads it as albedo,
+	# and the imported glTF material does not. Overriding also drops the pack's
+	# palette texture, which is the point: its greens are the teal this tint
+	# exists to replace, and a flat-shaded tuft matches a blockout ward anyway.
+	var mat := StandardMaterial3D.new()
+	mat.vertex_color_use_as_albedo = true
+	mat.roughness = 0.95
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	node.material_override = mat
+	node.layers = WORLD_LAYER
+	# Ground cover does not need to cast shadows, and several hundred instances
+	# that do is the cheapest frame-budget mistake available here.
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	room.add_child(node)
+
+
+func _pick_scatter(band: String, rng: RandomNumberGenerator) -> Dictionary:
+	var options: Array = _scatter_models.get(band, [])
+	if options.is_empty():
+		return {}
+	var total := 0
+	for o in options:
+		total += int(o.get("weight", 1))
+	var roll := rng.randi() % maxi(total, 1)
+	for o in options:
+		roll -= int(o.get("weight", 1))
+		if roll < 0:
+			return o
+	return options[options.size() - 1]
+
+
+## Pulls the first mesh out of each scatter model once.
+##
+## A MultiMesh needs a Mesh, and a glTF import is a scene — so the model is
+## instantiated, its mesh taken, and the instance thrown away. Doing this per
+## room would re-instantiate every model five times for nothing.
+func _load_scatter_models() -> void:
+	_scatter_models = {}
+	_scatter_meshes = {}
+	if not FileAccess.file_exists(FREE_ASSETS_MANIFEST):
+		return
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(FREE_ASSETS_MANIFEST))
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+	var map: Dictionary = (parsed as Dictionary).get("scatter_models", {})
+	for band in map:
+		if String(band).begins_with("_"):
+			continue
+		var usable: Array = []
+		for e in map[band]:
+			var entry: Dictionary = e
+			var file := String(entry.get("file", ""))
+			var path := "%s/%s" % [MODEL_DIR, file]
+			if not _scatter_meshes.has(path):
+				var mesh := _first_mesh_of(path)
+				if mesh == null:
+					continue
+				_scatter_meshes[path] = mesh
+			var t: Array = entry.get("tint", [1.0, 1.0, 1.0])
+			usable.append({
+				"file": path,
+				"weight": int(entry.get("weight", 1)),
+				"scale": entry.get("scale", [1.0, 1.0]),
+				"tint": Color(float(t[0]), float(t[1]), float(t[2])),
+			})
+		if not usable.is_empty():
+			_scatter_models[band] = usable
+
+
+static func _first_mesh_of(path: String) -> Mesh:
+	if not ResourceLoader.exists(path):
+		return null
+	var packed := load(path) as PackedScene
+	if packed == null:
+		return null
+	var root_node := packed.instantiate()
+	var found := _find_mesh(root_node)
+	root_node.queue_free()
+	return found
+
+
+static func _find_mesh(node: Node) -> Mesh:
+	if node is MeshInstance3D and (node as MeshInstance3D).mesh != null:
+		return (node as MeshInstance3D).mesh
+	for child in node.get_children():
+		var m := _find_mesh(child)
+		if m != null:
+			return m
+	return null
 
 
 func _load_prop_models() -> void:
