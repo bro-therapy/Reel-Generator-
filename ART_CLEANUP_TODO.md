@@ -118,3 +118,13 @@ are built.
   between filmed effects and pixel actors is the look that was asked for — but it
   means these sheets will never sit correctly on a pixel grid if the project ever
   goes fully pixel-locked.
+
+## From the first hands-on playtest (owner, 2026-07-30)
+
+- **Summons need side-profile locomotion frames.** The escort lanes rotate with
+  the hero's facing, so summons spend most of a fight moving laterally across
+  the screen — and every species only has toward/away-ish locomotion frames, so
+  they read as pivoting on the spot ("they constantly kind of spin"). The
+  behaviour is per guide §6 and stays; the fix is art: a side-walk cycle per
+  species (mirrorable, so one side is enough), same grids and pivots as the
+  existing locomotion rows. *(high — visible every second of play)*

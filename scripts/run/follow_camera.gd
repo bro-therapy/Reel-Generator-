@@ -21,21 +21,25 @@ extends Camera3D
 ## Position is smoothed and the angle is not, which is what makes it feel attached
 ## to the hero rather than dragged behind them.
 
-## Degrees below horizontal, and metres back along the view axis. Both are
-## derived, not chosen by eye.
+## Degrees below horizontal, and metres back along the view axis.
 ##
-## Pitch is set by the walls. Ward walls are 7 m (guide §12 keeps them tall enough
-## to fill frame at the boss framing), and a wall standing between the camera and
-## the hero occludes unless the sight line clears it. That height is a function of
-## pitch alone — distance cancels — and at the 32 degrees the static test scenes
-## used, the line clears a 7 m wall by 0.2 m, so the near wall filled the bottom
-## half of the screen. 44 degrees clears it by 3.3 m.
+## History, because both numbers have moved and each move had a reason:
 ##
-## Distance is then set by the hero. Guide: "Hero reads at 88 px tall at
-## 1920x1080." With a 45 degree vertical FOV, a 1.8 m hero subtends 88 px at
-## 26.5 m — so that is the distance, rather than whatever looked right.
-@export var pitch_degrees := 44.0
-@export var distance := 26.5
+## 32° (the static test scenes) put the near wall across the lower half of the
+## frame — the sight line cleared a 7 m wall by 0.2 m. 44° cleared it by 3.3 m
+## and put the hero at the guide's 88 px, and that build went to the owner —
+## who called it "really zoomed out, not the angle we talked about". They are
+## right on both counts: WardBuilder now hides the camera-side walls entirely,
+## so the occlusion constraint that forced 44° no longer exists, and 88 px is
+## the guide's readability FLOOR ("reads at 88 px"), not a framing target.
+##
+## So: 36°, which still clears a 7 m wall by 1.1 m everywhere one is visible
+## (ray height at a wall is look_height + wall_distance * tan(pitch); distance
+## cancels), and 20.5 m, which puts a 1.8 m hero at ~115 px in a 1080-tall
+## viewport — comfortably above the 88 px floor. Owner-approved framing beats
+## derived framing; the derivation only guards the floor now.
+@export var pitch_degrees := 36.0
+@export var distance := 20.5
 ## How high above the hero's feet the camera aims. Roughly chest height, so the
 ## hero sits slightly below frame centre and there is room to see what is ahead.
 @export var look_height := 1.6

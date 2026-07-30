@@ -34,7 +34,17 @@ const THREAT_BOSS := &"boss"
 ## A node is targetable when it is in the "enemies" group, still inside the
 ## tree, visible, and reports itself alive. Anything that fails is skipped —
 ## this is what keeps dead, despawned, and hidden enemies from being selected.
-static func is_targetable(node: Object) -> bool:
+##
+## The parameter is deliberately UNTYPED. It used to be `node: Object`, and that
+## one annotation made the whole guard unreachable: Godot validates a freed
+## instance against a typed parameter at the call boundary, *before* the body
+## runs, so `is_instance_valid` never got the chance to answer. Every summon then
+## raised "Invalid type in function 'is_targetable'" once per frame the moment an
+## enemy it was tracking got freed — which in the editor halts the game. This is
+## the project's "a guard hidden behind another guard is not tested" rule again:
+## the guard was in the body, the second gate was the signature itself. Do not
+## re-type it, and keep the freed-object case in the acceptance suite.
+static func is_targetable(node) -> bool:
 	if node == null or not is_instance_valid(node):
 		return false
 	if not (node is Node3D):
@@ -82,12 +92,16 @@ static func threat_weight(node: Node3D) -> float:
 ## Scores one candidate. `preferred_aim` may be zero, which simply drops the
 ## facing term — that is the no-aim promise: not aiming costs priority nuance,
 ## never the ability to fire.
+## `current_target` and `rally_target` are untyped for the same reason
+## is_targetable's parameter is: they are exactly the references most likely to
+## be freed under the caller's feet, and a Node3D annotation rejects a freed
+## instance before the body can defend against it.
 static func score(
 	candidate: Node3D,
 	origin: Vector3,
 	preferred_aim: Vector3,
-	current_target: Node3D = null,
-	rally_target: Node3D = null,
+	current_target = null,
+	rally_target = null,
 	blocked: bool = false
 ) -> float:
 	var point := target_point(candidate)
@@ -118,14 +132,22 @@ static func score(
 
 
 ## Picks the highest-scoring valid target within `range_units`, or null.
+## Untyped stale-prone parameters — see score().
 static func pick_best(
 	candidates: Array,
 	origin: Vector3,
 	preferred_aim: Vector3,
 	range_units: float,
-	current_target: Node3D = null,
-	rally_target: Node3D = null
+	current_target = null,
+	rally_target = null
 ) -> Node3D:
+	# Sanitise once at the top so freed references cannot reach the comparison
+	# terms below with dangling identities.
+	if current_target != null and not is_instance_valid(current_target):
+		current_target = null
+	if rally_target != null and not is_instance_valid(rally_target):
+		rally_target = null
+
 	var best: Node3D = null
 	var best_score := -INF
 	var range_squared := range_units * range_units

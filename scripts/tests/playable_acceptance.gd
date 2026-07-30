@@ -19,6 +19,7 @@ extends SceneTree
 ## not go looking.
 
 const PLAYABLE := "res://scenes/playable.tscn"
+const ENEMY_SCENE := preload("res://scenes/enemies/enemy_base.tscn")
 const STEP := 1.0 / 60.0
 
 var _pass := 0
@@ -41,17 +42,78 @@ func _initialize() -> void:
 ## Waits a frame before asserting. The slice builds its world in `_ready`, and its
 ## nodes are not in the tree — so global_position is unusable and the audio pool's
 ## positional voices cannot play — until the first processed frame.
+## Two phases. The instant checks run on frame 2; then the fight is left to run
+## for real — summons acting under their own _physics_process, enemies dying and
+## being freed mid-targeting — because that is what a few manually-stepped frames
+## can never exercise. The freed-enemy targeting error that halted the first
+## playtest lived exactly in that gap: this suite was green at 6 frames of combat
+## and the game fell over at second five.
+const SOAK_FRAMES := 900  # 15 seconds
+
+var _soaking := false
+var _soak_started := 0
+var _spawned_at_soak := 0
+
+
 func _process(_delta: float) -> bool:
 	_frames += 1
 	if _frames < 2:
 		return false
 
-	_check_assembled()
-	_check_camera()
-	_check_combat_triggers()
-	_check_no_growth()
+	if not _soaking:
+		_check_assembled()
+		_check_camera()
+		_check_combat_triggers()
+		_check_no_growth()
+		# Second wave for the soak: combat_b has not been triggered yet.
+		var combat_b := WardLayout.space(&"combat_b")
+		_slice.hero.global_position = combat_b.centre
+		_soaking = true
+		_soak_started = _frames
+		return false
+
+	if _frames == _soak_started + 2:
+		_spawned_at_soak = _slice.enemies_alive()
+
+	if _frames - _soak_started < SOAK_FRAMES:
+		return false
+
+	_check_soak()
 	_summary()
 	return true
+
+
+## The fight ran for fifteen real seconds with no input. Two things have to be
+## true at the end: enemies actually died (the no-aim promise — summons fight
+## effectively with nobody touching aim), and the run got there without a script
+## error (enforced by check_project.sh, which fails any suite that emits one).
+func _check_soak() -> void:
+	if _spawned_at_soak <= 0:
+		_no("combat soak", "combat_b spawned nothing to fight")
+		return
+	var alive: int = _slice.enemies_alive()
+	if alive < _spawned_at_soak:
+		_ok("summons fight a real wave unaided for 15 seconds",
+			"%d of %d enemies down, no input, no script errors" % [
+				_spawned_at_soak - alive, _spawned_at_soak])
+	else:
+		_no("no-aim promise", "%d enemies alive after 15s of summon combat — nothing died" % alive)
+
+	# The specific shape of the playtest crash: a freed enemy handed to the
+	# targeting contract. Must be answered, quietly, with false.
+	var victim := ENEMY_SCENE.instantiate() as EnemyBase
+	victim.data = load("res://data/enemies/rift_crawler.tres") as EnemyData
+	root.add_child(victim)
+	victim.free()
+	if TargetScorer.is_targetable(victim) == false:
+		_ok("a freed enemy is quietly untargetable",
+			"the guard runs instead of the signature rejecting it")
+	else:
+		_no("freed target", "is_targetable said true for a freed node")
+	if TargetScorer.pick_best([], Vector3.ZERO, Vector3.ZERO, 10.0, victim, victim) == null:
+		_ok("pick_best survives freed sticky and rally references")
+	else:
+		_no("pick_best", "returned something for an empty candidate list")
 
 
 func _check_assembled() -> void:
@@ -127,14 +189,16 @@ func _check_camera() -> void:
 		_no("camera occlusion", "sight line only %.1f m at a %.1f m wall — the near "
 			% [ray_height, wall_h] + "wall will fill the lower frame")
 
-	# Guide: "Hero reads at 88 px tall at 1920x1080." A 1.8 m hero at this FOV and
-	# distance is arithmetic, so it is checked rather than assumed.
+	# Guide: "Hero reads at 88 px tall at 1920x1080." That is a readability FLOOR,
+	# not a framing target — the first playtest at exactly 88 px came back as
+	# "really zoomed out", and the owner set the framing closer. The check now
+	# guards the floor and a sanity ceiling instead of pinning one number.
 	var visible_height := 2.0 * cam.distance * tan(deg_to_rad(cam.fov * 0.5))
 	var hero_px := 1.8 / visible_height * 1080.0
-	if absf(hero_px - 88.0) <= 12.0:
-		_ok("the framing puts the hero near its 88 px target", "%.0f px" % hero_px)
+	if hero_px >= 88.0 and hero_px <= 150.0:
+		_ok("the hero clears the 88 px readability floor", "%.0f px at %.1f m" % [hero_px, cam.distance])
 	else:
-		_no("hero size", "%.0f px at %.1f m, target 88" % [hero_px, cam.distance])
+		_no("hero size", "%.0f px at %.1f m — floor 88, ceiling 150" % [hero_px, cam.distance])
 
 	# A framing change must ease rather than cut. Guide §12: 0.35-0.6 s.
 	var before := cam.framing()

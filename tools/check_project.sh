@@ -37,6 +37,22 @@ run_suite() {
   local line
   line="$(echo "$out" | grep -E "[0-9]+ passed, [0-9]+ failed" | tail -1)"
 
+  # A suite that passes every assertion while spraying script errors is not
+  # green. This is exactly how the freed-enemy targeting bug shipped: the guard
+  # returned false either way, so no assertion could see the error — but the
+  # editor halts on it, which read as "the game crashed" in the first playtest.
+  # Plain ERROR: lines are NOT counted: the dummy renderer emits hundreds of
+  # them ("Parameter m is null") on scenes a real renderer draws cleanly.
+  local script_errors
+  script_errors="$(echo "$out" | grep -c "^SCRIPT ERROR:")"
+  if [[ "$script_errors" != "0" ]]; then
+    printf "  %-22s ✗ %s script error(s) at runtime\n" "$label" "$script_errors"
+    echo "$out" | grep -A1 "^SCRIPT ERROR:" | head -6 | sed 's/^/      /'
+    failed_suites+=("$label")
+    total_fail=$((total_fail + 1))
+    return
+  fi
+
   if [[ -z "$line" ]]; then
     if echo "$out" | grep -q "SKIP"; then
       printf "  %-22s skipped (assets not present)\n" "$label"

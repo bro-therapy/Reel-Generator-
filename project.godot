@@ -18,9 +18,12 @@ SceneFlow="*res://scripts/run/scene_flow.gd"
 
 [display]
 
-; 1920x1080 reference resolution, aspect preserved on resize.
+; 1920x1080 reference resolution, aspect preserved on resize. Opens maximized:
+; the framing math assumes a big viewport, and Godot's default 1152x648 window
+; made the first playtest read as "zoomed out" on top of the camera being far.
 window/size/viewport_width=1920
 window/size/viewport_height=1080
+window/size/mode=2
 window/stretch/mode="canvas_items"
 window/stretch/aspect="keep"
 
