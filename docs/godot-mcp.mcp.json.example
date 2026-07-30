@@ -1,0 +1,12 @@
+{
+  "_comment": "Copy to .mcp.json in the project root ON YOUR MAC ONLY, and fix the path below to wherever you cloned the MCP server. Do NOT commit the copy — .mcp.json is gitignored, because a cloud session would try to start a server at a path that does not exist there. See docs/GODOT_MCP_SETUP.md.",
+  "mcpServers": {
+    "godot-mcp": {
+      "command": "node",
+      "args": ["/Users/YOUR_NAME/Desktop/godot-mcp/server/build/index.js"],
+      "env": {
+        "GODOT_MCP_PORT": "6505"
+      }
+    }
+  }
+}

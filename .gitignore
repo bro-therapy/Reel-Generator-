@@ -85,3 +85,6 @@ __pycache__/
 
 # Local Python virtualenv, if one is made in-project
 .venv/
+
+# Local MCP server config — machine-specific paths, see docs/GODOT_MCP_SETUP.md
+.mcp.json
