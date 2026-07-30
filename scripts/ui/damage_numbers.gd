@@ -51,10 +51,14 @@ func initialize() -> void:
 		label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 		label.no_depth_test = true
 		label.fixed_size = true
-		label.font_size = 48
-		label.outline_size = 12
-		label.outline_modulate = Color(0.04, 0.03, 0.08, 1.0)
-		label.pixel_size = 0.0018
+		# Sized against the hero, who reads at 88 px on a 1080p screen. The first
+		# pass rendered numbers nearly as tall as him, which pulled the eye off
+		# the fight; and a 12 px outline at that scale swallowed the fill colour
+		# so every number looked navy regardless of side.
+		label.font_size = 40
+		label.outline_size = 5
+		label.outline_modulate = Color(0.05, 0.04, 0.09, 0.85)
+		label.pixel_size = 0.0009
 		label.visible = false
 		# Actor visual layer, so floor decals cannot paint over it.
 		label.layers = 2
@@ -75,14 +79,14 @@ func show_damage(amount: int, at: Vector3, critical: bool = false,
 
 	label.text = str(amount)
 	if critical:
-		label.modulate = Color(1.0, 0.85, 0.35)
-		label.font_size = 64
+		label.modulate = Color(1.0, 0.86, 0.4)
+		label.font_size = 54
 	elif to_player:
-		label.modulate = Color(1.0, 0.45, 0.35)
-		label.font_size = 48
+		label.modulate = Color(1.0, 0.5, 0.4)
+		label.font_size = 44
 	else:
-		label.modulate = Color(0.82, 0.9, 1.0)
-		label.font_size = 48
+		label.modulate = Color(0.86, 0.93, 1.0)
+		label.font_size = 40
 
 	var start := at + Vector3(
 		_rng.randf_range(-SPREAD, SPREAD), 0.2, _rng.randf_range(-SPREAD, SPREAD))
