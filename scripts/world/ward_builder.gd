@@ -465,7 +465,12 @@ func _build_props(room: Node3D, s: WardLayout.Space, doors: Array) -> void:
 		var dist := inner - rng.randf_range(0.0, 3.0)
 		var pos: Vector3 = s.centre + Vector3(cos(a) * dist, 0.0, sin(a) * dist)
 
-		if s.kind == WardLayout.Kind.COMBAT and pos.distance_to(s.centre) < WardLayout.CLEAR_RADIUS:
+		# By extent, not centre: a 2 m hedge placed with its CENTRE just past the
+		# line still pokes its end into the clear circle, which is exactly what
+		# Phase 8's cylinder probe measures. 1.5 covers the longest prop's half
+		# extent with a little slack.
+		if s.kind == WardLayout.Kind.COMBAT \
+				and pos.distance_to(s.centre) < WardLayout.CLEAR_RADIUS + 1.5:
 			continue
 
 		# Never in a doorway. Props ring the perimeter, which is exactly where
@@ -537,18 +542,25 @@ func _try_model_prop(room: Node3D, kind: String, pos: Vector3, rng: RandomNumber
 		return false
 	room.add_child(inst)
 	inst.position = pos
-	inst.rotation.y = rng.randf_range(0.0, TAU)
+	var yaw := rng.randf_range(0.0, TAU)
+	inst.rotation.y = yaw
 	var sc: float = pick["scale"]
 	inst.scale = Vector3(sc, sc, sc)
+	if pick.has("y_offset"):
+		inst.position.y += float(pick["y_offset"])
 
 	# Imported glTF carries no physics. Where the primitive version was solid the
 	# model version must be too, or swapping art would silently change gameplay.
+	# The collider takes the model's yaw: an axis-aligned box under a rotated
+	# hedge is an invisible wall at the wrong angle, and it was also how a prop
+	# that respected the clear radius still poked its corner into it.
 	var collider: Variant = pick["collider"]
 	if collider != null:
 		var size: Vector3 = collider
 		var body := StaticBody3D.new()
 		body.collision_layer = WORLD_LAYER
 		body.position = pos + Vector3(0, size.y * 0.5, 0)
+		body.rotation.y = yaw
 		var shape := CollisionShape3D.new()
 		var box := BoxShape3D.new()
 		box.size = size

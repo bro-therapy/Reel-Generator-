@@ -419,13 +419,25 @@ func _check_music(d: AudioDirector) -> void:
 
 	# The placeholder beds are written as whole bars so the seam lands on a beat;
 	# that is worth nothing unless the stream is actually set to loop.
-	var stream := load("res://assets/audio/music/music_first_bell.wav") as AudioStreamWAV
-	if stream != null and stream.loop_mode == AudioStreamWAV.LOOP_FORWARD:
-		_ok("music streams are set to loop", "loop_mode %d" % stream.loop_mode)
-	elif stream == null:
-		_no("music loop", "music_first_bell.wav did not load as AudioStreamWAV")
+	# Asserted on the stream the director actually played, not on a WAV loaded
+	# from disk: with FREE_ASSETS music installed the slot plays an MP3/OGG and
+	# the placeholder WAV is rightly untouched. This is also what makes the check
+	# meaningful on both an assetless checkout and a full one.
+	d.play_music(&"music_first_bell")
+	var played: AudioStream = d._music.stream
+	var looping := false
+	if played is AudioStreamWAV:
+		looping = (played as AudioStreamWAV).loop_mode == AudioStreamWAV.LOOP_FORWARD
+	elif played is AudioStreamOggVorbis:
+		looping = (played as AudioStreamOggVorbis).loop
+	elif played is AudioStreamMP3:
+		looping = (played as AudioStreamMP3).loop
+	if played != null and looping:
+		_ok("the playing bed is set to loop", played.get_class())
+	elif played == null:
+		_no("music loop", "play_music(&\"music_first_bell\") set no stream")
 	else:
-		_no("music loop", "loop_mode is %d, not LOOP_FORWARD" % stream.loop_mode)
+		_no("music loop", "%s is not set to loop" % played.get_class())
 
 	d.stop_music()
 	if d.current_music() == &"":
