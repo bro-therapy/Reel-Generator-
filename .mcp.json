@@ -1,0 +1,12 @@
+{
+  "_comment": "Project-scoped MCP servers. Checked in, so anyone working on this repo gets the same tools. Secrets are NOT checked in: ${VAR} is expanded from the environment when Claude Code starts, so the file carries the wiring and your shell carries the key. See docs/PIXELLAB_SETUP.md.",
+  "mcpServers": {
+    "pixellab": {
+      "type": "http",
+      "url": "https://api.pixellab.ai/mcp",
+      "headers": {
+        "Authorization": "Bearer ${PIXELLAB_API_KEY}"
+      }
+    }
+  }
+}

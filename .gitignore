@@ -86,5 +86,14 @@ __pycache__/
 # Local Python virtualenv, if one is made in-project
 .venv/
 
-# Local MCP server config — machine-specific paths, see docs/GODOT_MCP_SETUP.md
-.mcp.json
+# MCP server config is COMMITTED, so a fresh clone has the tools wired up.
+#
+# It was ignored when it held machine-specific paths to a local Godot MCP binary.
+# It now holds only URLs and ${VAR} references, which Claude Code expands from the
+# environment at startup — so the repo carries the wiring and the shell carries the
+# secrets. See docs/PIXELLAB_SETUP.md.
+#
+# The rule that makes this safe: a value in .mcp.json is NEVER a literal secret.
+# If a key ever needs to go in, it goes in as ${SOMETHING_API_KEY} and lives in
+# ~/.zshrc. Anything else belongs in .mcp.local.json, which stays ignored.
+.mcp.local.json
